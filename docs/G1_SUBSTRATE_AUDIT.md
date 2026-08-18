@@ -7,6 +7,11 @@ prepares, but does not make, the human substrate decision at G2.  In
 particular, it does not accept a dependency, add a package, or change any
 canonical representation in `ROADMAP.md`.
 
+Later disposition: `docs/G2_SUBSTRATE_DECISION.md` selects the Mathlib-native
+route in the repository revision that contains it.  This file remains the G1
+evidence snapshot and is not rewritten as though that later decision had been
+known during the audit.
+
 ## Evidence boundary
 
 The audit fixes five different kinds of evidence and does not substitute one
@@ -930,8 +935,10 @@ than rely on naming similarity:
    provide the complete Chapter 1 producer surface; no such declaration exists
    at the inspected pin.
 
-Until those questions are answered, G2 is open.  F1, F2, and A2 must not begin
-on the assumption that the candidate has been accepted.
+At the G1 snapshot, G2 remained open until these questions were answered.  The
+later G2 decision record answers them by rejecting the candidate routes and
+selecting Mathlib-native construction.  F1, F2, and A2 still must not begin
+until that selected coherence kernel is implemented and reviewed.
 
 ## Reproduction notes
 

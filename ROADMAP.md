@@ -2,11 +2,15 @@
 
 Status: accepted bootstrap route at repository commit
 `0a7e55543629438cacf6e25b698ba770274225d9`, with the A1 scalar and operator
-comparison increments and completed G1 evidence audit recorded below.  G2
-remains an open human gate: no dependency or substrate route has been selected.
-This file is the repository-owned route for the Chapter 1 library.  It is not a
-transcription of the project brief, and each implementation claim is limited
-to the exact audited commit named below.
+comparison increments and completed G1 evidence audit recorded below.  The
+repository revision containing [`docs/G2_SUBSTRATE_DECISION.md`](docs/G2_SUBSTRATE_DECISION.md)
+selects the Mathlib-native route; while that revision is under review the
+selection is proposed, and merge is its human acceptance.  G2 remains open
+until the selected metric, distance, volume, connection, and curvature-sign
+kernel is implemented and reviewed.  This file is the repository-owned route
+for the Chapter 1 library.  It is not a transcription of the project brief,
+and each implementation claim is limited to the exact audited commit named
+below.
 
 ## Authority and evidence
 
@@ -26,9 +30,10 @@ Conflicts are recorded at the authority level where they occur.  The direct
 source audit confirms the issue snapshot's connection claim: the pinned
 Mathlib tree contains `Geometry/Manifold/VectorBundle/CovariantDerivative`
 (`Basic`, `Metric`, and `Torsion`) alongside the bundle metric and induced
-path-length APIs.  The candidate DoCarmo connection files remain prior art;
-G2 must still check that their intrinsic geodesic conventions are compatible
-before selecting that repository as a dependency.
+path-length APIs.  The candidate DoCarmo connection files remain prior art.
+The G2 decision rejects that repository as a dependency at the audited
+unlicensed commit; a future route revision would have to recheck its intrinsic
+geodesic conventions as well as its legal and producer status.
 
 The primary source is Morgan and Tian's arXiv v2 source (`math/0607607`,
 revised 21 March 2007), whose retained PDF is the checked Chapter 1 source.
@@ -64,7 +69,9 @@ The completed declaration-level G1 audit is
 [`docs/G1_SUBSTRATE_AUDIT.md`](docs/G1_SUBSTRATE_AUDIT.md).  It records the
 exact pinned signatures and imports, the candidate's license and producer
 gaps, a disposition for every source row, and the bounded alternatives and
-questions for G2.  It does not change the canonical representations below.
+questions for G2.  The G2 decision record resolves those questions, records
+the exact re-audit, and freezes the implementation contract.  It does not
+claim that the coherence declarations already exist.
 
 ## End state and boundaries
 
@@ -132,40 +139,40 @@ faked by this workflow.
 
 ## Canonical representations and public API
 
-G2 freezes representations before F1--J1.  The intended choices are:
+The reviewed G2 decision freezes representations before F1--J1.  The selected
+choices are:
 
-- **Metric and distance.** Use Mathlib's
-  `ContMDiffRiemannianMetric`/`RiemannianBundle` and
-  `IsRiemannianManifold`, with `pathELength` and `riemannianEDist` as the
-  induced length/distance infrastructure.  If the dependency gate selects an
-  explicit metric object for differential geometry, it must have proved
-  conversion, topology, distance, norm, and measure coherence lemmas.  Two
+- **Metric and distance.** Public statements use Mathlib's
+  `Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I)` directly, with one
+  local `Bundle.RiemannianBundle` installation.  There is no project or
+  candidate metric alias.  `pathELength` and `riemannianEDist` are the induced
+  length/distance infrastructure; the implementation must prove fibre inner,
+  norm, topology, ambient `edist`/`dist`, and `Metric.ball` coherence.  Two
   unrelated public metric or distance structures are forbidden.
-- **Connection.** The public connection is the pinned bundled
-  `CovariantDerivative`-style object selected by G2, with metric compatibility
-  and zero torsion.  If that name is supplied by a reviewed shared dependency
-  rather than Mathlib, the bridge to Mathlib's bundle metric is public and
-  proved.  A chart Christoffel formula is an implementation theorem, not a
-  second connection.
+- **Connection.** The public connection is exactly Mathlib's
+  `CovariantDerivative I E (TangentSpace I)`, constructed from the selected
+  metric, with proved metric compatibility, zero torsion, the Koszul formula,
+  and uniqueness on differentiable vector fields.  A chart Christoffel
+  formula is an implementation theorem, not a second connection.
 - **Curvature.** The public `(1,3)` tensor is `R X Y Z` with
   `R X Y Z = nabla_X(nabla_Y Z) - nabla_Y(nabla_X Z) -
-  nabla_[X,Y] Z`.  The `(0,4)` form is `g (R X Y W) Z`, so its argument order
-  agrees with the Chapter 1 `R_{ijkl}` convention.  Sectional curvature is
-  `R X Y X Y` on an orthonormal pair.  A constant-curvature model must produce
+  nabla_[X,Y] Z`.  In Morgan--Tian's positional order the `(0,4)` form is
+  `curvature4 X Y Z W = g (R X Y W) Z`.  Sectional curvature is
+  `curvature4 X Y X Y` on an orthonormal pair, while the Jacobi and index-form
+  curvature term uses `R J V V`.  A constant-curvature model must produce
+  `R_K X Y W = lambda * (g Y W * X - g X W * Y)` and
   `R_{ijkl} = lambda (g_{ik} g_{jl} - g_{il} g_{jk})`; this is the kernel test
   before J1.
-- **Geodesics and exponential.** Reuse an accepted intrinsic geodesic,
-  maximal-domain, minimizing, and exponential API if G2 accepts
-  Hopf--Rinow-DoCarmo.  Otherwise build the minimum local intrinsic API in
-  `MorganTianLib.Ch01.Geodesic` and record the migration trigger.  The maximal
-  exponential domain preserves an unbounded/complete case rather than using a
-  finite-radius facade.
+- **Geodesics and exponential.** G2 selects no candidate geodesic API.
+  `MorganTianLib.Ch01.Geodesic` owns the project-built intrinsic API in F2.
+  The maximal exponential domain preserves an unbounded/complete case rather
+  than using a finite-radius facade.
 - **Jacobi fields.** `JacobiField gamma` is an intrinsic tangent-bundle field
-  along `gamma` satisfying the covariant Jacobi equation.  Chart `(J,DJ)`
-  pairs and parallel-frame matrices are private proof representations, with
-  explicit equivalence theorems.  Conjugacy means a nonzero endpoint-vanishing
-  intrinsic Jacobi field; the kernel of `d exp` equivalence is proved before
-  local-diffeomorphism arguments.
+  along `gamma` satisfying the source-ordered covariant Jacobi equation
+  `D^2 J + R J V V = 0`.  Chart `(J,DJ)` pairs and parallel-frame matrices are
+  private proof representations, with explicit equivalence theorems.
+  Conjugacy means a nonzero endpoint-vanishing intrinsic Jacobi field; the
+  kernel of `d exp` equivalence is proved before local-diffeomorphism arguments.
 - **Index form.** The public index form is the intrinsic symmetric bilinear
   integral on fields along a geodesic, with endpoint conditions stated
   explicitly.  A frame/inner-product-space form is an adapter proved equal to
@@ -175,10 +182,15 @@ G2 freezes representations before F1--J1.  The intended choices are:
   the maximal minimizing domain, distance to the cut locus, and the conjugate
   or broken-geodesic alternatives) are required before comparison APIs use
   them.
-- **Measure and volume.** Use Mathlib measures, metric balls, tangent-space
-  polar integration, and the model-space denominator coherently.  A ratio for
-  an arbitrary density is an A1/A2 analytic lemma only; it is not
-  Bishop--Gromov until N1/C3 prove the density and metric-ball equalities.
+- **Measure and volume.** The one Riemannian volume is Mathlib's
+  `MeasureTheory.Measure.euclideanHausdorffMeasure (Module.finrank ℝ E)`, or
+  `μHE[Module.finrank ℝ E]`, for the selected metric-induced distance.  This is
+  the pinned Euclidean-normalized scalar multiple of raw Hausdorff measure, not
+  raw `μH` itself.  G2 proves its Borel, metric, ball, and finite-dimensional
+  inner-product-space normalization facts.  A2 owns chart/polar integration
+  and Jacobians.  A ratio for an arbitrary density is an A1/A2 analytic lemma
+  only; it is not Bishop--Gromov until N1/C3 prove the density and metric-ball
+  equalities.
 
 ### Proposed module and declaration ownership
 
@@ -211,12 +223,12 @@ silently dropped.  Pages are printed Chapter 1 pages in arXiv v2.
 
 | Source claim and anchor | Intended API/module | Milestone and prerequisite | Current status |
 | --- | --- | --- | --- |
-| Riemannian metric and metric ball, Definition 1.1, p. 35; `morganTian2007` | Mathlib metric bridge, `Metric` | G2; Mathlib metric audit | G1-audited substrate/gap S01 |
-| Fundamental theorem of Levi--Civita, Theorem 1.2, pp. 35--36; `morganTian2007`, `doCarmo1992` Ch. 2, pp. 44--51 | `Connection.covariantDerivative` | G2 then F1 | G1-audited gap S02 |
+| Riemannian metric and metric ball, Definition 1.1, p. 35; `morganTian2007` | Mathlib metric bridge, `Metric` | G2; Mathlib metric audit | G2 Mathlib-native route selected; coherence kernel pending S01 |
+| Fundamental theorem of Levi--Civita, Theorem 1.2, pp. 35--36; `morganTian2007`, `doCarmo1992` Ch. 2, pp. 44--51 | `Connection.covariantDerivative` | G2 then F1 | G2 Mathlib `CovariantDerivative` route selected; construction pending S02 |
 | Christoffel formula (1.1), p. 36; `morganTian2007` | `Connection.christoffel_formula` | F1, chart bridge | G1-audited gap S03 |
 | Hessian definition (1.2) and `Hessformula`, Lemma 1.3, pp. 36--37; `morganTian2007` | `Connection.hessian`, symmetry/formula lemmas | F1 | G1-audited gap S04 |
 | Function Laplacian as Hessian trace, p. 37; `morganTian2007` | `Connection.laplacian` | F1 | G1-audited gap S05 |
-| Curvature `(1,3)` and `(0,4)` definitions and coordinate formula, Definition 1.4, pp. 37--38; `morganTian2007` | `Curvature.curvature`, `curvature₄` | F1; sign gate | G1-audited gap S06 |
+| Curvature `(1,3)` and `(0,4)` definitions and coordinate formula, Definition 1.4, pp. 37--38; `morganTian2007` | `Curvature.curvature`, `curvature₄` | F1; sign gate | G2 sign/order contract frozen; formal regressions pending S06 |
 | Symmetries and first/second Bianchi, Claim 1.5, p. 38; `morganTian2007` | `Curvature.bianchi₁`, `bianchi₂` | F1 | G1-audited gap S07 |
 | Sectional curvature and curvature operator, Definitions 1.6--1.7, pp. 38--39; `morganTian2007` | `sectionalCurvature`, `curvatureOperator` | F1 | G1-audited gap S08 |
 | Ricci and scalar curvature, Definition 1.8, p. 39; `morganTian2007` | `ricci`, `scalarCurvature` | F1 | G1-audited gap S09 |
@@ -229,7 +241,7 @@ silently dropped.  Pages are printed Chapter 1 pages in arXiv v2.
 | Cone metric definition, Definition 1.14 (`conedefn`), p. 40; `morganTian2007` | `Models.coneMetric` | F3 | G1-audited gap S16 |
 | Cone curvature proposition, Proposition 1.15 (`conecurv`) and eigenvalue corollary 1.16, pp. 40--41; `morganTian2007` | `Models.coneCurvature`, `coneCurvatureEigenvalue` | F3 | G1-audited gap S17 |
 | Geodesic definition/coordinate IVP, Definition 1.17, p. 41; `morganTian2007`, `doCarmo1992` Ch. 3, pp. 61--75 | `Geodesic.isGeodesic`, IVP | F2 | G1-audited gap/partial prior art S18 |
-| Hopf--Rinow, Theorem 1.18, pp. 41--42; `morganTian2007`, `doCarmo1992` Ch. 7, pp. 157--166 | `Geodesic.hopfRinow` adapter | F2/G2 | G1-audited gap S19 |
+| Hopf--Rinow, Theorem 1.18, pp. 41--42; `morganTian2007`, `doCarmo1992` Ch. 7, pp. 157--166 | `Geodesic.hopfRinow` adapter | F2/G2 | G2 rejects the candidate facade; project-owned F2 producer pending S19 |
 | Length, energy, Cauchy--Schwarz, first variation, and geodesic criticality, pp. 41--43; `morganTian2007`, `doCarmo1992` Ch. 9, pp. 185--201 | `Geodesic.energy`, `Variation.firstEnergyVariation` | F2 | G1-audited substrate/gap S20 |
 | Geodesic variations and Jacobi equation, pp. 43--44; `morganTian2007`, `doCarmo1992` Ch. 5, pp. 101--121 | `Jacobi.jacobiEquation`, variation bridge | J1; F1/F2 | G1-audited gap S21 |
 | Conjugate point definition, Definition 1.19, p. 44; `morganTian2007` | `Jacobi.IsConjugate` | J1 | G1-audited gap S22 |
@@ -337,8 +349,11 @@ Node contracts:
   module, and workflow. No mathematical implementation.
 - **G1** (`G0`): close the table above with current Mathlib and candidate dependency
   signatures, import graph, and exact source anchors.
-- **G2** (`G1`, human gate): human-select the substrate; prove metric/distance/measure and
-  connection bridges, audit assumptions, and freeze curvature signs.
+- **G2** (`G1`, human gate): first merge the repository-owned substrate
+  selection in `docs/G2_SUBSTRATE_DECISION.md`; then implement and prove its
+  metric/distance/measure and connection bridges, audit assumptions, and
+  freeze curvature signs.  The selection merge does not by itself unlock a
+  descendant.
 - **F1** (`G2`): connection, Hessian/function and tensor connection
   Laplacians, curvature, Bianchi, Ricci/scalar, divergence/Bochner,
   naturality, and rescaling.
@@ -387,29 +402,25 @@ Node contracts:
 
 ## Dependency alternatives and hard gates
 
-G2 compares the following routes in a written human decision.  The comparison
-must cover standalone CI reproducibility, immutable pinning, license and
-provenance, transitive dependencies/import size, Mathlib coherence, axiom and
-`sorry` inventory, semantic coverage, public-name collisions, maintenance
-ownership, and the number of bridge declarations.
+The exact ten-criterion comparison and answers to the eight reserved G1
+questions are in `docs/G2_SUBSTRATE_DECISION.md`.  The four route dispositions
+are:
 
-1. **Reviewed Git dependency (preferred when ready).** Use an immutable accepted
-   Hopf--Rinow-DoCarmo commit only after compatible license/toolchain/Mathlib
-   pins, green CI, unconditional intrinsic APIs, and no path-only transitive
-   dependencies are verified.
-2. **Scoped extraction/vendor fallback.** If that repository is not stable or
-   lacks required foundations, adapt only the minimum Apache-licensed modules,
-   retain provenance, and add a deletion/migration trigger. Never copy 168
-   files wholesale.
-3. **Mathlib-native construction.** Use Mathlib bundle metrics and the checked
-   covariant-derivative substrate if a compatibility spike has a smaller
-   reviewed surface than extraction. The current inventory warns that major
-   Levi--Civita/geodesic/curvature work may remain.
-4. **Wait for upstream.** PR #36845, PR #36036, and PR #33714 are now concrete
-   upstream prior art, but they remain unmerged and absent at the current pin.
-   This route waits for a merged immutable Mathlib commit, then requires a full
-   toolchain, import, signature, instance, and semantic-equivalence audit before
-   it can supply project declarations.
+1. **Reviewed Git dependency: rejected at this gate.** Candidate main
+   `60c3e1f` remains unlicensed, and its partial producers would not remove the
+   connection, measure, or maximal-geodesic work.
+2. **Scoped extraction: rejected at this gate.** The same missing software
+   license blocks copying or adaptation from the forge candidate.  A
+   differently licensed reference tree is not the audited candidate revision.
+3. **Mathlib-native construction: selected.** Keep Mathlib
+   `520045ab14e26149ee970e2e617ca04b09bde5d6` as the only external geometric
+   substrate, use its bundle metric, induced distance, Euclidean-normalized
+   Hausdorff measure, and bundled `CovariantDerivative` types directly, and own
+   the missing producers in focused Chapter 1 modules.
+4. **Wait for upstream: rejected at this gate.** PR #36845, PR #36036, and PR
+   #33714 remain unmerged, use later toolchains, and do not jointly supply the
+   complete kernel.  A named merged immutable revision can trigger migration,
+   but an open head is prior art rather than pinned API.
 
 Hard gates are recorded in the decision:
 
@@ -430,6 +441,10 @@ Hard gates are recorded in the decision:
   covering/compactness theory is project-scale;
 - every Lean/Mathlib/shared revision gets a compatibility, namespace,
   signature, instance, axiom, and source-fidelity audit.
+
+The selected route becomes accepted only through human review and merge of the
+revision containing the decision record.  G2 remains open after that merge
+until the Lean coherence kernel and its protected CI status are reviewed.
 
 ## Provisional debt and replacement triggers
 
@@ -514,6 +529,7 @@ reviewed commit.  The bootstrap record is:
 | `A1-model-scalar` / `70cc263f77dc9ee70b6246a94edd00f3f7f6a13d` | Added the standalone `Comparison.Model` API for flat/hyperbolic and spherical profiles, their normalized ODEs, positivity and first-pole facts, totalized radial coefficients, the quantitative origin estimate, and scalar Riccati comparison | Morgan--Tian Definition 1.30 and comparison discussion, pp. 48--49; Petersen 2016 Section 6.4, pp. 254--257; pinned Mathlib trigonometric derivative/bound, square-root, and one-variable derivative-monotonicity APIs; focused public-mathlib-PR search found no close packaged comparison-profile analogue | Keep the functions in A1 with no manifold facade; expose the scalar theorem through the Chapter 1 root; leave the spherical limits `snPos K r / r -> 1` and `r * logDerivPos K r -> 1`, scalar/vector Sturm, vector/operator/trace Riccati, determinant inequalities, and manifold bridges pending |
 | `G1-substrate-audit` / `96f226c580bf12ff7db80bf2bcc8c61da44f17f2` | Added the declaration-level Mathlib and candidate audit, corrected the Christoffel and Gaussian-expansion equation anchors, and assigned every source-inventory row to an exact declaration or explicit milestone gap | Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6`; `palimpsest/Hopf-Rinow-DoCarmo` `60c3e1f6493646d667a0bb645f99110a34d26e00`; Morgan--Tian arXiv v2 Chapter 1 PDF and `prelim.tex`; current project declarations at baseline `aa150877959ca78c1b1f382d0257e4c5e9c7753a` | Mark G1 complete and present four bounded routes at G2; keep G2 open, add no dependency or facade, and preserve all accepted canonical representations |
 | `G1-review-response` / `67e2bff29b6c048a0f340808e3d2e44050f98212` | Replaced broad metric source-section assumptions with exact exported contexts, made the candidate source count reproducible, audited three concrete unmerged Mathlib proposals, and corrected the unsupported claim that both spherical normalized limits were already proved | Pinned Mathlib `@Bundle.RiemannianMetric`, `@Bundle.RiemannianBundle`, continuous, and smooth metric signatures; candidate `60c3e1f6493646d667a0bb645f99110a34d26e00` tree and line totals; Mathlib PR #36845 head `41e2b25a520d7a24f37062855d2b091dab7a5d9d`, PR #36036 head `31613e7e48c4559a8be4de48121c911d74586744`, and PR #33714 head `c4cbb8b896a4db75bf49cf1ab0a898232cede01e`; current `Comparison.Model` declarations | Keep Mathlib pinned at `520045ab`, keep G2 open, count no PR declaration as available source, and retain both positive-curvature normalized limits as pending A1 work |
+| `G2-selection` / `docs/G2_SUBSTRATE_DECISION.md` | Selected Mathlib-native construction, resolved all eight G1 questions, froze the explicit metric, Euclidean-normalized Hausdorff-volume, bundled-connection, assumption, and source-aligned curvature-sign contracts, and named migration triggers | Project baseline `2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2`; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` and Apache license; merged Mathlib PR #34697 and its pinned `μHE` source; unchanged candidate main `60c3e1f6493646d667a0bb645f99110a34d26e00`; open candidate PR #40 and unchanged Mathlib PR heads #36845, #36036, and #33714 on 2026-08-19 | Select route 3 only when this revision is merged; add no dependency or facade; keep G2 and all geometric descendants blocked until the coherence kernel lands |
 | `A1-positive-scalar` / `e874c4c7b6126984488c487cbb78077828233457` | Completed the positive-curvature scalar boundary in `Comparison.Model`: both requested origin limits, strong logarithmic-derivative normalization, the regular Riccati ODE, the lower Riccati comparison used by the upper-sectional branch, scalar Sturm comparison and positivity, public flat corollaries, and public exact-model regressions | Morgan--Tian Definition 1.30 and upper-comparison discussion, pp. 48--49; Petersen 2016 Section 6.4, where Cor. 6.4.2 directly supports the scalar Riccati theorem while Thms. 6.4.3/6.4.6 are geometric targets and cross-checks, not statements of the scalar Wronskian theorem; pinned Mathlib derivative-slope, logarithmic derivative, interval-integral fundamental theorem, trigonometric bound, and derivative-monotonicity APIs; pinned Mathlib source search found no packaged geometric Riccati/Sturm analogue | Keep the complete scalar implementation, including its interval-integral proof, in standalone analytic `Comparison.Model`; export the exact-model regressions with the public comparison theorems and flat corollaries; leave vector/operator Riccati, trace, determinant, and all manifold/Jacobi/polar bridges to dependent issues |
 | `A1-positive-scalar-review-response` / `24afcb8519006e44b680f6bf749aa64925d8f31e` | Replaced the unrelated real-log import with the canonical logarithmic-derivative owner; moved the interval-FTC-dependent Riccati proof to `Comparison.PositiveRiccati`; made both exact-model regressions private; qualified the Sturm/Jacobi producer and Petersen attribution without changing the public comparison theorems or flat corollaries | Pinned Mathlib `Mathlib/Analysis/Calculus/LogDeriv.lean` at `520045ab14e26149ee970e2e617ca04b09bde5d6` and the exact import-set LSP probe; Petersen 2016 Section 6.4, Cor. 6.4.2 and geometric Thms. 6.4.3/6.4.6, pp. 254--257; exact diffs from `e874c4c7b6126984488c487cbb78077828233457` and review artifacts for the import, visibility, source, and module-boundary findings | Keep model profiles, origin estimates, and ODE facts independent of measure integration; import focused `Comparison.PositiveRiccati` through the Chapter 1 umbrella; retain exact-model instantiations only as private compile-time checks; in the later Jacobi bridge apply scalar Sturm on the nonvanishing interval before a hypothetical first zero and extend to the endpoint by continuity |
 | `A1-operator-riccati` / `cc1ad4e3d445dee8878b760182b07375a15571b9` | Added quadratic-form operator Riccati comparison in both curvature directions, operator-norm singular normalization, flat corollaries, reusable minimum-Rayleigh facts, and private exact-model regressions; generalized the upper theorem beyond finite dimension and confined finite-dimensional nontriviality to the lower extremal-eigenvalue proof | Morgan--Tian Chapter 1 comparison discussion and Theorem 1.31, pp. 48--49; Petersen 2016 Section 6.4, Cor. 6.4.2 and geometric Thms. 6.4.3/6.4.6, pp. 254--257; pinned Mathlib `Analysis.InnerProductSpace.Rayleigh`, continuous-linear-map calculus, and left-slope fencing APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; [Mathlib PR #4920](https://github.com/leanprover-community/mathlib4/pull/4920) for `hasEigenvector_of_isMinOn`, [PR #35173](https://github.com/leanprover-community/mathlib4/pull/35173) ("Rayleigh quotients are bounded above by the operator norm"), and [PR #35464](https://github.com/leanprover-community/mathlib4/pull/35464) for sharp symmetric-operator norm bounds | Keep `Comparison.OperatorRiccati` manifold-free and expose it through the Chapter 1 umbrella; unlike the reference prior art, keep support-function and barrier machinery private and import no Jacobi records or geometric facades; leave vector Sturm, trace Riccati, determinant/volume-density consequences, and every manifold/Jacobi/polar producer pending |
