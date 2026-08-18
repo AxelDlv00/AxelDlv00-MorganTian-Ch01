@@ -1,4 +1,5 @@
 import MorganTianLib.Ch01.Comparison.DeterminantDensity
+import MorganTianLib.Ch01.Comparison.PositiveRiccati
 
 /-!
 # Chapter 1: preliminaries from Riemannian geometry

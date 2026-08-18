@@ -38,7 +38,7 @@ proof combines scalar Cauchy--Schwarz for the diagonal entries with
 `inner (A e_i) (A e_i) <= trace (A.comp A)`.  This is the algebraic step in
 Morgan--Tian's traced Riccati argument on pp. 48--49. -/
 theorem sq_trace_le_finrank_mul_trace_comp_self {A : E →L[ℝ] E}
-    (hsym : ∀ v w : E, ⟪A v, w⟫ = ⟪v, A w⟫) :
+    (hsym : (A : E →ₗ[ℝ] E).IsSymmetric) :
     LinearMap.trace ℝ E ↑A ^ 2
       ≤ (finrank ℝ E : ℝ) * LinearMap.trace ℝ E ↑(A.comp A) := by
   classical
@@ -49,7 +49,11 @@ theorem sq_trace_le_finrank_mul_trace_comp_self {A : E →L[ℝ] E}
     intro i
     have hnorm : ‖b i‖ = 1 := b.orthonormal.1 i
     have hself : ⟪b i, A (A (b i))⟫ = ‖A (b i)‖ ^ 2 := by
-      rw [real_inner_comm, hsym (A (b i)) (b i), real_inner_self_eq_norm_sq]
+      calc
+        ⟪b i, A (A (b i))⟫ = ⟪A (A (b i)), b i⟫ := real_inner_comm _ _
+        _ = ⟪A (b i), A (b i)⟫ := by
+          simpa only [ContinuousLinearMap.coe_coe] using hsym (A (b i)) (b i)
+        _ = ‖A (b i)‖ ^ 2 := real_inner_self_eq_norm_sq _
     have hinner : |⟪b i, A (b i)⟫| ≤ ‖A (b i)‖ := by
       have h := abs_real_inner_le_norm (b i) (A (b i))
       rwa [hnorm, one_mul] at h
@@ -83,8 +87,7 @@ Morgan--Tian, pp. 48--49, and Petersen (2006), Chapter 9, Section 1. -/
 theorem trace_riccati_comparison [Nontrivial E] {k r₀ : ℝ} (hk : 0 ≤ k)
     {A A' : ℝ → E →L[ℝ] E}
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ v w : E,
-      ⟪A r v, w⟫ = ⟪v, A r w⟫)
+    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (hRic : ∀ r ∈ Ioo (0 : ℝ) r₀,
       LinearMap.trace ℝ E ↑(A' r) + LinearMap.trace ℝ E ↑((A r).comp (A r))
         ≤ (finrank ℝ E : ℝ) * k)
@@ -141,8 +144,7 @@ exactly `1 / r`, so the conclusion is `trace (A r) <= finrank Real E / r`. -/
 theorem trace_riccati_comparison_zero [Nontrivial E] {r₀ : ℝ}
     {A A' : ℝ → E →L[ℝ] E}
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ v w : E,
-      ⟪A r v, w⟫ = ⟪v, A r w⟫)
+    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (hRic : ∀ r ∈ Ioo (0 : ℝ) r₀,
       LinearMap.trace ℝ E ↑(A' r) + LinearMap.trace ℝ E ↑((A r).comp (A r)) ≤ 0)
     (h0 : Tendsto

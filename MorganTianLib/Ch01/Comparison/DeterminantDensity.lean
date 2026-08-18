@@ -1,5 +1,6 @@
 import MorganTianLib.Ch01.Comparison.TraceRiccati
 import Mathlib.Analysis.Calculus.FDeriv.Analytic
+import Mathlib.Analysis.InnerProductSpace.NormDet
 import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 import Mathlib.LinearAlgebra.Matrix.Adjugate
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
@@ -15,10 +16,12 @@ formula needed to identify the logarithmic derivative of `|det J|`.
 The pinned Mathlib provides the canonical basis-independent `LinearMap.det` and
 the theorem `LinearMap.det_toMatrix`, but not a derivative theorem for that
 map.  A private continuous-multilinear matrix adapter proves Jacobi's formula;
-all public signatures remain coordinate-independent.  In particular, none of
-the densities below is asserted to be a polar Jacobian or a Riemannian volume.
-Those producer and coherence statements belong to N1/C2/C3, not this A1
-analytic layer.
+all public signatures remain coordinate-independent.  The determinant-only
+calculus works on normed spaces, while the inner-product trace/Riccati facade
+uses Mathlib's measure-facing `LinearMap.normDet` through
+`LinearMap.normDet_eq_abs_det`.  In particular, none of the densities below is
+asserted to be a polar Jacobian or a Riemannian volume.  Those producer and
+coherence statements belong to N1/C2/C3, not this A1 analytic layer.
 
 Mathematical anchors: Morgan--Tian, Chapter 1, Ricci comparison and the
 determinant estimate on pp. 48--49; Petersen (2006), Chapter 9, Section 1; the
@@ -479,14 +482,13 @@ section InnerProductSpace
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   [FiniteDimensional ℝ E]
 
-/-- The determinant consequence of `trace_riccati_comparison`.  If `A` is the
-right logarithmic derivative `J' comp J⁻¹`, then the traced Riccati hypotheses
-make `|det J| / sn k ^ finrank Real E` antitone. -/
-theorem antitoneOn_absDet_div_sn_pow_of_trace_riccati [Nontrivial E]
+/-- The canonical volume-factor consequence of `trace_riccati_comparison`.  If
+`A` is the right logarithmic derivative `J' comp J⁻¹`, then the traced Riccati
+hypotheses make `normDet J / sn k ^ finrank Real E` antitone. -/
+theorem antitoneOn_normDet_div_sn_pow_of_trace_riccati [Nontrivial E]
     {k r₀ : ℝ} (hk : 0 ≤ k) {A A' J J' : ℝ → E →L[ℝ] E}
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ v w : E,
-      ⟪A r v, w⟫ = ⟪v, A r w⟫)
+    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (hRic : ∀ r ∈ Ioo (0 : ℝ) r₀,
       LinearMap.trace ℝ E ↑(A' r) + LinearMap.trace ℝ E ↑((A r).comp (A r))
         ≤ (finrank ℝ E : ℝ) * k)
@@ -497,22 +499,22 @@ theorem antitoneOn_absDet_div_sn_pow_of_trace_riccati [Nontrivial E]
     (hunit : ∀ r ∈ Ioo (0 : ℝ) r₀, IsUnit (J r))
     (hlog : ∀ r ∈ Ioo (0 : ℝ) r₀,
       (J' r).comp (Ring.inverse (J r)) = A r) :
-    AntitoneOn (fun r => endomorphismAbsDet J r / sn k r ^ finrank ℝ E)
+    AntitoneOn (fun r =>
+      LinearMap.normDet ((J r : E →L[ℝ] E) : E →ₗ[ℝ] E) / sn k r ^ finrank ℝ E)
       (Ioo 0 r₀) := by
   have hcmp := trace_riccati_comparison (E := E) hk hA hsym hRic hA0
-  apply antitoneOn_absDet_div_sn_pow hk hJ hunit
-  intro r hr
-  rw [hlog r hr]
-  exact hcmp r hr
+  have habs := antitoneOn_absDet_div_sn_pow hk hJ hunit (fun r hr => by
+    rw [hlog r hr]
+    exact hcmp r hr)
+  simpa only [endomorphismAbsDet, LinearMap.normDet_eq_abs_det] using habs
 
 /-- Origin-normalized determinant bound following from the traced Riccati
 comparison.  The limit hypothesis is explicit because A1 does not construct a
 geometric family with the required origin asymptotics. -/
-theorem absDet_le_sn_pow_of_trace_riccati [Nontrivial E]
+theorem normDet_le_sn_pow_of_trace_riccati [Nontrivial E]
     {k r₀ : ℝ} (hk : 0 ≤ k) {A A' J J' : ℝ → E →L[ℝ] E}
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ v w : E,
-      ⟪A r v, w⟫ = ⟪v, A r w⟫)
+    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (hRic : ∀ r ∈ Ioo (0 : ℝ) r₀,
       LinearMap.trace ℝ E ↑(A' r) + LinearMap.trace ℝ E ↑((A r).comp (A r))
         ≤ (finrank ℝ E : ℝ) * k)
@@ -524,22 +526,23 @@ theorem absDet_le_sn_pow_of_trace_riccati [Nontrivial E]
     (hlog : ∀ r ∈ Ioo (0 : ℝ) r₀,
       (J' r).comp (Ring.inverse (J r)) = A r)
     (hJ0 : Tendsto
-      (fun r => endomorphismAbsDet J r / sn k r ^ finrank ℝ E)
+      (fun r => LinearMap.normDet ((J r : E →L[ℝ] E) : E →ₗ[ℝ] E) /
+        sn k r ^ finrank ℝ E)
       (nhdsWithin 0 (Ioi 0)) (nhds 1)) :
     ∀ r ∈ Ioo (0 : ℝ) r₀,
-      endomorphismAbsDet J r ≤ sn k r ^ finrank ℝ E := by
+      LinearMap.normDet ((J r : E →L[ℝ] E) : E →ₗ[ℝ] E) ≤
+        sn k r ^ finrank ℝ E := by
   apply density_le_model_pow_of_antitone
     (fun r hr => sn_pos k r hk hr.1)
-    (antitoneOn_absDet_div_sn_pow_of_trace_riccati hk hA hsym hRic hA0
+    (antitoneOn_normDet_div_sn_pow_of_trace_riccati hk hA hsym hRic hA0
       hJ hunit hlog) hJ0
 
-/-- Flat determinant consequence: the normalization is exactly
-`|det J r| / r ^ finrank Real E`. -/
-theorem antitoneOn_absDet_div_self_pow_of_trace_riccati [Nontrivial E]
+/-- Flat canonical volume-factor consequence: the normalization is exactly
+`normDet (J r) / r ^ finrank Real E`. -/
+theorem antitoneOn_normDet_div_self_pow_of_trace_riccati [Nontrivial E]
     {r₀ : ℝ} {A A' J J' : ℝ → E →L[ℝ] E}
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ v w : E,
-      ⟪A r v, w⟫ = ⟪v, A r w⟫)
+    (hsym : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (hRic : ∀ r ∈ Ioo (0 : ℝ) r₀,
       LinearMap.trace ℝ E ↑(A' r) + LinearMap.trace ℝ E ↑((A r).comp (A r)) ≤ 0)
     (hA0 : Tendsto
@@ -549,9 +552,10 @@ theorem antitoneOn_absDet_div_self_pow_of_trace_riccati [Nontrivial E]
     (hunit : ∀ r ∈ Ioo (0 : ℝ) r₀, IsUnit (J r))
     (hlog : ∀ r ∈ Ioo (0 : ℝ) r₀,
       (J' r).comp (Ring.inverse (J r)) = A r) :
-    AntitoneOn (fun r => endomorphismAbsDet J r / r ^ finrank ℝ E)
+    AntitoneOn (fun r =>
+      LinearMap.normDet ((J r : E →L[ℝ] E) : E →ₗ[ℝ] E) / r ^ finrank ℝ E)
       (Ioo 0 r₀) := by
-  simpa using antitoneOn_absDet_div_sn_pow_of_trace_riccati
+  simpa using antitoneOn_normDet_div_sn_pow_of_trace_riccati
     (E := E) (k := 0) (by positivity) hA hsym
       (fun r hr => by simpa using hRic r hr) hA0 hJ hunit hlog
 
