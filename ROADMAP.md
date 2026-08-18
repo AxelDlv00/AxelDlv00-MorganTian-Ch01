@@ -47,6 +47,11 @@ The source/API audit for this bootstrap used:
   `Geometry/Manifold/VectorBundle/CovariantDerivative/{Basic,Metric,Torsion}.lean`,
   `Geometry/Manifold/Riemannian/Basic.lean`, and
   `Geometry/Manifold/Riemannian/PathELength.lean`.
+- The concrete but unmerged Mathlib proposals at PR #36845 head
+  `41e2b25a520d7a24f37062855d2b091dab7a5d9d`, PR #36036 head
+  `31613e7e48c4559a8be4de48121c911d74586744`, and PR #33714 head
+  `c4cbb8b896a4db75bf49cf1ab0a898232cede01e`, as current prior art only;
+  none is available at the pinned commit.
 - The candidate `palimpsest/Hopf-Rinow-DoCarmo` main commit
   `60c3e1f6493646d667a0bb645f99110a34d26e00`, which is not yet an accepted
   dependency and is not used by this bootstrap package.
@@ -270,11 +275,12 @@ before they become Lean APIs:
   `snPos K r = sin (sqrt K * r) / sqrt K` and
   `logDerivPos K r = (snPos K)' r / snPos K r =
   sqrt K * cot (sqrt K * r)`.  It proves the normalized ODE
-  `phi'' + K * phi = 0`, `phi 0 = 0`, `phi' 0 = 1`, the small-radius facts
-  `snPos K r / r -> 1` and `r * logDerivPos K r -> 1`, positivity on the first
+  `phi'' + K * phi = 0`, `phi 0 = 0`, `phi' 0 = 1`, positivity on the first
   interval `0 < r < pi / sqrt K`, and the first positive zero at
-  `pi / sqrt K`.  On each regular polar segment, C1 must consume these A1
-  facts in `Comparison.sectional_upper` only for
+  `pi / sqrt K`.  The small-radius facts `snPos K r / r -> 1` and
+  `r * logDerivPos K r -> 1` remain pending A1 targets.  On each regular polar
+  segment, C1 must consume the available A1 facts in
+  `Comparison.sectional_upper` only for
   `0 < r < min (r_0, pi / sqrt K)` and state the lower bounds
   `(snPos' K r / snPos K r) * g_r <= Hess r`,
   `snPos K r ^ 2 * g_S <= g_r`, and
@@ -396,8 +402,11 @@ ownership, and the number of bridge declarations.
    covariant-derivative substrate if a compatibility spike has a smaller
    reviewed surface than extraction. The current inventory warns that major
    Levi--Civita/geodesic/curvature work may remain.
-4. **Wait for upstream.** Not a route at the current pin unless an audit finds
-   concrete declarations and semantic equivalences.
+4. **Wait for upstream.** PR #36845, PR #36036, and PR #33714 are now concrete
+   upstream prior art, but they remain unmerged and absent at the current pin.
+   This route waits for a merged immutable Mathlib commit, then requires a full
+   toolchain, import, signature, instance, and semantic-equivalence audit before
+   it can supply project declarations.
 
 Hard gates are recorded in the decision:
 

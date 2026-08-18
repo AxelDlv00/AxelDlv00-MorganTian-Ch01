@@ -9,13 +9,14 @@ canonical representation in `ROADMAP.md`.
 
 ## Evidence boundary
 
-The audit fixes four different kinds of evidence and does not substitute one
+The audit fixes five different kinds of evidence and does not substitute one
 for another:
 
 | Evidence | Immutable revision inspected | What it can establish |
 | --- | --- | --- |
 | Project baseline | `aa150877959ca78c1b1f382d0257e4c5e9c7753a` | Repository declarations and the accepted route before G1 |
 | Mathlib source | `520045ab14e26149ee970e2e617ca04b09bde5d6` | Names, signatures, instances, imports, and implementation gaps at the pin |
+| Current Mathlib PR history | PR #36845 head `41e2b25a520d7a24f37062855d2b091dab7a5d9d`; PR #36036 head `31613e7e48c4559a8be4de48121c911d74586744`; PR #33714 head `c4cbb8b896a4db75bf49cf1ab0a898232cede01e` | Concrete but unmerged prior art and possible migration targets; no declaration availability at the project pin |
 | Candidate source | `palimpsest/Hopf-Rinow-DoCarmo` commit `60c3e1f6493646d667a0bb645f99110a34d26e00` | Prior-art declarations and packaging at that exact commit only |
 | Primary publication | Morgan--Tian arXiv v2 (`math/0607607`, revised 2007-03-21), `prelim.tex` and retained PDF | Chapter 1 mathematics, statement numbering, and printed pp. 35--50 |
 
@@ -35,8 +36,10 @@ unchanged.
 
 All paths in this section are relative to the pinned Mathlib `Mathlib/`
 directory.  Names are shown fully qualified where they live in a namespace.
-The displayed signatures are transcribed from the exact source; the context
-tables state the implicit typeclass parameters that surround them.
+The displayed signatures are transcribed from the exact source.  Context
+blocks labelled "exported" reproduce the parameters retained by `@...` after
+Lean removes unused source-section variables.  Stronger assumptions used only
+to derive instances are stated separately.
 
 ### Direct public import edges
 
@@ -60,20 +63,19 @@ project-owned aggregator is selected.
 
 ### Metric data and instances
 
-For `Bundle.RiemannianMetric`, `Bundle.RiemannianBundle`, and the continuous
-variant, the ambient context is
+The exact exported context of `@Bundle.RiemannianMetric` and
+`@Bundle.RiemannianBundle` is only
 
 ```lean
-{B : Type*} [TopologicalSpace B]
-{F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-{E : B → Type*} [TopologicalSpace (TotalSpace F E)]
-[∀ b, TopologicalSpace (E b)] [∀ b, AddCommGroup (E b)]
-[∀ b, Module ℝ (E b)] [∀ b, IsTopologicalAddGroup (E b)]
-[∀ b, ContinuousConstSMul ℝ (E b)]
-[FiberBundle F E] [VectorBundle ℝ F E]
+{B : Type*} {E : B → Type*}
+[∀ b, TopologicalSpace (E b)]
+[∀ b, AddCommGroup (E b)]
+[∀ b, Module ℝ (E b)]
 ```
 
-The public data class is:
+In particular, these two exported declarations do not require a topology on
+`B`, a model fibre, a topology on a total space, or `FiberBundle` and
+`VectorBundle` instances.  Their public shapes are:
 
 ```lean
 namespace Bundle
@@ -90,7 +92,8 @@ class RiemannianBundle (E : B → Type*) where
 ```
 
 `RiemannianBundle` is construction data, not the general theorem assumption.
-Its two derived instances have these exact result types:
+The stronger fibre assumptions first enter through its two priority-80
+derived instances, whose exact contexts and result types are:
 
 ```lean
 noncomputable scoped instance (priority := 80)
@@ -106,9 +109,41 @@ noncomputable scoped instance (priority := 80)
 
 Both are scoped to `Bundle`; consumers must use `open scoped Bundle`.  This is
 the mechanism that avoids a second, non-definitionally-equal norm on tangent
-fibres.
+fibres.  The `IsTopologicalAddGroup` and `ContinuousConstSMul` families are
+instance-construction assumptions, not parameters of `RiemannianMetric` or
+`RiemannianBundle`.
 
-For the smooth metric, add
+The exact exported context of `@Bundle.ContinuousRiemannianMetric` and its
+`toRiemannianMetric` conversion is
+
+```lean
+{B : Type*} [TopologicalSpace B]
+{F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
+{E : B → Type*} [TopologicalSpace (TotalSpace F E)]
+[∀ b, TopologicalSpace (E b)] [∀ b, AddCommGroup (E b)]
+[∀ b, Module ℝ (E b)]
+[FiberBundle F E] [VectorBundle ℝ F E]
+```
+
+Neither `IsTopologicalAddGroup` nor `ContinuousConstSMul` occurs in those
+exported types.  The record and conversion have the public shapes
+
+```lean
+structure Bundle.ContinuousRiemannianMetric
+    (F : Type*) (E : B → Type*) where
+  inner (b : B) : E b →L[ℝ] E b →L[ℝ] ℝ
+  symm (b : B) (v w : E b) : inner b v w = inner b w v
+  pos (b : B) (v : E b) (hv : v ≠ 0) : 0 < inner b v v
+  isVonNBounded (b : B) : IsVonNBounded ℝ {v : E b | inner b v v < 1}
+  continuous : Continuous
+    (fun b => TotalSpace.mk' (F →L[ℝ] F →L[ℝ] ℝ) b (inner b))
+
+def Bundle.ContinuousRiemannianMetric.toRiemannianMetric
+    (g : ContinuousRiemannianMetric F E) : RiemannianMetric E
+```
+
+For the smooth record and its two conversions, add the following to that
+continuous exported context:
 
 ```lean
 {EB : Type*} [NormedAddCommGroup EB] [NormedSpace ℝ EB]
@@ -117,7 +152,7 @@ For the smooth metric, add
 [ChartedSpace HB B]
 ```
 
-to the preceding bundle context.  The exact data structure is:
+The exact data structure is:
 
 ```lean
 namespace Bundle
@@ -133,17 +168,25 @@ structure ContMDiffRiemannianMetric
     (IB.prod 𝓘(ℝ, F →L[ℝ] F →L[ℝ] ℝ)) n
     (fun b => TotalSpace.mk' (F →L[ℝ] F →L[ℝ] ℝ) b (inner b))
 
+def ContMDiffRiemannianMetric.toContinuousRiemannianMetric
+    (g : ContMDiffRiemannianMetric IB n F E) :
+    ContinuousRiemannianMetric F E
+
 def ContMDiffRiemannianMetric.toRiemannianMetric
     (g : ContMDiffRiemannianMetric IB n F E) : RiemannianMetric E
 ```
 
-Given `g`, installing
+Given `g`, install
 
 ```lean
 letI : RiemannianBundle E := ⟨g.toRiemannianMetric⟩
 ```
 
-activates the pinned instance
+The installation itself adds no assumption to `RiemannianBundle`.  In the
+stronger context with `[∀ b, IsTopologicalAddGroup (E b)]` and
+`[∀ b, ContinuousConstSMul ℝ (E b)]`, the scoped instances above derive the
+fibre norm and inner product, and the pinned smooth instance becomes
+available:
 
 ```lean
 instance (g : ContMDiffRiemannianMetric IB n F E) :
@@ -151,9 +194,11 @@ instance (g : ContMDiffRiemannianMetric IB n F E) :
     IsContMDiffRiemannianBundle IB n F E
 ```
 
-whose witness is definitionally `g.inner`.  The smooth metric also has a
-`toContinuousRiemannianMetric` conversion, but the `Riemannian.Basic` module
-documentation correctly warns that a general
+whose witness is definitionally `g.inner`; the analogous instance for
+`g.toContinuousRiemannianMetric` produces
+`IsContinuousRiemannianBundle F E`.  The exported smooth record and conversion
+types themselves do not carry the two stronger assumptions.  The
+`Riemannian.Basic` module documentation correctly warns that a general
 `IsContMDiffRiemannianBundle IB n F E` assumption does not let typeclass
 inference guess `n` to synthesize `IsContinuousRiemannianBundle F E`.
 The G2 bridge must therefore install the continuous fact explicitly wherever
@@ -340,6 +385,132 @@ manifold inverse-function, tensor, metric, measure, and integration APIs are
 available, but they are infrastructure rather than any Chapter 1 theorem.
 The complete claim-by-claim ownership is recorded below.
 
+## Current unmerged Mathlib proposals
+
+GitHub PR metadata and the exact Git trees were rechecked on 2026-08-18.
+These proposals repair the earlier claim that there was no concrete upstream
+work to wait for, but they do not contradict any negative finding about pinned
+Mathlib `520045ab`.  The pin is current-library API evidence; open PR heads are
+unmerged prior art.  None of the declarations in this section can be imported
+by the project without a later human-approved pin change and compatibility
+audit.
+
+### PR #36845: Levi--Civita construction
+
+[Mathlib PR #36845](https://github.com/leanprover-community/mathlib4/pull/36845),
+`feat: the Levi-Civita connection on a manifold`, was open with label
+`awaiting-author` at head
+`41e2b25a520d7a24f37062855d2b091dab7a5d9d`.  That head uses Lean
+`v4.33.0-rc1`, not the project's `v4.32.1`.  Its new module
+`Geometry/Manifold/VectorBundle/CovariantDerivative/LeviCivita.lean` imports
+`Analysis.InnerProductSpace.Dual`, `CovariantDerivative.Metric`, and
+`CovariantDerivative.Torsion`.
+
+Its relevant exported context is
+
+```lean
+{E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+{H : Type*} [TopologicalSpace H]
+(I : ModelWithCorners ℝ E H)
+{M : Type*} [TopologicalSpace M] [ChartedSpace H M]
+[IsManifold I 2 M] [FiniteDimensional ℝ E]
+[RiemannianBundle (fun x : M => TangentSpace I x)]
+[IsContMDiffRiemannianBundle I 1 E
+  (fun x : M => TangentSpace I x)]
+
+public structure CovariantDerivative.IsLeviCivitaConnection : Prop where
+  isMetricCompatible :
+    cov.IsMetricCompatible (M := M) (V := TangentSpace I)
+  torsion : cov.torsion = 0
+
+public noncomputable def CovariantDerivative.leviCivitaConnection
+    (I : ModelWithCorners ℝ E H) (M : Type*) :
+    CovariantDerivative I E (TangentSpace I : M → Type _)
+
+public lemma CovariantDerivative.isLeviCivitaConnection_leviCivitaConnection :
+    (CovariantDerivative.leviCivitaConnection I M).IsLeviCivitaConnection
+```
+
+It also proves the Koszul formula and uniqueness on differentiable vector
+fields.  The PR description explicitly leaves regularity of the constructed
+connection to future work: it does not yet produce the
+`ContMDiffCovariantDerivative` instance needed by later curvature consumers.
+Thus it is a concrete F1 migration target for S02, not a pinned producer and
+not a complete F1 surface; Hessian, Laplacian, curvature, Bianchi, Ricci, and
+scalar-curvature producers remain outside this PR.
+
+### PR #36036: connections and geodesics umbrella
+
+[Mathlib PR #36036](https://github.com/leanprover-community/mathlib4/pull/36036)
+was an open `WIP` placeholder with `blocked-by-other-PR`, `merge-conflict`, and
+`large-import` labels at head
+`31613e7e48c4559a8be4de48121c911d74586744`, updated 2026-08-17.  It uses
+Lean `v4.33.0-rc2`, lists #36845 as its remaining unchecked dependency, and
+adds or changes 29 files spanning metric existence, Levi--Civita,
+Christoffel symbols, curvature, horizontal lifts, and geodesics.  Several of
+those experimental files contain `sorry`, including the metric-existence,
+Christoffel, curvature, Levi--Civita, trivial-connection, and tensoriality
+work, so the branch cannot satisfy this project's no-holes contract.
+
+The hole-free `CovariantDerivative/Geodesics.lean` module imports
+`CovariantDerivative.Lift` and `CovariantDerivative.IntegralCurvePrelim`.  Its
+exact relevant context and core are
+
+```lean
+{E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+[FiniteDimensional ℝ E]
+{H : Type*} [TopologicalSpace H]
+{I : ModelWithCorners ℝ E H}
+{M : Type*} [TopologicalSpace M] [ChartedSpace H M]
+[IsManifold I 2 M]
+(cov : CovariantDerivative I E (TangentSpace I : M → Type _))
+
+noncomputable def CovariantDerivative.geodVF
+    (v : TotalSpace E (TangentSpace I : M → Type _)) :
+    TangentSpace% v := cov.lift_vec v v.2
+
+def CovariantDerivative.isGeodAt (gamma : ℝ → M) (t : ℝ) :=
+  IsMIntegralCurveAt (velocity I gamma) cov.geodVF t
+
+def CovariantDerivative.isGeod (gamma : ℝ → M) :=
+  ∀ t, cov.isGeodAt gamma t
+```
+
+`isGeodAt` is a neighborhood-local integral-curve predicate, not merely a
+pointwise equation.  The module proves horizontal/projection
+characterizations but no local interval IVP, uniqueness, smooth dependence,
+maximal gluing, exponential map, minimizing theorem, or Hopf--Rinow result.
+The umbrella has concrete Christoffel and curvature declarations, but their
+source holes prevent crediting them as producers.  It also has no Jacobi,
+conjugate-point, index-form, cut-locus, injectivity-radius, Riemannian-volume,
+comparison, or Bishop--Gromov surface.
+
+### PR #33714: existence of a smooth metric
+
+[Mathlib PR #33714](https://github.com/leanprover-community/mathlib4/pull/33714),
+`feat(Geometry/Manifold): riemannian metrics exist`, was open with label
+`awaiting-author` at head
+`c4cbb8b896a4db75bf49cf1ab0a898232cede01e`.  It uses Lean
+`v4.33.0-rc1`.  Its new
+`Geometry/Manifold/ExistsRiemannianMetric.lean` module imports
+`VectorBundle.Riemannian`, `PartitionOfUnity`, and
+`Analysis.LocallyConvex.Bounded`.  Its final theorem assumes the file's real
+vector-bundle context together with
+
+```lean
+[FiniteDimensional ℝ EB] [SigmaCompactSpace B] [T2Space B]
+[IsManifold IB ω B] [ContMDiffVectorBundle ω F E IB]
+
+public theorem exists_riemannian_metric :
+  Nonempty
+    (ContMDiffRiemannianMetric (IB := IB) (n := ∞) (F := F) (E := E))
+```
+
+This is concrete prior art for S01 and removes metric existence from the
+future implementation burden if an equivalent theorem merges.  It does not
+choose the project's canonical tangent metric, prove distance or measure
+coherence, or supply any connection, geodesic, or later Chapter 1 producer.
+
 ## Candidate dependency at `60c3e1f`
 
 ### Packaging, provenance, and reproducibility
@@ -351,7 +522,7 @@ The complete claim-by-claim ownership is recorded below.
 | Lean/Mathlib | `lean-toolchain` is `leanprover/lean4:v4.32.1`; `lakefile.lean` and the manifest pin Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6`. | Syntactically compatible with this project at the audited pins. |
 | Dependencies | Lake has one direct dependency, the Mathlib Git pin.  The manifest contains Mathlib's eight inherited Git packages and no `type: path` entry. | No sibling/path dependency or extra direct package would be introduced. |
 | Standalone workflow | The repository owns `Lean CI` / `lake-build`, disables credential persistence, supports an absent Actions cache, and runs `lake exe cache get` then `lake build`. | The configuration is cold-run capable.  G1 did not run a forbidden local full build; an exact future dependency commit still needs its own terminal CI status. |
-| Source/import size | 13 tracked Lean files, 4,743 lines; `HopfRinow.lean` directly imports all 12 subordinate modules. | Importing the umbrella takes the whole candidate.  A selected dependency should import narrow modules and document the resulting project import closure. |
+| Source/import size | 13 library source files totaling 4,743 lines, plus the 18-line `lakefile.lean` (14 tracked `.lean` files / 4,761 lines overall); `HopfRinow.lean` directly imports all 12 subordinate library modules. | Importing the umbrella takes the whole candidate.  A selected dependency should import narrow modules and document the resulting project import closure. |
 | Holes and axioms | Source search found zero `sorry`, `admit`, `axiom`, `opaque`, or `unsafe` commands. | No source-level mathematical hole or project axiom was found. |
 | Resource exceptions | Source search found zero `set_option`; Lake sets only `autoImplicit := false` and `pp.unicode.fun := true`. | No heartbeat, recursion-depth, or transparency debt at this commit. |
 | Proof axioms | The merged PR #38 review reports only `propext`, `Classical.choice`, and `Quot.sound` for its selected transfer declarations.  No exhaustive whole-library `#print axioms` report is retained at the merge commit. | G2 must rerun `#print axioms` for every declaration it proposes to export; the source scan is not a proof-term axiom audit. |
@@ -684,17 +855,17 @@ require the human gate.
 
 | Criterion | Reviewed Git dependency | Scoped extraction | Mathlib-native construction | Wait for upstream |
 | --- | --- | --- | --- | --- |
-| Exact input | Candidate at a newly reviewed immutable commit descended from `60c3e1f` | Minimum selected candidate modules, with retained commit/file provenance | Mathlib `520045ab` modules audited above plus project code | A future concrete Mathlib or accepted shared commit |
-| Legal/provenance | **Blocked now:** no software license at `60c3e1f` | **Blocked now:** absence of a license also forbids copying/adaptation | Mathlib is Apache-2.0; project ownership is direct | Unknown until a concrete upstream revision exists |
-| F1 value | Coordinate Gram/Christoffel prior art only | Could extract coordinate calculations after licensing | General connection, metric compatibility, and torsion substrate exists; Levi--Civita and curvature must be built | No current producer |
-| F2 value | Useful distance coherence and local coordinate spray; no interval/maximal/exponential/Hopf--Rinow producer | Could limit scope to distance plus selected local-IVP modules | Largest implementation burden, but no facade debt | Blocks F2 indefinitely at this pin |
-| J1 value | None | None at audited commit | Must be built | No current producer |
-| Metric coherence | Explicit metric is a transparent Mathlib alias; candidate supplies finite-distance/topology lemmas | Same if distance module is included | Must reproduce a small explicit-metric adapter or choose typeclass-only public statements | Depends on future API |
-| Measure coherence | Absent | Absent | Must be built in A2 | No current producer |
-| Import/maintenance cost | External 13-file/4,743-line library; narrow imports possible, umbrella is broad | Smaller code surface but project owns adaptation and later deletion | No external repository, but project owns the full analytic/geometric proof surface | Lowest current maintenance, no progress |
-| Namespace/API cost | `HopfRinow.RiemannianMetric` alias/namespace and generic geodesic names need an adoption decision | Names can be adapted once, with provenance and a removal trigger | Names can follow the accepted project ownership table directly | Migration risk deferred, not removed |
-| Reproducibility | Compatible pins and cacheless workflow; recheck exact selected commit and terminal status | Project CI owns copied code after legal clearance | Existing project CI and pin | Cannot validate an API that does not yet exist |
-| Earliest honest readiness | Only after license, governance, new-head audit, and unconditional producer review | Only after license and a bounded extraction design | Ready for a G2 implementation decision, not for claiming the missing mathematics | Not ready at the current pin |
+| Exact input | Candidate at a newly reviewed immutable commit descended from `60c3e1f` | Minimum selected candidate modules, with retained commit/file provenance | Mathlib `520045ab` modules audited above plus project code | Named unmerged PR heads #36845 (`41e2b25a`), #36036 (`31613e7e`), and #33714 (`c4cbb8b8`), or a later merged immutable Mathlib commit that replaces them |
+| Legal/provenance | **Blocked now:** no software license at `60c3e1f` | **Blocked now:** absence of a license also forbids copying/adaptation | Mathlib is Apache-2.0; project ownership is direct | Proposed Mathlib code is Apache-2.0, but open PR heads are not released pinned-library APIs |
+| F1 value | Coordinate Gram/Christoffel prior art only | Could extract coordinate calculations after licensing | General connection, metric compatibility, and torsion substrate exists; Levi--Civita and curvature must be built | #36845 concretely constructs a compatible torsion-free connection; #36036 has incomplete Christoffel/curvature prior art.  Neither is present at `520045ab` |
+| F2 value | Useful distance coherence and local coordinate spray; no interval/maximal/exponential/Hopf--Rinow producer | Could limit scope to distance plus selected local-IVP modules | Largest implementation burden, but no facade debt | #36036 defines `geodVF`, `isGeodAt`, and `isGeod`; interval IVP, maximal domain, exponential, minimizing, and Hopf--Rinow remain absent |
+| J1 value | None | None at audited commit | Must be built | No Jacobi or conjugacy producer in the three inspected heads |
+| Metric coherence | Explicit metric is a transparent Mathlib alias; candidate supplies finite-distance/topology lemmas | Same if distance module is included | Must reproduce a small explicit-metric adapter or choose typeclass-only public statements | #33714 proposes existence, not a chosen tangent metric or its distance/measure bridges |
+| Measure coherence | Absent | Absent | Must be built in A2 | No Riemannian-volume producer in the three inspected heads |
+| Import/maintenance cost | External 13-library-file/4,743-line surface plus `lakefile.lean`; narrow imports possible, umbrella is broad | Smaller code surface but project owns adaptation and later deletion | No external repository, but project owns the full analytic/geometric proof surface | No immediate project code, but later pin/toolchain migration is mandatory; #36036 is a large WIP branch with source holes |
+| Namespace/API cost | `HopfRinow.RiemannianMetric` alias/namespace and generic geodesic names need an adoption decision | Names can be adapted once, with provenance and a removal trigger | Names can follow the accepted project ownership table directly | `CovariantDerivative` names are plausible migration targets, but signatures can change before merge |
+| Reproducibility | Compatible pins and cacheless workflow; recheck exact selected commit and terminal status | Project CI owns copied code after legal clearance | Existing project CI and pin | Exact heads are source-auditable, but use Lean 4.33 release candidates, remain unmerged, and #36036 cannot meet the no-`sorry` contract |
+| Earliest honest readiness | Only after license, governance, new-head audit, and unconditional producer review | Only after license and a bounded extraction design | Ready for a G2 implementation decision, not for claiming the missing mathematics | Only after a proposal merges into a reviewed immutable Mathlib commit and the project rechecks toolchain, imports, signatures, instances, and semantic coverage |
 
 ### Mandatory coherence bridges
 
@@ -752,9 +923,12 @@ than rely on naming similarity:
    curvature, and geodesic consumers?
 7. Which concrete measure construction will A2 use, and which hypotheses are
    accepted for its metric-ball and polar-integration coherence theorems?
-8. Is waiting for a named upstream proposal acceptable despite blocking F1,
-   F2, A2, and all their descendants?  At the inspected pin there is no
-   concrete upstream declaration to wait for.
+8. Is waiting specifically for #36845, a completed successor to #36036, or
+   #33714 acceptable despite blocking F1, F2, A2, and their descendants, and
+   what merged immutable Mathlib commit triggers migration?  Concrete proposals
+   now exist, but they are unmerged, use later Lean toolchains, and do not
+   provide the complete Chapter 1 producer surface; no such declaration exists
+   at the inspected pin.
 
 Until those questions are answered, G2 is open.  F1, F2, and A2 must not begin
 on the assumption that the candidate has been accepted.
@@ -766,7 +940,9 @@ source inspection and full-tree `rg` searches.  The primary-source anchors
 were checked both in `prelim.tex` and in `pdftotext -layout` output from the
 retained arXiv PDF.  The candidate inventory used `git ls-tree`, its complete
 Lake files, direct imports, and source scans for holes, axiom commands, unsafe
-declarations, and resource options.
+declarations, and resource options.  Current Mathlib PR statuses came from the
+GitHub PR API; their exact heads were fetched separately and inspected for
+toolchains, imports, signatures, missing producers, and source holes.
 
 `palimpsest_lean_lsp` reported no diagnostics for the existing project file
 `MorganTianLib/Ch01/Comparison/Model.lean`.  A diagnostic request for the
