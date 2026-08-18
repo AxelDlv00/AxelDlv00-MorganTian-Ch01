@@ -1,4 +1,4 @@
-import MorganTianLib.Ch01.Comparison.Model
+import MorganTianLib.Ch01.Comparison.PositiveRiccati
 
 /-!
 # Chapter 1: preliminaries from Riemannian geometry

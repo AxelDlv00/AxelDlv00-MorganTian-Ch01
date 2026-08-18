@@ -2,6 +2,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
+import Mathlib.Analysis.Calculus.LogDeriv
 import Mathlib.Analysis.Real.Sqrt
 
 /-!
@@ -338,10 +339,29 @@ theorem snPos_le_self (K r : ℝ) (hK : 0 ≤ K) (hr : 0 ≤ r) : snPos K r ≤ 
         Real.sin_le (by positivity)
       _ = r * Real.sqrt K := mul_comm _ _
 
+/-- The normalized spherical profile has unit right-hand slope at the origin.
+This includes the flat branch `K = 0` without a separate convention. -/
+theorem tendsto_snPos_div_self (K : ℝ) (hK : 0 ≤ K) :
+    Tendsto (fun r => snPos K r / r) (nhdsWithin 0 (Ioi 0)) (nhds 1) := by
+  have hslope := hasDerivAt_iff_tendsto_slope.1 (hasDerivAt_snPos K 0 hK)
+  rw [csPos_zero_right] at hslope
+  have hmono : nhdsWithin (0 : ℝ) (Ioi 0) ≤ nhdsWithin 0 {(0 : ℝ)}ᶜ :=
+    nhdsWithin_mono 0 fun _ hx => ne_of_gt hx
+  refine (hslope.mono_left hmono).congr fun r => ?_
+  simp [slope_def_field, div_eq_inv_mul]
+
 theorem logDerivPos_eq (K r : ℝ) (hK : 0 < K) :
     logDerivPos K r = csPos K r / snPos K r := by
   simp only [logDerivPos, if_neg hK.ne', csPos_eq K r hK, snPos_eq K r hK]
   field_simp
+
+/-- For nonnegative curvature parameter, the total spherical coefficient is
+the quotient `csPos K r / snPos K r`, including the flat branch. -/
+theorem logDerivPos_eq_div (K r : ℝ) (hK : 0 ≤ K) :
+    logDerivPos K r = csPos K r / snPos K r := by
+  rcases hK.eq_or_lt with rfl | hK
+  · simp [logDerivPos, csPos, snPos]
+  · exact logDerivPos_eq K r hK
 
 /-- The spherical coefficient agrees with Mathlib's logarithmic derivative. -/
 theorem logDerivPos_eq_logDeriv (K r : ℝ) (hK : 0 ≤ K) :
@@ -351,8 +371,168 @@ theorem logDerivPos_eq_logDeriv (K r : ℝ) (hK : 0 ≤ K) :
   · simp [logDerivPos, csPos, snPos]
   · exact logDerivPos_eq K r hK
 
+/-- The spherical logarithmic derivative has the Euclidean singular
+normalization `r * logDerivPos K r -> 1` from the right. -/
+theorem tendsto_self_mul_logDerivPos (K : ℝ) (hK : 0 ≤ K) :
+    Tendsto (fun r => r * logDerivPos K r) (nhdsWithin 0 (Ioi 0)) (nhds 1) := by
+  have hinv := (tendsto_snPos_div_self K hK).inv₀ one_ne_zero
+  rw [inv_one] at hinv
+  have hcs : Tendsto (csPos K) (nhdsWithin 0 (Ioi 0)) (nhds 1) := by
+    have h := (hasDerivAt_csPos K 0 hK).continuousAt.tendsto
+    rw [csPos_zero_right] at h
+    exact h.mono_left nhdsWithin_le_nhds
+  have h := hcs.mul hinv
+  rw [one_mul] at h
+  refine h.congr fun r => ?_
+  rw [logDerivPos_eq_div K r hK, inv_div]
+  ring
 
-/-! ## Scalar Riccati comparison
+/-- On the regular first-pole interval, the spherical logarithmic derivative
+solves `a' = -(K + a^2)`.  The pole hypothesis is exactly what makes the
+quotient denominator nonzero.
+
+This is the scalar model equality used in Petersen (2016), Corollary 6.4.2. -/
+theorem hasDerivAt_logDerivPos (K r : ℝ) (hK : 0 ≤ K)
+    (hpole : BeforeFirstPole K r) :
+    HasDerivAt (logDerivPos K) (-(K + (logDerivPos K r) ^ 2)) r := by
+  have hsn : snPos K r ≠ 0 := (snPos_pos K r hK hpole).ne'
+  have hdiv := (hasDerivAt_csPos K r hK).div (hasDerivAt_snPos K r hK) hsn
+  have hfun : logDerivPos K = csPos K / snPos K := by
+    funext x
+    exact logDerivPos_eq_div K x hK
+  rw [hfun]
+  apply hdiv.congr_deriv
+  simp only [Pi.div_apply]
+  field_simp
+  ring
+
+/-- Derivative form of `hasDerivAt_logDerivPos`. -/
+theorem deriv_logDerivPos (K r : ℝ) (hK : 0 ≤ K)
+    (hpole : BeforeFirstPole K r) :
+    deriv (logDerivPos K) r = -(K + (logDerivPos K r) ^ 2) :=
+  (hasDerivAt_logDerivPos K r hK hpole).deriv
+
+/-! ## Positive-curvature scalar Riccati comparison -/
+
+/-- Quantitative origin control for the spherical coefficient.  On the first
+half of the regular spherical interval,
+`-K * r / 2 <= logDerivPos K r - 1 / r <= 0`. -/
+theorem logDerivPos_sub_inv_mem_Icc (K r : ℝ) (hK : 0 ≤ K) (hr : 0 < r)
+    (hhalf : Real.sqrt K * r ≤ Real.pi / 2) :
+    logDerivPos K r - 1 / r ∈ Icc (-(K * r / 2)) 0 := by
+  have hpole : BeforeFirstPole K r := by
+    refine ⟨hr, ?_⟩
+    rcases hK.eq_or_lt with rfl | hK
+    · exact Or.inl rfl
+    · exact Or.inr <| hhalf.trans_lt (div_lt_self Real.pi_pos one_lt_two)
+  have hsnpos : 0 < snPos K r := snPos_pos K r hK hpole
+  set h₁ : ℝ → ℝ := fun x => x * csPos K x - snPos K x with hh₁
+  have hd₁ : ∀ x : ℝ, HasDerivAt h₁ (-(K * x * snPos K x)) x := by
+    intro x
+    have h := ((hasDerivAt_id x).mul (hasDerivAt_csPos K x hK)).sub
+      (hasDerivAt_snPos K x hK)
+    have heq : 1 * csPos K x + id x * (-(K * snPos K x)) - csPos K x =
+        -(K * x * snPos K x) := by
+      simp only [id_eq]
+      ring
+    rwa [heq] at h
+  have hsn_nonneg : ∀ x ∈ Icc (0 : ℝ) r, 0 ≤ snPos K x := by
+    intro x hx
+    apply snPos_nonneg K x hK
+    refine ⟨hx.1, ?_⟩
+    rcases hK.eq_or_lt with rfl | hK
+    · exact Or.inl rfl
+    · exact Or.inr <| (mul_le_mul_of_nonneg_left hx.2
+        (Real.sqrt_nonneg K)).trans (hhalf.trans (div_le_self Real.pi_pos.le one_le_two))
+  have hanti₁ : AntitoneOn h₁ (Icc (0 : ℝ) r) := by
+    refine antitoneOn_of_hasDerivWithinAt_nonpos (convex_Icc 0 r)
+      (fun x _ => (hd₁ x).continuousAt.continuousWithinAt)
+      (fun x _ => (hd₁ x).hasDerivWithinAt) fun x hx => ?_
+    rw [interior_Icc] at hx
+    have hsn := hsn_nonneg x ⟨hx.1.le, hx.2.le⟩
+    exact neg_nonpos.mpr (mul_nonneg (mul_nonneg hK hx.1.le) hsn)
+  have h₁0 : h₁ 0 = 0 := by simp [hh₁]
+  have h₁nonpos : h₁ r ≤ 0 := by
+    have h := hanti₁ (left_mem_Icc.2 hr.le) (right_mem_Icc.2 hr.le) hr.le
+    rwa [h₁0] at h
+  set h₂ : ℝ → ℝ := fun x => h₁ x + K * x ^ 2 / 2 * snPos K x with hh₂
+  have hd₂ : ∀ x : ℝ, HasDerivAt h₂ (K * x ^ 2 / 2 * csPos K x) x := by
+    intro x
+    have hpoly : HasDerivAt (fun y : ℝ => K * y ^ 2 / 2) (K * x) x := by
+      have h := ((hasDerivAt_pow 2 x).const_mul K).div_const 2
+      have heq : K * (((2 : ℕ) : ℝ) * x ^ (2 - 1)) / 2 = K * x := by
+        push_cast
+        ring
+      rwa [heq] at h
+    have h := (hd₁ x).add (hpoly.mul (hasDerivAt_snPos K x hK))
+    have heq : -(K * x * snPos K x) +
+        (K * x * snPos K x + K * x ^ 2 / 2 * csPos K x) =
+        K * x ^ 2 / 2 * csPos K x := by
+      ring
+    rwa [heq] at h
+  have hcs_nonneg : ∀ x ∈ Icc (0 : ℝ) r, 0 ≤ csPos K x := by
+    intro x hx
+    rcases hK.eq_or_lt with rfl | hK
+    · simp [csPos]
+    · rw [csPos_eq K x hK]
+      apply Real.cos_nonneg_of_mem_Icc
+      constructor
+      · exact (neg_nonpos_of_nonneg (div_nonneg Real.pi_pos.le (by norm_num))).trans
+          (mul_nonneg (Real.sqrt_nonneg K) hx.1)
+      · exact (mul_le_mul_of_nonneg_left hx.2 (Real.sqrt_nonneg K)).trans hhalf
+  have hmono₂ : MonotoneOn h₂ (Icc (0 : ℝ) r) := by
+    refine monotoneOn_of_hasDerivWithinAt_nonneg (convex_Icc 0 r)
+      (fun x _ => (hd₂ x).continuousAt.continuousWithinAt)
+      (fun x _ => (hd₂ x).hasDerivWithinAt) fun x hx => ?_
+    rw [interior_Icc] at hx
+    have hcs := hcs_nonneg x ⟨hx.1.le, hx.2.le⟩
+    positivity
+  have h₂0 : h₂ 0 = 0 := by simp [hh₂, h₁0]
+  have h₂nonneg : 0 ≤ h₂ r := by
+    have h := hmono₂ (left_mem_Icc.2 hr.le) (right_mem_Icc.2 hr.le) hr.le
+    rwa [h₂0] at h
+  have hkey : logDerivPos K r - 1 / r = h₁ r / (r * snPos K r) := by
+    rw [logDerivPos_eq_div K r hK, hh₁]
+    field_simp
+  constructor
+  · rw [hkey]
+    have hbound : -(K * r ^ 2 / 2 * snPos K r) ≤ h₁ r := by
+      rw [hh₂] at h₂nonneg
+      linarith
+    have hdiv := div_le_div_of_nonneg_right hbound (by positivity : 0 ≤ r * snPos K r)
+    calc
+      -(K * r / 2) = -(K * r ^ 2 / 2 * snPos K r) / (r * snPos K r) := by
+        field_simp
+      _ ≤ h₁ r / (r * snPos K r) := hdiv
+  · rw [hkey]
+    exact div_nonpos_of_nonpos_of_nonneg h₁nonpos (by positivity)
+
+/-- The spherical model has the strong Euclidean singular normalization
+`logDerivPos K r - 1/r -> 0` from the right. -/
+theorem tendsto_logDerivPos_sub_inv (K : ℝ) (hK : 0 ≤ K) :
+    Tendsto (fun r => logDerivPos K r - 1 / r)
+      (nhdsWithin 0 (Ioi 0)) (nhds 0) := by
+  have hlower : Tendsto (fun r : ℝ => -(K * r / 2))
+      (nhdsWithin 0 (Ioi 0)) (nhds 0) := by
+    have h : Tendsto (fun r : ℝ => -(K * r / 2)) (nhds (0 : ℝ))
+        (nhds (-(K * 0 / 2))) :=
+      ((continuous_const.mul continuous_id).div_const 2).neg.tendsto 0
+    simpa using h.mono_left nhdsWithin_le_nhds
+  have harg : Tendsto (fun r : ℝ => Real.sqrt K * r)
+      (nhdsWithin 0 (Ioi 0)) (nhds 0) := by
+    have h : Tendsto (fun r : ℝ => Real.sqrt K * r) (nhds (0 : ℝ))
+        (nhds (Real.sqrt K * 0)) := (continuous_const.mul continuous_id).tendsto 0
+    simpa using h.mono_left nhdsWithin_le_nhds
+  have hhalf : ∀ᶠ r in nhdsWithin 0 (Ioi (0 : ℝ)),
+      Real.sqrt K * r ≤ Real.pi / 2 :=
+    harg.eventually (Iic_mem_nhds Real.pi_div_two_pos)
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlower tendsto_const_nhds ?_ ?_
+  · filter_upwards [eventually_mem_nhdsWithin, hhalf] with r hr hbound
+    exact (logDerivPos_sub_inv_mem_Icc K r hK hr hbound).1
+  · filter_upwards [eventually_mem_nhdsWithin, hhalf] with r hr hbound
+    exact (logDerivPos_sub_inv_mem_Icc K r hK hr hbound).2
+
+/-! ## Flat and hyperbolic scalar Riccati comparison
 
 The following results are still independent of manifold data.  They prove the
 scalar comparison statement that later radial shape and trace estimates will
@@ -563,6 +743,239 @@ theorem scalar_riccati_comparison_Ioi {k : ℝ} (hk : 0 ≤ k) {φ φ' : ℝ →
     ∀ r ∈ Ioi (0 : ℝ), φ r ≤ radialCoeff k r := fun r hr =>
   scalar_riccati_comparison hk (fun s hs => hφ s hs.1) (fun s hs => hric s hs.1)
     h0 r ⟨hr, lt_add_one r⟩
+
+/-! ## Positive-curvature scalar Sturm comparison -/
+
+/-- Scalar Sturm comparison for the upper-curvature branch.  Let `f` vanish at
+the origin with unit right derivative and satisfy `f'' + K f >= 0`.  If `r₀`
+is before the first spherical pole, then `snPos K r <= f r` through the
+endpoint; in particular, `f` is positive there.
+
+The boundedness hypothesis on `f'` is the exact origin control used to make the
+Wronskian tend to zero.  In the later Jacobi reduction, `f` is the norm of a
+Jacobi field normalized by the norm of its initial covariant derivative.  This
+norm supplies `hd1` and `hd2` only where the Jacobi field is nonzero, so the
+bridge must apply this theorem up to a hypothetical first zero and use `hf` to
+extend the inequality to that endpoint by continuity.  On the nonvanishing
+interval, the Jacobi equation and Cauchy--Schwarz give the displayed scalar
+inequality.
+
+Source: Morgan--Tian, comparison discussion on pp. 48--49.  Petersen (2016),
+Theorems 6.4.3 and 6.4.6, are geometric targets and cross-checks for this scalar
+Wronskian theorem, rather than statements of the theorem itself. -/
+theorem scalar_sturm_comparison_pos {K r₀ C : ℝ} (hK : 0 ≤ K)
+    (hpole : BeforeFirstPole K r₀) {f f' f'' : ℝ → ℝ}
+    (hf : ContinuousOn f (Icc 0 r₀)) (hf0 : f 0 = 0)
+    (hunit : HasDerivWithinAt f 1 (Ici 0) 0)
+    (hd1 : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt f (f' r) r)
+    (hd2 : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt f' (f'' r) r)
+    (hineq : ∀ r ∈ Ioo (0 : ℝ) r₀, -(K * f r) ≤ f'' r)
+    (hbdd : ∀ᶠ r in nhdsWithin 0 (Ioi (0 : ℝ)), |f' r| ≤ C) :
+    ∀ r ∈ Ioc (0 : ℝ) r₀, snPos K r ≤ f r := by
+  have hsnpos : ∀ r ∈ Ioc (0 : ℝ) r₀, 0 < snPos K r := by
+    intro r hr
+    apply snPos_pos K r hK
+    refine ⟨hr.1, ?_⟩
+    rcases hpole.2 with hzero | hlt
+    · exact Or.inl hzero
+    · exact Or.inr <| (mul_le_mul_of_nonneg_left hr.2 (Real.sqrt_nonneg K)).trans_lt hlt
+  have hslope : Tendsto (fun r => f r / r) (nhdsWithin 0 (Ioi 0)) (nhds 1) := by
+    have hslope := hasDerivWithinAt_iff_tendsto_slope.1 hunit
+    have hset : Ici (0 : ℝ) \ {0} = Ioi 0 := by
+      ext r
+      simp [lt_iff_le_and_ne]
+    rw [hset] at hslope
+    refine hslope.congr fun r => ?_
+    simp [slope_def_field, hf0]
+  set W : ℝ → ℝ := fun r => f' r * snPos K r - f r * csPos K r with hW
+  have hdW : ∀ r ∈ Ioo (0 : ℝ) r₀,
+      HasDerivAt W (snPos K r * (f'' r + K * f r)) r := by
+    intro r hr
+    have h := ((hd2 r hr).mul (hasDerivAt_snPos K r hK)).sub
+      ((hd1 r hr).mul (hasDerivAt_csPos K r hK))
+    have heq : f'' r * snPos K r + f' r * csPos K r -
+        (f' r * csPos K r + f r * -(K * snPos K r)) =
+        snPos K r * (f'' r + K * f r) := by
+      ring
+    rwa [heq] at h
+  have hWmono : MonotoneOn W (Ioo (0 : ℝ) r₀) := by
+    refine monotoneOn_of_hasDerivWithinAt_nonneg
+      (f' := fun r => snPos K r * (f'' r + K * f r)) (convex_Ioo _ _)
+      (fun r hr => (hdW r hr).continuousAt.continuousWithinAt)
+      (fun r hr => ?_) (fun r hr => ?_)
+    · rw [interior_Ioo] at hr
+      exact (hdW r hr).hasDerivWithinAt
+    · rw [interior_Ioo] at hr
+      have hsn : 0 ≤ snPos K r := (hsnpos r ⟨hr.1, hr.2.le⟩).le
+      have hnonneg : 0 ≤ f'' r + K * f r := by
+        have := hineq r hr
+        linarith
+      positivity
+  have hf_zero : Tendsto f (nhdsWithin 0 (Ioi (0 : ℝ))) (nhds 0) := by
+    have hid : Tendsto (fun r : ℝ => r) (nhdsWithin 0 (Ioi 0)) (nhds 0) :=
+      tendsto_id.mono_left nhdsWithin_le_nhds
+    have h := hslope.mul hid
+    rw [one_mul] at h
+    refine h.congr' ?_
+    filter_upwards [eventually_mem_nhdsWithin] with r hr
+    have hrne : r ≠ 0 := ne_of_gt hr
+    field_simp [hrne]
+  have hW_zero : Tendsto W (nhdsWithin 0 (Ioi (0 : ℝ))) (nhds 0) := by
+    have hsn_zero : Tendsto (snPos K) (nhdsWithin 0 (Ioi (0 : ℝ))) (nhds 0) := by
+      have h := (hasDerivAt_snPos K 0 hK).continuousAt.tendsto
+      rw [snPos_zero_right] at h
+      exact h.mono_left nhdsWithin_le_nhds
+    have hterm1 : Tendsto (fun r => f' r * snPos K r)
+        (nhdsWithin 0 (Ioi (0 : ℝ))) (nhds 0) := by
+      refine squeeze_zero_norm' (a := fun r => C * |snPos K r|) ?_ ?_
+      · filter_upwards [hbdd] with r hr
+        calc
+          ‖f' r * snPos K r‖ = |f' r| * |snPos K r| := abs_mul _ _
+          _ ≤ C * |snPos K r| := mul_le_mul_of_nonneg_right hr (abs_nonneg _)
+      · have h : Tendsto (fun r => C * |snPos K r|)
+            (nhdsWithin 0 (Ioi (0 : ℝ))) (nhds (C * |0|)) :=
+          hsn_zero.abs.const_mul C
+        simpa using h
+    have hcs : Tendsto (csPos K) (nhdsWithin 0 (Ioi (0 : ℝ)))
+        (nhds (csPos K 0)) :=
+      ((hasDerivAt_csPos K 0 hK).continuousAt.tendsto).mono_left nhdsWithin_le_nhds
+    have hterm2 : Tendsto (fun r => f r * csPos K r)
+        (nhdsWithin 0 (Ioi (0 : ℝ))) (nhds 0) := by
+      have h := hf_zero.mul hcs
+      rw [zero_mul] at h
+      exact h
+    have h := hterm1.sub hterm2
+    rw [zero_sub] at h
+    simpa only [hW, neg_zero] using h
+  have hWnonneg : ∀ r ∈ Ioo (0 : ℝ) r₀, 0 ≤ W r := by
+    intro r hr
+    have hev : ∀ᶠ s in nhdsWithin 0 (Ioi (0 : ℝ)), W s ≤ W r := by
+      have hpos : ∀ᶠ s in nhdsWithin 0 (Ioi (0 : ℝ)), s ∈ Ioi (0 : ℝ) :=
+        eventually_mem_nhdsWithin
+      have hlt : ∀ᶠ s in nhdsWithin 0 (Ioi (0 : ℝ)), s < r :=
+        (eventually_lt_nhds hr.1).filter_mono nhdsWithin_le_nhds
+      filter_upwards [hpos, hlt] with s hs hsr
+      exact hWmono ⟨hs, hsr.trans hr.2⟩ hr hsr.le
+    exact le_of_tendsto hW_zero hev
+  set Q : ℝ → ℝ := fun r => f r / snPos K r with hQ
+  have hdQ : ∀ r ∈ Ioo (0 : ℝ) r₀,
+      HasDerivAt Q (W r / snPos K r ^ 2) r := by
+    intro r hr
+    have hsn : snPos K r ≠ 0 := (hsnpos r ⟨hr.1, hr.2.le⟩).ne'
+    exact (hd1 r hr).div (hasDerivAt_snPos K r hK) hsn
+  have hQmono : MonotoneOn Q (Ioo (0 : ℝ) r₀) := by
+    refine monotoneOn_of_hasDerivWithinAt_nonneg
+      (f' := fun r => W r / snPos K r ^ 2) (convex_Ioo _ _)
+      (fun r hr => (hdQ r hr).continuousAt.continuousWithinAt)
+      (fun r hr => ?_) (fun r hr => ?_)
+    · rw [interior_Ioo] at hr
+      exact (hdQ r hr).hasDerivWithinAt
+    · rw [interior_Ioo] at hr
+      have hWpos := hWnonneg r hr
+      have hsn : 0 < snPos K r ^ 2 := pow_pos (hsnpos r ⟨hr.1, hr.2.le⟩) 2
+      positivity
+  have hQ_zero : Tendsto Q (nhdsWithin 0 (Ioi (0 : ℝ))) (nhds 1) := by
+    have hratio : Tendsto (fun r => r / snPos K r)
+        (nhdsWithin 0 (Ioi (0 : ℝ))) (nhds 1) := by
+      have h := (tendsto_snPos_div_self K hK).inv₀ one_ne_zero
+      rw [inv_one] at h
+      refine h.congr fun r => ?_
+      rw [inv_div]
+    have h := hslope.mul hratio
+    rw [one_mul] at h
+    refine h.congr' ?_
+    have hlt : ∀ᶠ r in nhdsWithin 0 (Ioi (0 : ℝ)), r < r₀ :=
+      (eventually_lt_nhds hpole.1).filter_mono nhdsWithin_le_nhds
+    filter_upwards [eventually_mem_nhdsWithin, hlt] with r hr hrlt
+    have hrne : r ≠ 0 := ne_of_gt hr
+    have hsnne : snPos K r ≠ 0 := (hsnpos r ⟨hr, hrlt.le⟩).ne'
+    rw [hQ]
+    field_simp [hrne, hsnne]
+  have hQge : ∀ r ∈ Ioo (0 : ℝ) r₀, 1 ≤ Q r := by
+    intro r hr
+    have hev : ∀ᶠ s in nhdsWithin 0 (Ioi (0 : ℝ)), Q s ≤ Q r := by
+      have hpos : ∀ᶠ s in nhdsWithin 0 (Ioi (0 : ℝ)), s ∈ Ioi (0 : ℝ) :=
+        eventually_mem_nhdsWithin
+      have hlt : ∀ᶠ s in nhdsWithin 0 (Ioi (0 : ℝ)), s < r :=
+        (eventually_lt_nhds hr.1).filter_mono nhdsWithin_le_nhds
+      filter_upwards [hpos, hlt] with s hs hsr
+      exact hQmono ⟨hs, hsr.trans hr.2⟩ hr hsr.le
+    exact le_of_tendsto hQ_zero hev
+  have hmain : ∀ r ∈ Ioo (0 : ℝ) r₀, snPos K r ≤ f r := by
+    intro r hr
+    have hsn : 0 < snPos K r := hsnpos r ⟨hr.1, hr.2.le⟩
+    have h := hQge r hr
+    rw [hQ] at h
+    simpa only [one_mul] using (le_div_iff₀ hsn).1 h
+  intro r hr
+  rcases lt_or_eq_of_le hr.2 with hlt | heq
+  · exact hmain r ⟨hr.1, hlt⟩
+  · subst r
+    have hne : (nhdsWithin r₀ (Ioo (0 : ℝ) r₀)).NeBot := by
+      rw [← mem_closure_iff_nhdsWithin_neBot, closure_Ioo hpole.1.ne]
+      exact ⟨hpole.1.le, le_rfl⟩
+    have hft : Tendsto f (nhdsWithin r₀ (Ioo (0 : ℝ) r₀)) (nhds (f r₀)) := by
+      have hcw : ContinuousWithinAt f (Icc 0 r₀) r₀ :=
+        hf r₀ ⟨hpole.1.le, le_rfl⟩
+      exact hcw.tendsto.mono_left (nhdsWithin_mono r₀ Ioo_subset_Icc_self)
+    have hst : Tendsto (snPos K) (nhdsWithin r₀ (Ioo (0 : ℝ) r₀))
+        (nhds (snPos K r₀)) :=
+      ((hasDerivAt_snPos K r₀ hK).continuousAt.tendsto).mono_left nhdsWithin_le_nhds
+    refine le_of_tendsto_of_tendsto hst hft ?_
+    filter_upwards [eventually_mem_nhdsWithin] with s hs
+    exact hmain s hs
+
+/-- Positivity consequence of `scalar_sturm_comparison_pos`: the normalized
+solution cannot vanish at or before any radius preceding the first pole. -/
+theorem scalar_sturm_pos {K r₀ C : ℝ} (hK : 0 ≤ K)
+    (hpole : BeforeFirstPole K r₀) {f f' f'' : ℝ → ℝ}
+    (hf : ContinuousOn f (Icc 0 r₀)) (hf0 : f 0 = 0)
+    (hunit : HasDerivWithinAt f 1 (Ici 0) 0)
+    (hd1 : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt f (f' r) r)
+    (hd2 : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt f' (f'' r) r)
+    (hineq : ∀ r ∈ Ioo (0 : ℝ) r₀, -(K * f r) ≤ f'' r)
+    (hbdd : ∀ᶠ r in nhdsWithin 0 (Ioi (0 : ℝ)), |f' r| ≤ C) :
+    ∀ r ∈ Ioc (0 : ℝ) r₀, 0 < f r := by
+  have hcmp := scalar_sturm_comparison_pos hK hpole hf hf0 hunit hd1 hd2 hineq hbdd
+  intro r hr
+  have hmodel : 0 < snPos K r := by
+    apply snPos_pos K r hK
+    refine ⟨hr.1, ?_⟩
+    rcases hpole.2 with hzero | hlt
+    · exact Or.inl hzero
+    · exact Or.inr <| (mul_le_mul_of_nonneg_left hr.2
+        (Real.sqrt_nonneg K)).trans_lt hlt
+  exact hmodel.trans_le (hcmp r hr)
+
+/-- Flat-branch form of `scalar_sturm_comparison_pos`: a normalized function
+with `f'' >= 0` lies above the Euclidean profile `r`. -/
+theorem scalar_sturm_comparison_zero {r₀ C : ℝ} (hr₀ : 0 < r₀)
+    {f f' f'' : ℝ → ℝ} (hf : ContinuousOn f (Icc 0 r₀)) (hf0 : f 0 = 0)
+    (hunit : HasDerivWithinAt f 1 (Ici 0) 0)
+    (hd1 : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt f (f' r) r)
+    (hd2 : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt f' (f'' r) r)
+    (hineq : ∀ r ∈ Ioo (0 : ℝ) r₀, 0 ≤ f'' r)
+    (hbdd : ∀ᶠ r in nhdsWithin 0 (Ioi (0 : ℝ)), |f' r| ≤ C) :
+    ∀ r ∈ Ioc (0 : ℝ) r₀, r ≤ f r := by
+  simpa using scalar_sturm_comparison_pos (K := 0) (C := C) (by positivity)
+    (beforeFirstPole_zero_iff r₀ |>.2 hr₀) hf hf0 hunit hd1 hd2
+    (fun r hr => by simpa using hineq r hr) hbdd
+
+/-- Exact-model regression for `scalar_sturm_comparison_pos`.  This invokes the
+comparison theorem with `f = snPos K`, so a reversed ODE sign or first-pole
+condition makes the check fail. -/
+private theorem scalar_sturm_comparison_pos_model (K r₀ : ℝ) (hK : 0 ≤ K)
+    (hpole : BeforeFirstPole K r₀) :
+    ∀ r ∈ Ioc (0 : ℝ) r₀, snPos K r ≤ snPos K r := by
+  apply scalar_sturm_comparison_pos (K := K) (C := 1) hK hpole
+  · exact fun r _ => (hasDerivAt_snPos K r hK).continuousAt.continuousWithinAt
+  · exact snPos_zero_right K
+  · simpa using (hasDerivAt_snPos K 0 hK).hasDerivWithinAt
+  · exact fun r _ => hasDerivAt_snPos K r hK
+  · exact fun r _ => hasDerivAt_csPos K r hK
+  · intro r _
+    exact le_rfl
+  · exact Filter.Eventually.of_forall fun r => abs_csPos_le_one K r hK
 
 end Comparison
 end Ch01
