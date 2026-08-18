@@ -1,10 +1,11 @@
 # G2 substrate decision
 
-Status: the repository revision containing this record selects the
-Mathlib-native construction route.  While that revision is under review, the
-selection is a proposal; merge is the human approval that makes it accepted.
-The selection alone does not complete G2.  The coherence kernel listed below
-must land in a later issue #8 pull request before F1, F2, or A2 starts.
+Status: the Mathlib-native construction route was accepted at repository
+commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  The current issue #8
+revision implements the metric, smooth/continuous bundle, distance/topology,
+and measure/volume bridge families in `Ch01.Metric`.  G2 is not complete:
+the connection producer and curvature-sign regressions below must still be
+implemented and reviewed before F1, F2, or A2 starts.
 
 Decision date: 2026-08-19 (Asia/Shanghai).
 
@@ -43,7 +44,8 @@ The selected inputs were rechecked as follows:
 
 | Evidence | Exact revision or result | Re-audit result |
 | --- | --- | --- |
-| Project | `2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2` | G0, G1, and scalar A1 are present; G2 has no existing implementation |
+| Project decision baseline | `2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2` | G0, G1, and scalar A1 were present; G2 had no implementation when the route was audited |
+| Accepted G2 route | `aa45255fc76b3de3870f6411dde9b1c733e39074` | Human-reviewed merge of the decision; no package, pin, workflow, or Lean declaration changed in that slice |
 | Lean | `leanprover/lean4:v4.32.1` | Unchanged in `lean-toolchain` |
 | Mathlib | `520045ab14e26149ee970e2e617ca04b09bde5d6` | Checkout and manifest agree; the selected declarations contain no `sorry`, `admit`, mathematical `axiom`, `opaque`, or `unsafe` command.  The normalized-measure owner separately contains the disclosed unused `proof_wanted` described below |
 | Mathlib license | Apache License 2.0, local file SHA-256 `b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1` | Permits use of the pinned library; any adapted prior-art code must retain its own attribution and modification notice |
@@ -53,23 +55,24 @@ The selected inputs were rechecked as follows:
 | Mathlib [PR #36036](https://github.com/leanprover-community/mathlib4/pull/36036) | head `31613e7e48c4559a8be4de48121c911d74586744` | Still open, WIP, merge-conflicted, and absent from the pin; its source holes rule out direct use |
 | Mathlib [PR #33714](https://github.com/leanprover-community/mathlib4/pull/33714) | head `c4cbb8b896a4db75bf49cf1ab0a898232cede01e` | Still open and absent from the pin; metric-existence prior art only |
 
-The issue context abbreviates the project main commit as `2b48a6b8`, while
-the checked-out `origin/main` resolves to
-`2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2`; the former prefix does not
-resolve in this repository.  This metadata/source conflict is resolved at
-evidence level 4 in favor of the actual protected-branch Git object.  It does
-not change the issue scope or any mathematical decision.
+At the decision audit, the issue context abbreviated the project baseline as
+`2b48a6b8`, while Git resolved the relevant protected-branch object to
+`2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2`; the former prefix did not
+resolve.  That historical metadata/source conflict was resolved at evidence
+level 4 in favor of the Git object.  The accepted decision is now the later
+commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.
 
 The inspected selected Mathlib surface is
 `Geometry.Manifold.Riemannian.Basic`,
 `Geometry.Manifold.VectorBundle.Riemannian`, the three
 `CovariantDerivative` modules `Basic`, `Metric`, and `Torsion`,
 `Geometry.Euclidean.Volume.Measure` (and its imported raw Hausdorff measure), and
-`Analysis.InnerProductSpace.Dual`.  The implementation must use these focused
-imports, or a smaller set, rather than the `Mathlib` umbrella.  The exact
-transitive import closure will be recorded from the implementation diff; this
-decision does not pretend that not-yet-written imports have already been
-measured.
+`Analysis.InnerProductSpace.Dual`.  Implementations use focused imports rather
+than the `Mathlib` umbrella.  The current `Ch01.Metric` implementation has the
+four direct imports `Geometry.Manifold.Riemannian.Basic`,
+`Geometry.Euclidean.Volume.Measure`,
+`MeasureTheory.Constructions.BorelSpace.Metric`, and
+`Topology.Connected.Clopen`; it adds no Lake dependency or sibling path.
 
 The selected `euclideanHausdorffMeasure` API was introduced by merged Mathlib
 PR [#34697](https://github.com/leanprover-community/mathlib4/pull/34697) at
@@ -167,7 +170,9 @@ and no second public vocabulary.
 
 ## Frozen coherence contracts
 
-The next issue #8 slice must implement these contracts before G2 is complete.
+Issue #8 implements these contracts in reviewable dependency slices.  The
+metric through volume sections now have Lean owners named in the bridge ledger;
+the connection and curvature sections remain mandatory before G2 is complete.
 Names are ownership descriptions; review may improve a declaration name
 without changing its representation or semantics.
 
@@ -319,15 +324,15 @@ an additional `T2Space M` must not be repeated without a distinct consumer.
 
 The seven mandatory bridge families have these owners and completion tests:
 
-| Family | Owner | G2 completion evidence |
-| --- | --- | --- |
-| Metric data | `Ch01.Metric` | one installation path plus fibre inner/norm/topology equalities |
-| Smooth/continuous bundle | `Ch01.Metric` | explicit successful instance synthesis at the selected regularity |
-| Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, and ball equalities |
-| Measure/volume | `Ch01.Volume` or a focused submodule of `Metric` | Euclidean Hausdorff definition, Borel facts, metric dependence, Euclidean normalization |
-| Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, and uniqueness |
-| Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed |
-| Curvature signs | `Ch01.Curvature` | kernel equation and all five constant-curvature regressions |
+| Family | Owner | G2 completion evidence | Status in this revision |
+| --- | --- | --- | --- |
+| Metric data | `Ch01.Metric` | one installation path plus fibre inner/norm/topology equalities | Implemented by `contMDiffRiemannianBundle`, `inner_eq_metric`, `norm_eq_sqrt_metric`, and `tangent_topology_eq_norm_topology` |
+| Smooth/continuous bundle | `Ch01.Metric` | explicit successful instance synthesis at the selected regularity | Implemented by `contMDiffRiemannianBundle` and `continuousRiemannianBundle` |
+| Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, and ball equalities | Implemented, including the clopen finite-distance proof and its actual `C^1` path witness |
+| Measure/volume | focused section of `Ch01.Metric` | Euclidean Hausdorff definition, Borel facts, metric dependence, Euclidean normalization | Implemented by `riemannianVolume` and its Borel, ball, raw-Hausdorff, and Euclidean normalization theorems |
+| Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, and uniqueness | Pending; blocks G2 |
+| Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed | Pending F2 after G2; no compatibility adapter exists |
+| Curvature signs | `Ch01.Curvature` | kernel equation and all five constant-curvature regressions | Pending; blocks G2 |
 
 The G2 implementation may split these into focused modules, but the Chapter 1
 umbrella must import every completed public contract.  No module may import a
@@ -352,11 +357,17 @@ Chapter 2/3 file, the reference workspace, or an unmerged PR tree.
   require a named downstream caller and a removal issue; G2 currently approves
   none.
 
-## Scope of this decision slice
+## Implementation status
 
-This decision slice changes no Lean declaration, package pin, workflow, or
-canonical theorem.  It completes the human-selectable design boundary only.
-The next issue #8 slice must implement and locally diagnose the coherence
-kernel, update the umbrella and source inventory, run axiom/source scans, and
-obtain `Lean CI / lake-build (pull_request)`.  Only that later merge marks G2
-complete and unlocks F1, F2, and A2.
+The accepted decision slice changed no Lean declaration, package pin,
+workflow, or canonical theorem.  This focused implementation revision adds
+`Ch01.Metric`, updates the Chapter 1 umbrella and source inventory, and covers
+the first four bridge-ledger rows without adding a compatibility adapter.
+It deliberately adds no connection, coordinate geodesic, curvature, polar
+integration, exponential Jacobian, or cut-locus claim.
+
+Local diagnostics and axiom/source scans support review of this revision; the
+protected `Lean CI / lake-build (pull_request)` status remains the authoritative
+build check.  Even after this slice merges, G2 remains open until the connection
+producer and all five curvature-sign regressions are reviewed.  F1, F2, and A2
+therefore remain blocked.
