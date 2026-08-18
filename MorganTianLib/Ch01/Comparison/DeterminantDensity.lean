@@ -83,7 +83,7 @@ private theorem linearDeriv_eq_det_mul_trace (A B : Matrix n n ℝ)
   rw [hadj, Matrix.mul_smul, Matrix.trace_smul, Matrix.trace_mul_comm,
     smul_eq_mul]
 
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [FiniteDimensional ℝ E]
 
 private def toMatrixCLM (b : Basis (Fin (finrank ℝ E)) ℝ E) :
@@ -162,7 +162,9 @@ end DeterminantAdapter
 
 /-! ## Coordinate-independent determinant formulas -/
 
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+section NormedSpace
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [FiniteDimensional ℝ E]
 
 /-- The absolute determinant of an endomorphism family.  Absolute value removes
@@ -239,21 +241,19 @@ theorem endomorphismAbsDet_pos {J : ℝ → E →L[ℝ] E} {r : ℝ}
     (hunit : IsUnit (J r)) : 0 < endomorphismAbsDet J r :=
   abs_pos.mpr (endomorphismDet_ne_zero hunit)
 
+end NormedSpace
+
 /-! ## Abstract positive-density ratios -/
 
-/-- Quotient-rule derivative for a density divided by a natural power of a
-positive model function. -/
-theorem hasDerivAt_div_pow {r₀ : ℝ} {m : ℕ} {s s' ρ ρ' : ℝ → ℝ}
-    (hs : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt s (s' r) r)
-    (hspos : ∀ r ∈ Ioo (0 : ℝ) r₀, 0 < s r)
-    (hρ : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt ρ (ρ' r) r) :
-    ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt (fun u => ρ u / s u ^ m)
+/-- Pointwise quotient-rule derivative for a density divided by a natural
+power of a nonzero model function. -/
+theorem hasDerivAt_div_pow {m : ℕ} {s s' ρ ρ' : ℝ → ℝ} {r : ℝ}
+    (hs : HasDerivAt s (s' r) r) (hs0 : s r ≠ 0)
+    (hρ : HasDerivAt ρ (ρ' r) r) :
+    HasDerivAt (fun u => ρ u / s u ^ m)
       ((ρ' r * s r ^ m - ρ r * ((m : ℝ) * s r ^ (m - 1) * s' r)) /
         (s r ^ m) ^ 2) r := by
-  intro r hr
-  have hpow : HasDerivAt (fun u => s u ^ m)
-      ((m : ℝ) * s r ^ (m - 1) * s' r) r := (hs r hr).pow m
-  exact (hρ r hr).div hpow (pow_ne_zero _ (hspos r hr).ne')
+  exact hρ.div (hs.pow m) (pow_ne_zero _ hs0)
 
 private theorem mul_div_mul_pow_eq {m : ℕ} {x y z : ℝ} (hx : x ≠ 0) :
     (m : ℝ) * (y / x) * z * x ^ m = z * ((m : ℝ) * x ^ (m - 1) * y) := by
@@ -273,7 +273,9 @@ theorem antitoneOn_div_pow_of_logDeriv_le {r₀ : ℝ} {m : ℕ}
     (hρpos : ∀ r ∈ Ioo (0 : ℝ) r₀, 0 < ρ r)
     (hle : ∀ r ∈ Ioo (0 : ℝ) r₀, q r ≤ (m : ℝ) * (s' r / s r)) :
     AntitoneOn (fun r => ρ r / s r ^ m) (Ioo 0 r₀) := by
-  have hD := hasDerivAt_div_pow (m := m) hs hspos hρ
+  have hD := fun r hr =>
+    hasDerivAt_div_pow (m := m) (s := s) (s' := s') (ρ := ρ)
+      (ρ' := fun u => ρ u * q u) (hs r hr) (hspos r hr).ne' (hρ r hr)
   apply antitoneOn_of_deriv_nonpos (convex_Ioo 0 r₀)
   · exact fun r hr => (hD r hr).continuousAt.continuousWithinAt
   · intro r hr
@@ -303,7 +305,9 @@ theorem monotoneOn_div_pow_of_le_logDeriv {r₀ : ℝ} {m : ℕ}
     (hρpos : ∀ r ∈ Ioo (0 : ℝ) r₀, 0 < ρ r)
     (hle : ∀ r ∈ Ioo (0 : ℝ) r₀, (m : ℝ) * (s' r / s r) ≤ q r) :
     MonotoneOn (fun r => ρ r / s r ^ m) (Ioo 0 r₀) := by
-  have hD := hasDerivAt_div_pow (m := m) hs hspos hρ
+  have hD := fun r hr =>
+    hasDerivAt_div_pow (m := m) (s := s) (s' := s') (ρ := ρ)
+      (ρ' := fun u => ρ u * q u) (hs r hr) (hspos r hr).ne' (hρ r hr)
   apply monotoneOn_of_deriv_nonneg (convex_Ioo 0 r₀)
   · exact fun r hr => (hD r hr).continuousAt.continuousWithinAt
   · intro r hr
@@ -430,6 +434,11 @@ theorem monotoneOn_density_div_snPos_pow {K r₀ : ℝ} (hK : 0 ≤ K) {m : ℕ}
 
 /-! ## Absolute-determinant specializations and the traced consequence -/
 
+section NormedSpace
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [FiniteDimensional ℝ E]
+
 /-- A trace upper bound makes the absolute determinant ratio against the
 flat/hyperbolic model antitone.  Invertibility supplies both positivity and the
 orientation-independent derivative formula. -/
@@ -462,6 +471,13 @@ theorem monotoneOn_absDet_div_snPos_pow {K r₀ : ℝ} (hK : 0 ≤ K)
   monotoneOn_density_div_snPos_pow hK hpole
     (fun r hr => hasDerivAt_endomorphismAbsDet (hJ r hr) (hunit r hr))
     (fun r hr => endomorphismAbsDet_pos (hunit r hr)) htrace
+
+end NormedSpace
+
+section InnerProductSpace
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [FiniteDimensional ℝ E]
 
 /-- The determinant consequence of `trace_riccati_comparison`.  If `A` is the
 right logarithmic derivative `J' comp J⁻¹`, then the traced Riccati hypotheses
@@ -539,9 +555,11 @@ theorem antitoneOn_absDet_div_self_pow_of_trace_riccati [Nontrivial E]
     (E := E) (k := 0) (by positivity) hA hsym
       (fun r hr => by simpa using hRic r hr) hA0 hJ hunit hlog
 
-/-- Exact-model direction regression.  Applying both logarithmic-derivative
-adapters to `sn k ^ m` checks that equality gives both antitonicity and
-monotonicity, so reversing either comparison direction breaks this check. -/
+end InnerProductSpace
+
+/-- Exact-model normalization regression.  Applying both
+logarithmic-derivative adapters to `sn k ^ m` checks that equality gives both
+antitonicity and monotonicity. -/
 private theorem normalized_sn_pow_model {k r₀ : ℝ} (hk : 0 ≤ k) (m : ℕ) :
     AntitoneOn (fun r => sn k r ^ m / sn k r ^ m) (Ioo 0 r₀) ∧
       MonotoneOn (fun r => sn k r ^ m / sn k r ^ m) (Ioo 0 r₀) := by
@@ -566,12 +584,40 @@ private theorem normalized_sn_pow_model {k r₀ : ℝ} (hk : 0 ≤ k) (m : ℕ) 
   · exact monotoneOn_density_div_sn_pow (m := m) hk hderiv hpos
       (fun _ _ => le_rfl)
 
-/-- Flat-branch direction regression: the exact-model check specializes to
+/-- Flat-branch normalization regression: the exact-model check specializes to
 normalization by `r ^ m`, with no hidden nonzero-curvature denominator. -/
 private theorem normalized_self_pow_model {r₀ : ℝ} (m : ℕ) :
     AntitoneOn (fun r => r ^ m / r ^ m) (Ioo 0 r₀) ∧
       MonotoneOn (fun r => r ^ m / r ^ m) (Ioo 0 r₀) := by
   simpa using normalized_sn_pow_model (k := 0) (r₀ := r₀) (by positivity) m
+
+/-- Nonconstant upper-direction regression in the flat `m = 1` model.  The
+constant positive density has normalized ratio `1 / r`, so the upper adapter
+must return antitonicity. -/
+private theorem normalized_const_div_self_antitone {r₀ : ℝ} :
+    AntitoneOn (fun r : ℝ => 1 / r) (Ioo 0 r₀) := by
+  simpa using antitoneOn_density_div_self_pow (r₀ := r₀) (m := 1)
+    (ρ := fun _ => 1) (q := fun _ => 0)
+    (fun r _ => by simpa using hasDerivAt_const (x := r) (c := (1 : ℝ)))
+    (fun _ _ => by positivity)
+    (fun r hr => by simpa using (one_div_pos.mpr hr.1).le)
+
+/-- Nonconstant lower-direction regression in the flat `m = 1` model.  The
+density `r ^ 2` has normalized ratio `r ^ 2 / r`, so the lower adapter must
+return monotonicity. -/
+private theorem normalized_sq_div_self_monotone {r₀ : ℝ} :
+    MonotoneOn (fun r : ℝ => r ^ 2 / r) (Ioo 0 r₀) := by
+  have hderiv : ∀ r ∈ Ioo (0 : ℝ) r₀,
+      HasDerivAt (fun u : ℝ => u ^ 2) (r ^ 2 * (2 / r)) r := by
+    intro r hr
+    apply ((hasDerivAt_id r).pow 2).congr_deriv
+    norm_num
+    field_simp [hr.1.ne']
+  have hmono := monotoneOn_density_div_sn_pow (k := 0) (r₀ := r₀) (m := 1)
+    (by positivity) hderiv (fun r hr => pow_pos hr.1 2) (fun r hr => by
+      simp only [Nat.cast_one, one_mul, radialCoeff]
+      exact div_le_div_of_nonneg_right (by norm_num) hr.1.le)
+  simpa using hmono
 
 end Comparison
 end Ch01
