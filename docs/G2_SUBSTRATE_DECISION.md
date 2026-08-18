@@ -45,7 +45,7 @@ The selected inputs were rechecked as follows:
 | --- | --- | --- |
 | Project | `2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2` | G0, G1, and scalar A1 are present; G2 has no existing implementation |
 | Lean | `leanprover/lean4:v4.32.1` | Unchanged in `lean-toolchain` |
-| Mathlib | `520045ab14e26149ee970e2e617ca04b09bde5d6` | Checkout and manifest agree; the selected source modules contain no `sorry`, `admit`, mathematical `axiom`, `opaque`, or `unsafe` command |
+| Mathlib | `520045ab14e26149ee970e2e617ca04b09bde5d6` | Checkout and manifest agree; the selected declarations contain no `sorry`, `admit`, mathematical `axiom`, `opaque`, or `unsafe` command.  The normalized-measure owner separately contains the disclosed unused `proof_wanted` described below |
 | Mathlib license | Apache License 2.0, local file SHA-256 `b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1` | Permits use of the pinned library; any adapted prior-art code must retain its own attribution and modification notice |
 | Candidate repository | `palimpsest/Hopf-Rinow-DoCarmo` main `60c3e1f6493646d667a0bb645f99110a34d26e00` | Main is unchanged and still has no tracked `LICENSE`, `COPYING`, or `NOTICE`; dependency and extraction remain blocked |
 | Candidate governance | [PR #40](http://127.0.0.1:3001/palimpsest/Hopf-Rinow-DoCarmo/pulls/40) head `6460d507cb578f408c8081e2b1398345ac3a2c43` | Still open and not part of candidate main; it cannot change the audit of `60c3e1f` |
@@ -64,12 +64,24 @@ The inspected selected Mathlib surface is
 `Geometry.Manifold.Riemannian.Basic`,
 `Geometry.Manifold.VectorBundle.Riemannian`, the three
 `CovariantDerivative` modules `Basic`, `Metric`, and `Torsion`,
-`MeasureTheory.Measure.Hausdorff`, and
+`Geometry.Euclidean.Volume.Measure` (and its imported raw Hausdorff measure), and
 `Analysis.InnerProductSpace.Dual`.  The implementation must use these focused
 imports, or a smaller set, rather than the `Mathlib` umbrella.  The exact
 transitive import closure will be recorded from the implementation diff; this
 decision does not pretend that not-yet-written imports have already been
 measured.
+
+The selected `euclideanHausdorffMeasure` API was introduced by merged Mathlib
+PR [#34697](https://github.com/leanprover-community/mathlib4/pull/34697) at
+commit `9d092b118b6f9f777ba67c7a2d2c2bcdd1b52395`, which is an ancestor of the
+project pin.  Its pinned owner file contains one `proof_wanted`,
+`addHaarScalarFactor_hausdorffMeasure_eq`, asking for a closed formula for the
+scaling constant.  Batteries elaborates this command to a private metadata
+placeholder, not an exported theorem.  Neither
+`euclideanHausdorffMeasure_def` nor
+`InnerProductSpace.euclideanHausdorffMeasure_eq_volume` depends on it, and the
+project does not consume or restate the wanted formula.  This is disclosed as
+upstream source debt rather than counted as a proved API declaration.
 
 The read-only OpenGA reference tree contains a different, later DoCarmo source
 tree with an Apache license.  That does not license the forge candidate at
@@ -91,7 +103,7 @@ route semantically cheaper.
 | License and provenance | Blocked: no software license at candidate main | Blocked for the same reason | Mathlib is Apache-2.0; new project code has direct repository provenance | Mathlib PR code is Apache-2.0, but availability still requires merge and repinning |
 | Transitive imports | Narrow distance imports are possible; the umbrella imports all 12 subordinate modules audited by G1 | Potentially smaller, but every copied import and later rebase becomes project-owned | Focused pinned imports only; no new Lake package or sibling path | Unknown at the future merge; #36036 currently has a broad 29-file change |
 | Mathlib coherence | Candidate metric is an alias, but its coordinate connection vocabulary is not a Mathlib `CovariantDerivative` | Adapters would still be required and would become local debt | Direct use of Mathlib bundle metrics, distance, measure, and `CovariantDerivative` types | Potentially best after merge, but current heads do not provide the complete kernel |
-| Axiom and `sorry` inventory | Candidate source scan is clean, but exported proof-term axioms are incomplete | Cannot legally perform the final extracted proof audit | Selected pinned modules have no source holes; every exported local theorem will receive an axiom check | #36036 contains holes; #36845 and #33714 do not cover all required producers |
+| Axiom and `sorry` inventory | Candidate source scan is clean, but exported proof-term axioms are incomplete | Cannot legally perform the final extracted proof audit | Selected pinned declarations have no source holes; the measure owner's unused private `proof_wanted` is disclosed above, and every exported local theorem will receive an axiom check | #36036 contains holes; #36845 and #33714 do not cover all required producers |
 | Semantic coverage | Partial distance and pointwise coordinate-geodesic work; no volume or bundled Levi--Civita producer | Same bounded source coverage | No hidden coverage claim: every missing producer is owned explicitly | No inspected proposal covers metric, distance, volume, connection regularity, curvature, and geodesics together |
 | Namespace collisions | `HopfRinow.RiemannianMetric` and generic geodesic names overlap the roadmap vocabulary | Names could be changed, creating migration adapters | Project namespaces can follow the roadmap while public types remain Mathlib types | Future names are plausible migration targets but remain unstable before merge |
 | Maintenance ownership | External repository plus local bridges and version coordination | Full ownership of adapted source plus provenance and deletion work | Full ownership of only the code Chapter 1 actually uses | Work is deferred, not removed; later pin migration and local bridges remain |
@@ -134,14 +146,18 @@ and no second public vocabulary.
    value on nondifferentiable fields unconstrained.  F1 must prove the separate
    `ContMDiffCovariantDerivative` regularity required by its consumers before
    defining their smooth curvature fields.
-7. **Measure.** After installing the metric-induced `EMetricSpace`, define
-   Riemannian volume to be
-   `MeasureTheory.Measure.hausdorffMeasure (Module.finrank Real E)`.  This is a
-   Mathlib `Measure M`, is built from the selected `edist`, is Borel by the
-   metric outer-measure construction, and uses Mathlib's normalization that is
-   exactly Lebesgue volume on finite real coordinate spaces.  A2 must prove
-   chart and polar Jacobian formulas for this measure; they are not assumed at
-   G2.
+7. **Measure.** After installing the metric-induced `EMetricSpace` and its
+   Borel measurable space, define Riemannian volume to be the pinned
+   `MeasureTheory.Measure.euclideanHausdorffMeasure (Module.finrank Real E)`,
+   not the unscaled raw Hausdorff measure.  With Mathlib's scoped notation this
+   is `μHE[Module.finrank Real E]`.  It is a dimension-dependent scalar multiple
+   of raw `μH[Module.finrank Real E]` constructed from the selected `edist`.  At
+   the pin,
+   `InnerProductSpace.euclideanHausdorffMeasure_eq_volume` proves that this
+   scaled measure, unlike raw `μH`, is exactly `volume` on every
+   finite-dimensional real inner-product space.  G2 must prove the Borel and
+   metric coherence; A2 must prove chart and polar Jacobian formulas for this
+   measure.  None of those later formulas is assumed here.
 8. **Waiting.** Rejected.  There is no named merged revision to wait for.
    Migration is triggered only by a merged immutable Mathlib commit that is
    compatible with the selected toolchain or an approved repin and supplies a
@@ -194,14 +210,19 @@ definition.
 
 ### Riemannian volume
 
-The sole volume measure is the finite-dimensional Hausdorff measure of the
-metric just installed.  The foundation module must prove:
+The sole volume measure is the full-dimensional Euclidean-normalized Hausdorff
+measure `μHE[Module.finrank Real E]` of the metric just installed.  The
+foundation module must prove:
 
 - its measurable space is the Borel space of the original topology;
 - every open set and every `Metric.ball` is measurable;
-- the measure definition unfolds to Hausdorff measure for the selected
-  Riemannian `edist`; and
-- the Euclidean coordinate model reduces to Mathlib's `volume` normalization.
+- the measure definition unfolds to Mathlib's pinned dimension-dependent
+  scalar multiple of raw Hausdorff measure for the selected Riemannian `edist`;
+  and
+- every finite-dimensional real inner-product model reduces to Mathlib's
+  `volume` by `InnerProductSpace.euclideanHausdorffMeasure_eq_volume`.
+
+No Euclidean normalization is claimed for raw `μH[Module.finrank Real E]`.
 
 G2 does not claim sphere integration, a polar change-of-variables theorem,
 an exponential Jacobian, cut-locus measurability or nullity, or equality with
@@ -242,17 +263,18 @@ R X Y W = nabla_X (nabla_Y W)
           - nabla_[X,Y] W.
 ```
 
-The four-tensor is
+The four-tensor uses Morgan--Tian's positional order: its third argument is the
+metric-pairing slot and its fourth argument is the operator-input slot.
 
 ```text
-curvature4 X Y W Z = g (R X Y W) Z.
+curvature4 X Y Z W = g (R X Y W) Z.
 ```
 
 The constant-curvature operator and four-tensor are therefore
 
 ```text
-R_K X Y W = K * (g X W * Y - g Y W * X),
-R4_K X Y W Z = K * (g X W * g Y Z - g X Z * g Y W).
+R_K X Y W = K * (g Y W * X - g X W * Y),
+R4_K X Y Z W = K * (g X Z * g Y W - g X W * g Y Z).
 ```
 
 Before F1 exports curvature, formal regressions must establish all of the
@@ -261,10 +283,10 @@ following signs:
 | Consumer boundary | Required regression |
 | --- | --- |
 | Chart | `R_ijkl = K (g_ik g_jl - g_il g_jk)` in that exact argument order |
-| Jacobi | for unit `V` and `J` perpendicular to `V`, `R_K V J V = K * J`, so `D^2 J + R(V,J)V = 0` has the spherical sign |
-| Index form | the curvature contribution is `-g (R(V,J)V) J`, hence `-K * norm J ^ 2` on the same pair |
+| Jacobi | for unit `V` and `J` perpendicular to `V`, `R_K J V V = K * J`, so `D^2 J + R(J,V)V = 0` has the spherical sign |
+| Index form | the curvature contribution is `-g (R(J,V)V) J`, hence `-K * norm J ^ 2` on the same pair |
 | Sectional | `R4_K X Y X Y = K` on an orthonormal pair |
-| Ricci | contraction in the first and third slots is `(n - 1) * K * g` |
+| Ricci | for an orthonormal basis `e_i`, `sum_i R4_K X e_i Y e_i = (n - 1) * K * g X Y`, the source contraction of the second and fourth slots |
 
 These are algebraic convention tests, not a claim that a geometric
 constant-curvature manifold has already been constructed.  The later chart
@@ -302,7 +324,7 @@ The seven mandatory bridge families have these owners and completion tests:
 | Metric data | `Ch01.Metric` | one installation path plus fibre inner/norm/topology equalities |
 | Smooth/continuous bundle | `Ch01.Metric` | explicit successful instance synthesis at the selected regularity |
 | Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, and ball equalities |
-| Measure/volume | `Ch01.Volume` or a focused submodule of `Metric` | Hausdorff definition, Borel facts, metric dependence, Euclidean normalization |
+| Measure/volume | `Ch01.Volume` or a focused submodule of `Metric` | Euclidean Hausdorff definition, Borel facts, metric dependence, Euclidean normalization |
 | Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, and uniqueness |
 | Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed |
 | Curvature signs | `Ch01.Curvature` | kernel equation and all five constant-curvature regressions |

@@ -156,9 +156,11 @@ choices are:
   formula is an implementation theorem, not a second connection.
 - **Curvature.** The public `(1,3)` tensor is `R X Y Z` with
   `R X Y Z = nabla_X(nabla_Y Z) - nabla_Y(nabla_X Z) -
-  nabla_[X,Y] Z`.  The `(0,4)` form is `g (R X Y W) Z`, so its argument order
-  agrees with the Chapter 1 `R_{ijkl}` convention.  Sectional curvature is
-  `R X Y X Y` on an orthonormal pair.  A constant-curvature model must produce
+  nabla_[X,Y] Z`.  In Morgan--Tian's positional order the `(0,4)` form is
+  `curvature4 X Y Z W = g (R X Y W) Z`.  Sectional curvature is
+  `curvature4 X Y X Y` on an orthonormal pair, while the Jacobi and index-form
+  curvature term uses `R J V V`.  A constant-curvature model must produce
+  `R_K X Y W = lambda * (g Y W * X - g X W * Y)` and
   `R_{ijkl} = lambda (g_{ik} g_{jl} - g_{il} g_{jk})`; this is the kernel test
   before J1.
 - **Geodesics and exponential.** G2 selects no candidate geodesic API.
@@ -166,11 +168,11 @@ choices are:
   The maximal exponential domain preserves an unbounded/complete case rather
   than using a finite-radius facade.
 - **Jacobi fields.** `JacobiField gamma` is an intrinsic tangent-bundle field
-  along `gamma` satisfying the covariant Jacobi equation.  Chart `(J,DJ)`
-  pairs and parallel-frame matrices are private proof representations, with
-  explicit equivalence theorems.  Conjugacy means a nonzero endpoint-vanishing
-  intrinsic Jacobi field; the kernel of `d exp` equivalence is proved before
-  local-diffeomorphism arguments.
+  along `gamma` satisfying the source-ordered covariant Jacobi equation
+  `D^2 J + R J V V = 0`.  Chart `(J,DJ)` pairs and parallel-frame matrices are
+  private proof representations, with explicit equivalence theorems.
+  Conjugacy means a nonzero endpoint-vanishing intrinsic Jacobi field; the
+  kernel of `d exp` equivalence is proved before local-diffeomorphism arguments.
 - **Index form.** The public index form is the intrinsic symmetric bilinear
   integral on fields along a geodesic, with endpoint conditions stated
   explicitly.  A frame/inner-product-space form is an adapter proved equal to
@@ -181,11 +183,14 @@ choices are:
   or broken-geodesic alternatives) are required before comparison APIs use
   them.
 - **Measure and volume.** The one Riemannian volume is Mathlib's
-  `MeasureTheory.Measure.hausdorffMeasure (Module.finrank ℝ E)` for the selected
-  metric-induced distance.  G2 proves its Borel, metric, ball, and Euclidean
-  normalization facts.  A2 owns chart/polar integration and Jacobians.  A
-  ratio for an arbitrary density is an A1/A2 analytic lemma only; it is not
-  Bishop--Gromov until N1/C3 prove the density and metric-ball equalities.
+  `MeasureTheory.Measure.euclideanHausdorffMeasure (Module.finrank ℝ E)`, or
+  `μHE[Module.finrank ℝ E]`, for the selected metric-induced distance.  This is
+  the pinned Euclidean-normalized scalar multiple of raw Hausdorff measure, not
+  raw `μH` itself.  G2 proves its Borel, metric, ball, and finite-dimensional
+  inner-product-space normalization facts.  A2 owns chart/polar integration
+  and Jacobians.  A ratio for an arbitrary density is an A1/A2 analytic lemma
+  only; it is not Bishop--Gromov until N1/C3 prove the density and metric-ball
+  equalities.
 
 ### Proposed module and declaration ownership
 
@@ -408,9 +413,9 @@ are:
    differently licensed reference tree is not the audited candidate revision.
 3. **Mathlib-native construction: selected.** Keep Mathlib
    `520045ab14e26149ee970e2e617ca04b09bde5d6` as the only external geometric
-   substrate, use its bundle metric, induced distance, Hausdorff measure, and
-   bundled `CovariantDerivative` types directly, and own the missing producers
-   in focused Chapter 1 modules.
+   substrate, use its bundle metric, induced distance, Euclidean-normalized
+   Hausdorff measure, and bundled `CovariantDerivative` types directly, and own
+   the missing producers in focused Chapter 1 modules.
 4. **Wait for upstream: rejected at this gate.** PR #36845, PR #36036, and PR
    #33714 remain unmerged, use later toolchains, and do not jointly supply the
    complete kernel.  A named merged immutable revision can trigger migration,
@@ -523,7 +528,7 @@ reviewed commit.  The bootstrap record is:
 | `A1-model-scalar` / `70cc263f77dc9ee70b6246a94edd00f3f7f6a13d` | Added the standalone `Comparison.Model` API for flat/hyperbolic and spherical profiles, their normalized ODEs, positivity and first-pole facts, totalized radial coefficients, the quantitative origin estimate, and scalar Riccati comparison | Morgan--Tian Definition 1.30 and comparison discussion, pp. 48--49; Petersen 2016 Section 6.4, pp. 254--257; pinned Mathlib trigonometric derivative/bound, square-root, and one-variable derivative-monotonicity APIs; focused public-mathlib-PR search found no close packaged comparison-profile analogue | Keep the functions in A1 with no manifold facade; expose the scalar theorem through the Chapter 1 root; leave the spherical limits `snPos K r / r -> 1` and `r * logDerivPos K r -> 1`, scalar/vector Sturm, vector/operator/trace Riccati, determinant inequalities, and manifold bridges pending |
 | `G1-substrate-audit` / `96f226c580bf12ff7db80bf2bcc8c61da44f17f2` | Added the declaration-level Mathlib and candidate audit, corrected the Christoffel and Gaussian-expansion equation anchors, and assigned every source-inventory row to an exact declaration or explicit milestone gap | Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6`; `palimpsest/Hopf-Rinow-DoCarmo` `60c3e1f6493646d667a0bb645f99110a34d26e00`; Morgan--Tian arXiv v2 Chapter 1 PDF and `prelim.tex`; current project declarations at baseline `aa150877959ca78c1b1f382d0257e4c5e9c7753a` | Mark G1 complete and present four bounded routes at G2; keep G2 open, add no dependency or facade, and preserve all accepted canonical representations |
 | `G1-review-response` / `67e2bff29b6c048a0f340808e3d2e44050f98212` | Replaced broad metric source-section assumptions with exact exported contexts, made the candidate source count reproducible, audited three concrete unmerged Mathlib proposals, and corrected the unsupported claim that both spherical normalized limits were already proved | Pinned Mathlib `@Bundle.RiemannianMetric`, `@Bundle.RiemannianBundle`, continuous, and smooth metric signatures; candidate `60c3e1f6493646d667a0bb645f99110a34d26e00` tree and line totals; Mathlib PR #36845 head `41e2b25a520d7a24f37062855d2b091dab7a5d9d`, PR #36036 head `31613e7e48c4559a8be4de48121c911d74586744`, and PR #33714 head `c4cbb8b896a4db75bf49cf1ab0a898232cede01e`; current `Comparison.Model` declarations | Keep Mathlib pinned at `520045ab`, keep G2 open, count no PR declaration as available source, and retain both positive-curvature normalized limits as pending A1 work |
-| `G2-selection` / `docs/G2_SUBSTRATE_DECISION.md` | Selected Mathlib-native construction, resolved all eight G1 questions, froze the explicit metric, Hausdorff-volume, bundled-connection, assumption, and curvature-sign contracts, and named migration triggers | Project baseline `2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2`; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` and Apache license; unchanged candidate main `60c3e1f6493646d667a0bb645f99110a34d26e00`; open candidate PR #40 and unchanged Mathlib PR heads #36845, #36036, and #33714 on 2026-08-19 | Select route 3 only when this revision is merged; add no dependency or facade; keep G2 and all geometric descendants blocked until the coherence kernel lands |
+| `G2-selection` / `docs/G2_SUBSTRATE_DECISION.md` | Selected Mathlib-native construction, resolved all eight G1 questions, froze the explicit metric, Euclidean-normalized Hausdorff-volume, bundled-connection, assumption, and source-aligned curvature-sign contracts, and named migration triggers | Project baseline `2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2`; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` and Apache license; merged Mathlib PR #34697 and its pinned `μHE` source; unchanged candidate main `60c3e1f6493646d667a0bb645f99110a34d26e00`; open candidate PR #40 and unchanged Mathlib PR heads #36845, #36036, and #33714 on 2026-08-19 | Select route 3 only when this revision is merged; add no dependency or facade; keep G2 and all geometric descendants blocked until the coherence kernel lands |
 | `A1-positive-scalar` / `e874c4c7b6126984488c487cbb78077828233457` | Completed the positive-curvature scalar boundary in `Comparison.Model`: both requested origin limits, strong logarithmic-derivative normalization, the regular Riccati ODE, the lower Riccati comparison used by the upper-sectional branch, scalar Sturm comparison and positivity, public flat corollaries, and public exact-model regressions | Morgan--Tian Definition 1.30 and upper-comparison discussion, pp. 48--49; Petersen 2016 Section 6.4, where Cor. 6.4.2 directly supports the scalar Riccati theorem while Thms. 6.4.3/6.4.6 are geometric targets and cross-checks, not statements of the scalar Wronskian theorem; pinned Mathlib derivative-slope, logarithmic derivative, interval-integral fundamental theorem, trigonometric bound, and derivative-monotonicity APIs; pinned Mathlib source search found no packaged geometric Riccati/Sturm analogue | Keep the complete scalar implementation, including its interval-integral proof, in standalone analytic `Comparison.Model`; export the exact-model regressions with the public comparison theorems and flat corollaries; leave vector/operator Riccati, trace, determinant, and all manifold/Jacobi/polar bridges to dependent issues |
 | `A1-positive-scalar-review-response` / `24afcb8519006e44b680f6bf749aa64925d8f31e` | Replaced the unrelated real-log import with the canonical logarithmic-derivative owner; moved the interval-FTC-dependent Riccati proof to `Comparison.PositiveRiccati`; made both exact-model regressions private; qualified the Sturm/Jacobi producer and Petersen attribution without changing the public comparison theorems or flat corollaries | Pinned Mathlib `Mathlib/Analysis/Calculus/LogDeriv.lean` at `520045ab14e26149ee970e2e617ca04b09bde5d6` and the exact import-set LSP probe; Petersen 2016 Section 6.4, Cor. 6.4.2 and geometric Thms. 6.4.3/6.4.6, pp. 254--257; exact diffs from `e874c4c7b6126984488c487cbb78077828233457` and review artifacts for the import, visibility, source, and module-boundary findings | Keep model profiles, origin estimates, and ODE facts independent of measure integration; import focused `Comparison.PositiveRiccati` through the Chapter 1 umbrella; retain exact-model instantiations only as private compile-time checks; in the later Jacobi bridge apply scalar Sturm on the nonvanishing interval before a hypothetical first zero and extend to the endpoint by continuity |
 
