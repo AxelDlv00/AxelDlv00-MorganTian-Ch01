@@ -49,7 +49,7 @@ hypothesis is needed.
 This is the manifold-free matrix comparison behind Morgan--Tian, Theorem 1.31, p. 49. -/
 theorem operator_riccati_le {k r₀ : ℝ} (hk : 0 ≤ k) {A A' : ℝ → E →L[ℝ] E}
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsymm : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ X Y : E, ⟪A r X, Y⟫ = ⟪X, A r Y⟫)
+    (hsymm : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (h0 : Tendsto (fun r => A r - r⁻¹ • ContinuousLinearMap.id ℝ E)
       (nhdsWithin 0 (Ioi 0)) (nhds 0))
     (hric : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ X : E,
@@ -70,7 +70,7 @@ theorem operator_riccati_le {k r₀ : ℝ} (hk : 0 ≤ k) {A A' : ℝ → E →L
       intro r hr
       have hmain := hric r hr X
       have hsq_map : ⟪A r (A r X), X⟫ = ‖A r X‖ ^ 2 := by
-        rw [hsymm r hr (A r X) X]
+        rw [(hsymm r hr).apply_clm (A r X) X]
         exact real_inner_self_eq_norm_sq _
       have hsq_inner : ⟪A r X, X⟫ ^ 2 ≤ ‖A r X‖ ^ 2 := by
         have hbound := abs_real_inner_le_norm (A r X) X
@@ -109,7 +109,7 @@ theorem operator_riccati_le {k r₀ : ℝ} (hk : 0 ≤ k) {A A' : ℝ → E →L
 /-- Flat specialization of `operator_riccati_le`.  The model coefficient is exactly `1 / r`. -/
 theorem operator_riccati_le_zero {r₀ : ℝ} {A A' : ℝ → E →L[ℝ] E}
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsymm : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ X Y : E, ⟪A r X, Y⟫ = ⟪X, A r Y⟫)
+    (hsymm : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (h0 : Tendsto (fun r => A r - r⁻¹ • ContinuousLinearMap.id ℝ E)
       (nhdsWithin 0 (Ioi 0)) (nhds 0))
     (hric : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ X : E,
@@ -637,7 +637,7 @@ theorem logDerivPos_le_operator_riccati {K r₀ : ℝ} (hK : 0 ≤ K)
     {A A' : ℝ → E →L[ℝ] E}
     (hpole : ∀ r ∈ Ioo (0 : ℝ) r₀, BeforeFirstPole K r)
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsymm : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ X Y : E, ⟪A r X, Y⟫ = ⟪X, A r Y⟫)
+    (hsymm : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (h0 : Tendsto (fun r => A r - r⁻¹ • ContinuousLinearMap.id ℝ E)
       (nhdsWithin 0 (Ioi 0)) (nhds 0))
     (hric : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ X : E,
@@ -671,7 +671,7 @@ theorem logDerivPos_le_operator_riccati {K r₀ : ℝ} (hK : 0 ≤ K)
     intro r hr X Y
     rw [hUdef, sub_apply, sub_apply, inner_sub_left, inner_sub_right,
       smul_apply, smul_apply, ContinuousLinearMap.id_apply, ContinuousLinearMap.id_apply,
-      real_inner_smul_left, real_inner_smul_right, hsymm r hr]
+      real_inner_smul_left, real_inner_smul_right, (hsymm r hr).apply_clm X Y]
   have hU0 : Tendsto U (nhdsWithin 0 (Ioi 0)) (nhds 0) := by
     have ha0 : Tendsto (fun r => a r - 1 / r)
         (nhdsWithin 0 (Ioi 0)) (nhds 0) := by
@@ -723,7 +723,7 @@ theorem logDerivPos_le_operator_riccati {K r₀ : ℝ} (hK : 0 ≤ K)
 this branch, and the model coefficient is exactly `1 / r`. -/
 theorem inv_le_operator_riccati {r₀ : ℝ} {A A' : ℝ → E →L[ℝ] E}
     (hA : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt A (A' r) r)
-    (hsymm : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ X Y : E, ⟪A r X, Y⟫ = ⟪X, A r Y⟫)
+    (hsymm : ∀ r ∈ Ioo (0 : ℝ) r₀, (A r : E →ₗ[ℝ] E).IsSymmetric)
     (h0 : Tendsto (fun r => A r - r⁻¹ • ContinuousLinearMap.id ℝ E)
       (nhdsWithin 0 (Ioi 0)) (nhds 0))
     (hric : ∀ r ∈ Ioo (0 : ℝ) r₀, ∀ X : E,
