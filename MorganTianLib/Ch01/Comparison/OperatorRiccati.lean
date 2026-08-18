@@ -37,15 +37,6 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-! ## Quadratic forms and the upper comparison -/
 
-/-- The quadratic form of a continuous endomorphism at a unit vector is bounded in absolute
-value by its operator norm. -/
-theorem abs_inner_map_self_le {T : E →L[ℝ] E} {X : E} (hX : ‖X‖ = 1) :
-    |⟪T X, X⟫| ≤ ‖T‖ :=
-  calc
-    |⟪T X, X⟫| ≤ ‖T X‖ * ‖X‖ := abs_real_inner_le_norm _ _
-    _ ≤ ‖T‖ * ‖X‖ * ‖X‖ := by gcongr; exact T.le_opNorm X
-    _ = ‖T‖ := by rw [hX]; ring
-
 /-- **Upper operator Riccati comparison.** Let `A` be a differentiable symmetric family of
 continuous endomorphisms on a real inner-product space.  If, on `(0, r₀)`,
 
@@ -97,8 +88,9 @@ theorem operator_riccati_le {k r₀ : ℝ} (hk : 0 ≤ k) {A A' : ℝ → E →L
           real_inner_smul_left, real_inner_self_eq_norm_sq, hX]
         ring
       rw [← hid]
-      simpa using abs_inner_map_self_le
-        (T := A r - r⁻¹ • ContinuousLinearMap.id ℝ E) hX
+      simpa [ContinuousLinearMap.rayleighQuotient,
+        ContinuousLinearMap.reApplyInnerSelf_apply, hX] using
+          (A r - r⁻¹ • ContinuousLinearMap.id ℝ E).rayleighQuotient_le_norm X
     intro r hr
     exact scalar_riccati_comparison hk hφd hφric hφ0 r hr
   intro r hr X
@@ -138,40 +130,44 @@ private theorem bddBelow_image_sphere (T : E →L[ℝ] E) :
   refine ⟨-‖T‖, ?_⟩
   rintro v ⟨Y, hY, rfl⟩
   have hY1 : ‖Y‖ = 1 := by simpa using hY
-  linarith [abs_inner_map_self_le (T := T) hY1, neg_abs_le ⟪T Y, Y⟫]
+  have hnorm : |⟪T Y, Y⟫| ≤ ‖T‖ := by
+    simpa [ContinuousLinearMap.rayleighQuotient,
+      ContinuousLinearMap.reApplyInnerSelf_apply, hY1] using
+        T.rayleighQuotient_le_norm Y
+  linarith [hnorm, neg_abs_le ⟪T Y, Y⟫]
 
 /-- The minimum Rayleigh value bounds the quadratic form from below at every unit vector. -/
 theorem minRayleigh_le {T : E →L[ℝ] E} {X : E} (hX : ‖X‖ = 1) :
     minRayleigh T ≤ ⟪T X, X⟫ :=
   csInf_le (bddBelow_image_sphere T) ⟨X, by simpa using hX, rfl⟩
 
-variable [FiniteDimensional ℝ E] [Nontrivial E]
+section Nontrivial
 
-/-- In a nontrivial finite-dimensional space, the minimum Rayleigh value is attained on the unit
-sphere. -/
-theorem exists_norm_eq_one_minRayleigh (T : E →L[ℝ] E) :
-    ∃ X₀ : E, ‖X₀‖ = 1 ∧ ⟪T X₀, X₀⟫ = minRayleigh T ∧
-      IsMinOn (fun X => ⟪T X, X⟫) (sphere (0 : E) 1) X₀ := by
-  have hne : (sphere (0 : E) 1).Nonempty := by
-    obtain ⟨v, hv⟩ := exists_ne (0 : E)
-    exact ⟨(‖v‖⁻¹ : ℝ) • v, by simpa using norm_smul_inv_norm (𝕜 := ℝ) hv⟩
-  have hcont : ContinuousOn (fun X : E => ⟪T X, X⟫) (sphere 0 1) :=
-    (T.continuous.inner continuous_id).continuousOn
-  obtain ⟨X₀, hX₀mem, hmin⟩ := (isCompact_sphere (0 : E) 1).exists_isMinOn hne hcont
-  have hX₀ : ‖X₀‖ = 1 := by simpa using hX₀mem
-  refine ⟨X₀, hX₀, ?_, hmin⟩
-  have hleast : IsLeast ((fun X => ⟪T X, X⟫) '' sphere (0 : E) 1) ⟪T X₀, X₀⟫ :=
-    ⟨⟨X₀, hX₀mem, rfl⟩, by rintro v ⟨Y, hY, rfl⟩; exact hmin hY⟩
-  exact hleast.csInf_eq.symm
+variable [Nontrivial E]
+
+private theorem sphere_one_nonempty : (sphere (0 : E) 1).Nonempty := by
+  obtain ⟨v, hv⟩ := exists_ne (0 : E)
+  exact ⟨(‖v‖⁻¹ : ℝ) • v, by simpa using norm_smul_inv_norm (𝕜 := ℝ) hv⟩
 
 /-- The minimum Rayleigh functional is one-sided `1`-Lipschitz in the operator norm. -/
 theorem minRayleigh_sub_le (T T' : E →L[ℝ] E) :
     minRayleigh T - minRayleigh T' ≤ ‖T - T'‖ := by
-  obtain ⟨Y, hY, hYval, -⟩ := exists_norm_eq_one_minRayleigh T'
-  have h1 : minRayleigh T ≤ ⟪T Y, Y⟫ := minRayleigh_le hY
-  have h2 : ⟪T Y, Y⟫ - ⟪T' Y, Y⟫ = ⟪(T - T') Y, Y⟫ := by
+  by_contra hle
+  have hlt : minRayleigh T' < minRayleigh T - ‖T - T'‖ := by
+    push Not at hle
+    linarith
+  have himage : ((fun X => ⟪T' X, X⟫) '' sphere (0 : E) 1).Nonempty :=
+    (sphere_one_nonempty (E := E)).image _
+  obtain ⟨v, ⟨Y, hYmem, rfl⟩, hv⟩ :=
+    (csInf_lt_iff (bddBelow_image_sphere T') himage).mp hlt
+  have hY : ‖Y‖ = 1 := by simpa using hYmem
+  have hmin : minRayleigh T ≤ ⟪T Y, Y⟫ := minRayleigh_le hY
+  have hsub : ⟪T Y, Y⟫ - ⟪T' Y, Y⟫ = ⟪(T - T') Y, Y⟫ := by
     rw [sub_apply, inner_sub_left]
-  have h3 : |⟪(T - T') Y, Y⟫| ≤ ‖T - T'‖ := abs_inner_map_self_le hY
+  have hnorm : |⟪(T - T') Y, Y⟫| ≤ ‖T - T'‖ := by
+    simpa [ContinuousLinearMap.rayleighQuotient,
+      ContinuousLinearMap.reApplyInnerSelf_apply, hY] using
+        (T - T').rayleighQuotient_le_norm Y
   linarith [le_abs_self ⟪(T - T') Y, Y⟫]
 
 /-- The minimum Rayleigh functional is `1`-Lipschitz in the operator norm. -/
@@ -184,23 +180,37 @@ theorem abs_minRayleigh_sub_le (T T' : E →L[ℝ] E) :
 
 /-- The absolute minimum Rayleigh value is bounded by the operator norm. -/
 theorem abs_minRayleigh_le (T : E →L[ℝ] E) : |minRayleigh T| ≤ ‖T‖ := by
-  obtain ⟨X, hX, hXval, -⟩ := exists_norm_eq_one_minRayleigh T
   rw [abs_le]
   constructor
-  · rw [← hXval]
-    linarith [abs_inner_map_self_le (T := T) hX, neg_abs_le ⟪T X, X⟫]
-  · rw [← hXval]
-    linarith [abs_inner_map_self_le (T := T) hX, le_abs_self ⟪T X, X⟫]
+  · apply le_csInf ((sphere_one_nonempty (E := E)).image _)
+    rintro v ⟨Y, hYmem, rfl⟩
+    have hY : ‖Y‖ = 1 := by simpa using hYmem
+    have hnorm : |⟪T Y, Y⟫| ≤ ‖T‖ := by
+      simpa [ContinuousLinearMap.rayleighQuotient,
+        ContinuousLinearMap.reApplyInnerSelf_apply, hY] using
+          T.rayleighQuotient_le_norm Y
+    linarith [neg_abs_le ⟪T Y, Y⟫]
+  · obtain ⟨X, hXmem⟩ := sphere_one_nonempty (E := E)
+    have hX : ‖X‖ = 1 := by simpa using hXmem
+    have hmin : minRayleigh T ≤ ⟪T X, X⟫ := minRayleigh_le hX
+    have hnorm : |⟪T X, X⟫| ≤ ‖T‖ := by
+      simpa [ContinuousLinearMap.rayleighQuotient,
+        ContinuousLinearMap.reApplyInnerSelf_apply, hX] using
+          T.rayleighQuotient_le_norm X
+    linarith [le_abs_self ⟪T X, X⟫]
 
-omit [Nontrivial E] in
-/-- A unit minimizer of the quadratic form of a symmetric endomorphism is an eigenvector whose
+end Nontrivial
+
+section Complete
+
+variable [CompleteSpace E]
+
+/-- A unit minimizer of the quadratic form of a self-adjoint endomorphism is an eigenvector whose
 eigenvalue is the minimum value. -/
-theorem apply_eq_minRayleigh_smul {T : E →L[ℝ] E}
-    (hsymm : ∀ X Y : E, ⟪T X, Y⟫ = ⟪X, T Y⟫) {X₀ : E} (hX₀ : ‖X₀‖ = 1)
+theorem apply_eq_minRayleigh_smul {T : E →L[ℝ] E} (hT : IsSelfAdjoint T)
+    {X₀ : E} (hX₀ : ‖X₀‖ = 1)
     (hmin : IsMinOn (fun X => ⟪T X, X⟫) (sphere (0 : E) 1) X₀) :
     T X₀ = ⟪T X₀, X₀⟫ • X₀ := by
-  have hsa : IsSelfAdjoint T :=
-    ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.mpr fun X Y => hsymm X Y
   have hX₀ne : X₀ ≠ 0 := by
     intro h
     rw [h, norm_zero] at hX₀
@@ -209,7 +219,7 @@ theorem apply_eq_minRayleigh_smul {T : E →L[ℝ] E}
     rw [hX₀]
     intro Y hY
     simpa [ContinuousLinearMap.reApplyInnerSelf_apply] using hmin hY
-  have hev := hsa.hasEigenvector_of_isMinOn hX₀ne hextr
+  have hev := hT.hasEigenvector_of_isMinOn hX₀ne hextr
   have happ : T X₀ = (⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x : ℝ) • X₀ := by
     simpa using hev.apply_eq_smul
   have hval : (⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x : ℝ) =
@@ -220,6 +230,25 @@ theorem apply_eq_minRayleigh_smul {T : E →L[ℝ] E}
     simpa using h.symm
   rw [hval] at happ
   exact happ
+
+end Complete
+
+variable [FiniteDimensional ℝ E] [Nontrivial E]
+
+/-- In a nontrivial finite-dimensional space, the minimum Rayleigh value is attained on the unit
+sphere. -/
+theorem exists_norm_eq_one_minRayleigh (T : E →L[ℝ] E) :
+    ∃ X₀ : E, ‖X₀‖ = 1 ∧ ⟪T X₀, X₀⟫ = minRayleigh T ∧
+      IsMinOn (fun X => ⟪T X, X⟫) (sphere (0 : E) 1) X₀ := by
+  have hne : (sphere (0 : E) 1).Nonempty := sphere_one_nonempty (E := E)
+  have hcont : ContinuousOn (fun X : E => ⟪T X, X⟫) (sphere 0 1) :=
+    (T.continuous.inner continuous_id).continuousOn
+  obtain ⟨X₀, hX₀mem, hmin⟩ := (isCompact_sphere (0 : E) 1).exists_isMinOn hne hcont
+  have hX₀ : ‖X₀‖ = 1 := by simpa using hX₀mem
+  refine ⟨X₀, hX₀, ?_, hmin⟩
+  have hleast : IsLeast ((fun X => ⟪T X, X⟫) '' sphere (0 : E) 1) ⟪T X₀, X₀⟫ :=
+    ⟨⟨X₀, hX₀mem, rfl⟩, by rintro v ⟨Y, hY, rfl⟩; exact hmin hY⟩
+  exact hleast.csInf_eq.symm
 
 /-! ## Private support-function argument -/
 
@@ -451,7 +480,9 @@ private theorem operator_riccati_nonneg {r₀ Cs : ℝ} {s s' : ℝ → ℝ}
     have hsx : 0 < s x := hspos x hxIoo
     obtain ⟨X₀, hX₀unit, hX₀val, hX₀min⟩ := exists_norm_eq_one_minRayleigh (U x)
     have heig : U x X₀ = ⟪U x X₀, X₀⟫ • X₀ :=
-      apply_eq_minRayleigh_smul (hsymm x hxIoo) hX₀unit hX₀min
+      apply_eq_minRayleigh_smul
+        (ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.mpr (hsymm x hxIoo))
+        hX₀unit hX₀min
     have hφd : HasDerivAt (fun y => ⟪U y X₀, X₀⟫) ⟪U' x X₀, X₀⟫ x := by
       have h1 : HasDerivAt (fun y => U y X₀) (U' x X₀) x := by
         simpa using (hU x hxIoo).clm_apply (hasDerivAt_const x X₀)
