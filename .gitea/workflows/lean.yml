@@ -1,0 +1,97 @@
+name: Lean CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ gitea.workflow }}-${{ gitea.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lake-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Check out the candidate commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Derive bounded cache keys
+        id: cache-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          inputs=(lean-toolchain lake-manifest.json)
+          for input in "${inputs[@]}"; do test -s "$input"; done
+          fingerprint=$(sha256sum "${inputs[@]}" | sha256sum | cut -d' ' -f1)
+          generation=$(date -u +%G-W%V)
+          platform=${RUNNER_OS:-unknown}-${RUNNER_ARCH:-unknown}
+          output=${GITEA_OUTPUT:-$GITHUB_OUTPUT}
+          echo "dependency-key=lake-$platform-deps-$fingerprint" >> "$output"
+          echo "project-key=lake-$platform-main-$fingerprint-$generation" >> "$output"
+          echo "project-prefix=lake-$platform-main-$fingerprint-" >> "$output"
+
+      - name: Detect the runner cache service
+        id: actions-cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=${GITEA_OUTPUT:-$GITHUB_OUTPUT}
+          if [[ -n "${ACTIONS_CACHE_URL:-}" ]]; then
+            echo "enabled=true" >> "$output"
+          else
+            echo "enabled=false" >> "$output"
+            echo "::notice::Actions cache unavailable; continuing without restored caches."
+          fi
+
+      - name: Restore manifest-keyed dependency packages
+        id: dependency-cache
+        if: steps.actions-cache.outputs.enabled == 'true'
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: .lake/packages
+          key: ${{ steps.cache-key.outputs.dependency-key }}
+
+      - name: Restore weekly main-branch project outputs
+        id: project-cache
+        if: steps.actions-cache.outputs.enabled == 'true'
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: .lake/build
+          key: ${{ steps.cache-key.outputs.project-key }}
+          restore-keys: ${{ steps.cache-key.outputs.project-prefix }}
+
+      - name: Download available mathlib build artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake exe cache get
+
+      - name: Build the project
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake build
+
+      - name: Publish manifest-keyed dependency packages
+        if: steps.actions-cache.outputs.enabled == 'true' && gitea.event_name == 'push' && gitea.ref == 'refs/heads/main' && steps.dependency-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: .lake/packages
+          key: ${{ steps.cache-key.outputs.dependency-key }}
+
+      - name: Publish weekly main-branch project outputs
+        if: steps.actions-cache.outputs.enabled == 'true' && gitea.event_name == 'push' && gitea.ref == 'refs/heads/main' && steps.project-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: .lake/build
+          key: ${{ steps.cache-key.outputs.project-key }}
