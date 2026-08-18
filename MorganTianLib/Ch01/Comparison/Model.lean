@@ -2,7 +2,6 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
-import Mathlib.Analysis.Calculus.Deriv.Slope
 import Mathlib.Analysis.Real.Sqrt
 
 /-!
@@ -344,6 +343,14 @@ theorem logDerivPos_eq (K r : ℝ) (hK : 0 < K) :
   simp only [logDerivPos, if_neg hK.ne', csPos_eq K r hK, snPos_eq K r hK]
   field_simp
 
+/-- The spherical coefficient agrees with Mathlib's logarithmic derivative. -/
+theorem logDerivPos_eq_logDeriv (K r : ℝ) (hK : 0 ≤ K) :
+    logDerivPos K r = logDeriv (snPos K) r := by
+  rw [logDeriv_apply, (hasDerivAt_snPos K r hK).deriv]
+  rcases hK.eq_or_lt with rfl | hK
+  · simp [logDerivPos, csPos, snPos]
+  · exact logDerivPos_eq K r hK
+
 
 /-! ## Scalar Riccati comparison
 
@@ -359,6 +366,12 @@ theorem radialCoeff_eq_div (k r : ℝ) (hk : 0 ≤ k) :
   rcases hk.eq_or_lt with rfl | hk
   · simp [radialCoeff, cs, sn]
   · simp [radialCoeff, hk.ne']
+
+/-- The radial coefficient agrees with Mathlib's logarithmic derivative. -/
+theorem radialCoeff_eq_logDeriv (k r : ℝ) (hk : 0 ≤ k) :
+    radialCoeff k r = logDeriv (sn k) r := by
+  rw [logDeriv_apply, (hasDerivAt_sn k r hk).deriv]
+  exact radialCoeff_eq_div k r hk
 
 /-- The quotient model solves `a' = k - a^2` away from the origin. -/
 theorem hasDerivAt_cs_div_sn (k r : ℝ) (hk : 0 ≤ k) (hr : 0 < r) :
@@ -451,7 +464,7 @@ theorem tendsto_radialCoeff_sub_inv (k : ℝ) (hk : 0 ≤ k) :
 /-- Scalar Riccati comparison on `(0, r0)`.  A function with
 `phi' + phi^2 <= k` and the Euclidean singular normalization is bounded above
 by the flat/hyperbolic model coefficient. -/
-theorem scalarRiccatiComparison {k r₀ : ℝ} (hk : 0 ≤ k) {φ φ' : ℝ → ℝ}
+theorem scalar_riccati_comparison {k r₀ : ℝ} (hk : 0 ≤ k) {φ φ' : ℝ → ℝ}
     (hφ : ∀ r ∈ Ioo (0 : ℝ) r₀, HasDerivAt φ (φ' r) r)
     (hric : ∀ r ∈ Ioo (0 : ℝ) r₀, φ' r + φ r ^ 2 ≤ k)
     (h0 : Tendsto (fun r => φ r - 1 / r) (nhdsWithin 0 (Ioi 0)) (nhds 0)) :
@@ -543,12 +556,12 @@ theorem scalarRiccatiComparison {k r₀ : ℝ} (hk : 0 ≤ k) {φ φ' : ℝ → 
   rwa [radialCoeff_eq_div k r hk]
 
 /-- Scalar Riccati comparison on the whole positive ray. -/
-theorem scalarRiccatiComparison_Ioi {k : ℝ} (hk : 0 ≤ k) {φ φ' : ℝ → ℝ}
+theorem scalar_riccati_comparison_Ioi {k : ℝ} (hk : 0 ≤ k) {φ φ' : ℝ → ℝ}
     (hφ : ∀ r ∈ Ioi (0 : ℝ), HasDerivAt φ (φ' r) r)
     (hric : ∀ r ∈ Ioi (0 : ℝ), φ' r + φ r ^ 2 ≤ k)
     (h0 : Tendsto (fun r => φ r - 1 / r) (nhdsWithin 0 (Ioi 0)) (nhds 0)) :
     ∀ r ∈ Ioi (0 : ℝ), φ r ≤ radialCoeff k r := fun r hr =>
-  scalarRiccatiComparison hk (fun s hs => hφ s hs.1) (fun s hs => hric s hs.1)
+  scalar_riccati_comparison hk (fun s hs => hφ s hs.1) (fun s hs => hric s hs.1)
     h0 r ⟨hr, lt_add_one r⟩
 
 end Comparison
