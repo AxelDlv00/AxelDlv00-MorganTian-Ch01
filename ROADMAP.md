@@ -1,10 +1,10 @@
 # Morgan--Tian Chapter 1 roadmap
 
-Status: bootstrap revision, proposed by issue #1 and audited against baseline
-commit `e317497422c4e869ca2072f63f19b211a197bedf`.  This file is the
-repository-owned route for the Chapter 1 library.  It is not a transcription
-of the project brief and it is not a claim that any mathematical milestone is
-already implemented.
+Status: accepted bootstrap route at repository commit
+`0a7e55543629438cacf6e25b698ba770274225d9`, with the A1 scalar comparison
+increment recorded below.  This file is the repository-owned route for the
+Chapter 1 library.  It is not a transcription of the project brief, and each
+implementation claim is limited to the exact audited commit named below.
 
 ## Authority and evidence
 
@@ -196,7 +196,7 @@ This table is the completeness ledger.  Every row gets a declaration/proof or
 an explicit gated milestone; unnumbered source prose is included rather than
 silently dropped.  Pages are printed Chapter 1 pages in arXiv v2.
 
-| Source claim and anchor | Intended API/module | Milestone and prerequisite | Status at bootstrap |
+| Source claim and anchor | Intended API/module | Milestone and prerequisite | Current status |
 | --- | --- | --- | --- |
 | Riemannian metric and metric ball, Definition 1.1, pp. 35--36; `morganTian2007` | Mathlib metric bridge, `Metric` | G2; Mathlib metric audit | inventory |
 | Fundamental theorem of Levi--Civita, Theorem 1.2, p. 35; `morganTian2007`, `doCarmo1992` Ch. 2, pp. 44--51 | `Connection.covariantDerivative` | G2 then F1 | inventory |
@@ -232,8 +232,8 @@ silently dropped.  Pages are printed Chapter 1 pages in arXiv v2.
 | Gaussian-coordinate Laplacian, Lemma 1.27, p. 47; `morganTian2007` | `Normal.laplacianGaussian` | F1/N1 | inventory |
 | Distance-Laplacian local expansion `Delta r = (n-1)/r - (r/3) Ric(v,v) + O(r^2)`, unnumbered computation before Exercise 1.28, p. 48; `morganTian2007`, `petersen2006` pp. 265--268 | `Normal.laplacianDistance_asymptotic` | F3/N1; `metricexp` and Gaussian-Laplacian consumers | inventory |
 | Calabi weak/distributional distance-Laplacian inequality and test-function formulation, Exercise 1.28 and Remark 1.29, p. 48; `morganTian2007`, `petersen2006` Lemma 42, p. 284 | `Comparison.laplacianDistance_weak` | C2; require `2 <= n` locally for the all-manifold distributional theorem; F1/N1 plus checked distribution/test-function integration API | inventory |
-| Hyperbolic/flat model functions `sn_k` and `ct_k`, Definition 1.30, p. 48; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.sn`, `Comparison.ct` | A1; define the radial coefficient piecewise at `k = 0` | inventory |
-| Positive-curvature spherical model for the upper comparison, implicit in the unnumbered analogue before `localdiffeo`, p. 49; `morganTian2007`, `petersen2016` Section 6.4, Cor. 6.4.2 and Thms. 6.4.3/6.4.6, pp. 254--257 | `Comparison.snPos`, `Comparison.logDerivPos`, positivity and first-zero facts | A1; for `K > 0`, valid on `0 < r < pi / sqrt K`; explicit C1 input | inventory |
+| Hyperbolic/flat model functions `sn_k` and `ct_k`, Definition 1.30, p. 48; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.sn`, `Comparison.ct` | A1; define the radial coefficient piecewise at `k = 0` | model ODE, positivity, first integral, radial coefficient, small-radius bound, and scalar Riccati comparison implemented at `70cc263f77dc9ee70b6246a94edd00f3f7f6a13d`; vector/operator consumers pending |
+| Positive-curvature spherical model for the upper comparison, implicit in the unnumbered analogue before `localdiffeo`, p. 49; `morganTian2007`, `petersen2016` Section 6.4, Cor. 6.4.2 and Thms. 6.4.3/6.4.6, pp. 254--257 | `Comparison.snPos`, `Comparison.logDerivPos`, positivity and first-zero facts | A1; for `K > 0`, valid on `0 < r < pi / sqrt K`; explicit C1 input | total flat/spherical profile, ODE, first-pole radius/zero, positivity interval, and logarithmic derivative implemented at `70cc263f77dc9ee70b6246a94edd00f3f7f6a13d`; the limits `snPos K r / r -> 1` and `r * logDerivPos K r -> 1` and Sturm comparison pending |
 | Sectional curvature comparison `SCC`, Theorem 1.31, p. 49; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.sectional` | C1; A1/J1/N1 | inventory |
 | Upper sectional-curvature comparison on a regular polar segment: if `K > 0`, `sec <= K`, and `0 < r < min (r_0, pi / sqrt K)`, then `(snPos' K r / snPos K r) * g_r <= Hess r`, `snPos K r ^ 2 * g_S <= g_r`, and `snPos K r ^ (n - 1) <= J(r, theta)` for the normalized polar Jacobian; unnumbered analogue immediately before `localdiffeo`, p. 49; `morganTian2007`, `petersen2006` Ch. 9, Section 1; `petersen2016` Thms. 6.4.3/6.4.6, pp. 255--257 | `Comparison.sectional_upper` | C1; A1 positive model/J1/N1, and an explicit prerequisite for L1 `injvol` | inventory |
 | Curvature-norm local diffeomorphism `localdiffeo`, Lemma 1.32, p. 49; `morganTian2007` | `Comparison.exp_local_diffeomorph_of_curvature_bound` | C1; A1 positive model/J1/N1; use an unbounded radius when `K = 0`, and `pi / sqrt K` when `K > 0` | inventory |
@@ -491,6 +491,7 @@ reviewed commit.  The bootstrap record is:
 | `review-response` / `32bf9a3179d54c8301ba2c8e48072f474d774978` | Applied the source-correction gates for `k = 0`, `K = 0`, the upper sectional comparison needed by `injvol`, and the `2 <= n` uniformization non-vacuity condition; removed the unused Petersen 2016 key; downgraded the Gallot cross-check to unverified | Morgan--Tian `prelim.tex` Definitions 1.30, Theorem 1.11, SCC, `localdiffeo`, and `injvol`; retained-source inventory confirms no Gallot 2004 text; bibliography/roadmap consistency audit | Keep G2 open; all five requested corrections are documented, and no mathematical implementation is claimed |
 | `architecture-response` / `9f1b32d194a904ada7b614d0c12d13314aef4296` | Corrected every DAG edge; added curvature naturality, arbitrary-tensor connection Laplacian, and separate local/weak Calabi rows; reanchored Petersen editions; added A1 ownership of the positive-curvature model used by C1 | Morgan--Tian `prelim.tex` naturality paragraph, tensor-Laplacian definitions, local/weak Calabi passages, Definition 1.30, comparison-section pointer, and upper-bound paragraph; Petersen 2016 Section 6.4 retained pages 254--257 | Keep G2 as the human substrate gate and G0 implementation-free; restore `petersen2016` only as a precise, used cross-check |
 | `mathematical-correctness-response` / `a202631d534786fba23bad4c15d434cbb759988f` | Bound `Comparison.sectional_upper` to the regular first-pole interval with explicit lower shape, angular-metric, and Jacobian directions; added `2 <= n` only to the all-manifold weak Calabi theorem | Morgan--Tian `prelim.tex` local/weak Calabi passages and upper-bound paragraph; Petersen 2016 Cor. 6.4.2 and Thms. 6.4.3/6.4.6, pp. 254--257; the one-dimensional `abs` distributional counterexample | Keep the repaired Petersen edition split, A1 producer, hyperbolic SCC branch, C1-to-L1 edge, and local asymptotic unchanged |
+| `A1-model-scalar` / `70cc263f77dc9ee70b6246a94edd00f3f7f6a13d` | Added the standalone `Comparison.Model` API for flat/hyperbolic and spherical profiles, their normalized ODEs, positivity and first-pole facts, totalized radial coefficients, the quantitative origin estimate, and scalar Riccati comparison | Morgan--Tian Definition 1.30 and comparison discussion, pp. 48--49; Petersen 2016 Section 6.4, pp. 254--257; pinned Mathlib trigonometric derivative/bound, square-root, and one-variable derivative-monotonicity APIs; focused public-mathlib-PR search found no close packaged comparison-profile analogue | Keep the functions in A1 with no manifold facade; expose the scalar theorem through the Chapter 1 root; leave the spherical limits `snPos K r / r -> 1` and `r * logDerivPos K r -> 1`, scalar/vector Sturm, vector/operator/trace Riccati, determinant inequalities, and manifold bridges pending |
 
 ## Review and completion checklist
 
