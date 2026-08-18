@@ -275,12 +275,11 @@ before they become Lean APIs:
   `snPos K r = sin (sqrt K * r) / sqrt K` and
   `logDerivPos K r = (snPos K)' r / snPos K r =
   sqrt K * cot (sqrt K * r)`.  It proves the normalized ODE
-  `phi'' + K * phi = 0`, `phi 0 = 0`, `phi' 0 = 1`, positivity on the first
+  `phi'' + K * phi = 0`, `phi 0 = 0`, `phi' 0 = 1`, the small-radius facts
+  `snPos K r / r -> 1` and `r * logDerivPos K r -> 1`, positivity on the first
   interval `0 < r < pi / sqrt K`, and the first positive zero at
-  `pi / sqrt K`.  The small-radius facts `snPos K r / r -> 1` and
-  `r * logDerivPos K r -> 1` remain pending A1 targets.  On each regular polar
-  segment, C1 must consume the available A1 facts in
-  `Comparison.sectional_upper` only for
+  `pi / sqrt K`.  On each regular polar segment, C1 must consume these A1
+  facts in `Comparison.sectional_upper` only for
   `0 < r < min (r_0, pi / sqrt K)` and state the lower bounds
   `(snPos' K r / snPos K r) * g_r <= Hess r`,
   `snPos K r ^ 2 * g_S <= g_r`, and
