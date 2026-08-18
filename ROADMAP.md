@@ -2,9 +2,11 @@
 
 Status: accepted bootstrap route at repository commit
 `0a7e55543629438cacf6e25b698ba770274225d9`, with the A1 scalar comparison
-increment recorded below.  This file is the repository-owned route for the
-Chapter 1 library.  It is not a transcription of the project brief, and each
-implementation claim is limited to the exact audited commit named below.
+increment and completed G1 evidence audit recorded below.  G2 remains an open
+human gate: no dependency or substrate route has been selected.  This file is
+the repository-owned route for the Chapter 1 library.  It is not a
+transcription of the project brief, and each implementation claim is limited
+to the exact audited commit named below.
 
 ## Authority and evidence
 
@@ -52,6 +54,12 @@ The source/API audit for this bootstrap used:
   approximately 50,700-line Chapter 1 split and its Chapter 1 to Chapter 2
   import are specifically not adopted.
 - The publication records and stable URLs in `docs/references.bib`.
+
+The completed declaration-level G1 audit is
+[`docs/G1_SUBSTRATE_AUDIT.md`](docs/G1_SUBSTRATE_AUDIT.md).  It records the
+exact pinned signatures and imports, the candidate's license and producer
+gaps, a disposition for every source row, and the bounded alternatives and
+questions for G2.  It does not change the canonical representations below.
 
 ## End state and boundaries
 
@@ -198,49 +206,49 @@ silently dropped.  Pages are printed Chapter 1 pages in arXiv v2.
 
 | Source claim and anchor | Intended API/module | Milestone and prerequisite | Current status |
 | --- | --- | --- | --- |
-| Riemannian metric and metric ball, Definition 1.1, pp. 35--36; `morganTian2007` | Mathlib metric bridge, `Metric` | G2; Mathlib metric audit | inventory |
-| Fundamental theorem of Levi--Civita, Theorem 1.2, p. 35; `morganTian2007`, `doCarmo1992` Ch. 2, pp. 44--51 | `Connection.covariantDerivative` | G2 then F1 | inventory |
-| Christoffel formula (1.2), p. 36; `morganTian2007` | `Connection.christoffel_formula` | F1, chart bridge | inventory |
-| Hessian definition and `Hessformula`, Definition/Lemma 1.3, pp. 36--37; `morganTian2007` | `Connection.hessian`, symmetry/formula lemmas | F1 | inventory |
-| Function Laplacian as Hessian trace, p. 37; `morganTian2007` | `Connection.laplacian` | F1 | inventory |
-| Curvature `(1,3)` and `(0,4)` definitions and coordinate formula, Definition 1.4, pp. 37--38; `morganTian2007` | `Curvature.curvature`, `curvature₄` | F1; sign gate | inventory |
-| Symmetries and first/second Bianchi, Claim 1.5, p. 38; `morganTian2007` | `Curvature.bianchi₁`, `bianchi₂` | F1 | inventory |
-| Sectional curvature and curvature operator, Definitions 1.6--1.7, pp. 38--39; `morganTian2007` | `sectionalCurvature`, `curvatureOperator` | F1 | inventory |
-| Ricci and scalar curvature, Definition 1.8, p. 39; `morganTian2007` | `ricci`, `scalarCurvature` | F1 | inventory |
-| Naturality of Riemann, Ricci, and scalar curvature under diffeomorphism pullback, unnumbered paragraph after Definition 1.8, p. 39; `morganTian2007` | `Curvature.curvature_naturality`, `ricci_naturality`, `scalarCurvature_naturality` | F1; metric/connection pullback bridge | inventory |
-| Contracted Bianchi/divergence of Ricci, Lemma 1.9 (`divRic`), p. 39; `morganTian2007` | `divRic` | F1 | inventory |
-| Second covariant derivative and connection Laplacian on tensors of arbitrary rank, unnumbered definitions before `lapformula`, pp. 39--40; `morganTian2007` | `Connection.secondCovariantDerivative`, `Connection.connectionLaplacian` | F1; tensor-bundle trace bridge | inventory |
-| Bochner/Laplacian identity, Lemma 1.10 (`lapformula`), p. 40; `morganTian2007`, `gallotHulinLafontaine2004` (claimed cross-check: Proposition 4.36, p. 168, per Morgan--Tian; 2004 edition text unavailable, so unverified) | `bochnerFormula`, `laplacianDistance` | F1; Morgan--Tian primary, Gallot cross-check unverified | inventory |
-| Uniformization statement, Theorem 1.11, p. 40; `morganTian2007` | Chapter 1 exported interface or gated external theorem | F3; preserve strength with a `2 <= n` non-vacuity gate | inventory |
-| Einstein definition/consequences, Definition 1.12 and Example 1.13, p. 40; `morganTian2007` | `Models.einstein`, constant-curvature contractions | F3 | inventory |
-| Cone metric definition, Definition 1.14 (`conedefn`), p. 40; `morganTian2007` | `Models.coneMetric` | F3 | inventory |
-| Cone curvature proposition, Proposition 1.15 (`conecurv`) and eigenvalue corollary 1.16, pp. 40--41; `morganTian2007` | `Models.coneCurvature`, `coneCurvatureEigenvalue` | F3 | inventory |
-| Geodesic definition/coordinate IVP, Definition 1.17, p. 41; `morganTian2007`, `doCarmo1992` Ch. 3, pp. 61--75 | `Geodesic.isGeodesic`, IVP | F2 | inventory |
-| Hopf--Rinow, Theorem 1.18, pp. 41--42; `morganTian2007`, `doCarmo1992` Ch. 7, pp. 157--166 | `Geodesic.hopfRinow` adapter | F2/G2 | inventory |
-| Length, energy, Cauchy--Schwarz, first variation, and geodesic criticality, pp. 41--43; `morganTian2007`, `doCarmo1992` Ch. 9, pp. 185--201 | `Geodesic.energy`, `Variation.firstEnergyVariation` | F2 | inventory |
-| Geodesic variations and Jacobi equation, pp. 43--44; `morganTian2007`, `doCarmo1992` Ch. 5, pp. 101--121 | `Jacobi.jacobiEquation`, variation bridge | J1; F1/F2 | inventory |
-| Conjugate point definition, Definition 1.19, p. 44; `morganTian2007` | `Jacobi.IsConjugate` | J1 | inventory |
-| Index-form second variation and arbitrary-family boundary term, pp. 43--45; `morganTian2007`, `doCarmo1992` Ch. 9, pp. 185--201 | `IndexForm.secondVariation` | V1; exact regularity gate | inventory |
-| Minimal subsegments/no conjugate points, Proposition 1.20 (`jacmin`), pp. 44--45; `morganTian2007`, `petersen2006` Ch. 5, Prop. 19/Lem. 14, pp. 139--140 | `IndexForm.minimizer_no_conjugate` | V1 | inventory |
-| Jacobi null-space claim 1.21, p. 44; `morganTian2007` | `IndexForm.nullspace_iff_jacobi` | V1 | inventory |
-| Exponential map/maximal star domain, Definition 1.22, p. 45; `morganTian2007`, `doCarmo1992` Ch. 3, pp. 61--75 | `Geodesic.exp`, maximal domain | F2 | inventory |
-| Differential of exponential via Jacobi fields and local diffeomorphism `star`, Corollary 1.23, pp. 45--46; `morganTian2007` | `Jacobi.dExp_eq_endpoint`, `Geodesic.exp_local_diffeomorph` | J1/F2 | inventory |
-| Cut locus and exponential diffeomorphism, Definition 1.24/Proposition 1.25, p. 46; `morganTian2007`, `petersen2006` Ch. 5, Lem. 12, p. 133 and Prop. 19, p. 139 | `Normal.cutLocus`, `Normal.exp_on_regular_domain` | N1 | inventory |
-| Injectivity radius and frontier/conjugate alternatives, Definition 1.26, p. 46; `morganTian2007`, `petersen2006` Ch. 5 | `Normal.injectivityRadius`, equivalences | N1 | inventory |
-| Gaussian normal metric expansion `metricexp`, equation (1.8), pp. 46--47; `morganTian2007`, `sakai1996` Prop. 3.1, p. 41, with sign conversion | `Normal.metricExpansion` | F3/N1; term audit | inventory |
-| Gauss lemma, polar metric and volume element, p. 47; `morganTian2007`, `petersen2006` Ch. 5, Lem. 12, p. 133 | `Normal.gaussLemma`, polar Jacobian | N1/A2 | inventory |
-| Gaussian-coordinate Laplacian, Lemma 1.27, p. 47; `morganTian2007` | `Normal.laplacianGaussian` | F1/N1 | inventory |
-| Distance-Laplacian local expansion `Delta r = (n-1)/r - (r/3) Ric(v,v) + O(r^2)`, unnumbered computation before Exercise 1.28, p. 48; `morganTian2007`, `petersen2006` pp. 265--268 | `Normal.laplacianDistance_asymptotic` | F3/N1; `metricexp` and Gaussian-Laplacian consumers | inventory |
-| Calabi weak/distributional distance-Laplacian inequality and test-function formulation, Exercise 1.28 and Remark 1.29, p. 48; `morganTian2007`, `petersen2006` Lemma 42, p. 284 | `Comparison.laplacianDistance_weak` | C2; require `2 <= n` locally for the all-manifold distributional theorem; F1/N1 plus checked distribution/test-function integration API | inventory |
-| Hyperbolic/flat model functions `sn_k` and `ct_k`, Definition 1.30, p. 48; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.sn`, `Comparison.ct` | A1; define the radial coefficient piecewise at `k = 0` | model ODE, positivity, first integral, radial coefficient, small-radius bound, and scalar Riccati comparison implemented at `70cc263f77dc9ee70b6246a94edd00f3f7f6a13d`; vector/operator consumers pending |
-| Positive-curvature spherical model for the upper comparison, implicit in the unnumbered analogue before `localdiffeo`, p. 49; `morganTian2007`, `petersen2016` Section 6.4, Cor. 6.4.2 and Thms. 6.4.3/6.4.6, pp. 254--257 | `Comparison.snPos`, `Comparison.logDerivPos`, positivity and first-zero facts | A1; for `K > 0`, valid on `0 < r < pi / sqrt K`; explicit C1 input | total flat/spherical profile, ODE, first-pole radius/zero, positivity interval, and logarithmic derivative implemented at `70cc263f77dc9ee70b6246a94edd00f3f7f6a13d`; the limits `snPos K r / r -> 1` and `r * logDerivPos K r -> 1` and Sturm comparison pending |
-| Sectional curvature comparison `SCC`, Theorem 1.31, p. 49; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.sectional` | C1; A1/J1/N1 | inventory |
-| Upper sectional-curvature comparison on a regular polar segment: if `K > 0`, `sec <= K`, and `0 < r < min (r_0, pi / sqrt K)`, then `(snPos' K r / snPos K r) * g_r <= Hess r`, `snPos K r ^ 2 * g_S <= g_r`, and `snPos K r ^ (n - 1) <= J(r, theta)` for the normalized polar Jacobian; unnumbered analogue immediately before `localdiffeo`, p. 49; `morganTian2007`, `petersen2006` Ch. 9, Section 1; `petersen2016` Thms. 6.4.3/6.4.6, pp. 255--257 | `Comparison.sectional_upper` | C1; A1 positive model/J1/N1, and an explicit prerequisite for L1 `injvol` | inventory |
-| Curvature-norm local diffeomorphism `localdiffeo`, Lemma 1.32, p. 49; `morganTian2007` | `Comparison.exp_local_diffeomorph_of_curvature_bound` | C1; A1 positive model/J1/N1; use an unbounded radius when `K = 0`, and `pi / sqrt K` when `K > 0` | inventory |
-| Ricci comparison `riccurvcomp`, Theorem 1.33, p. 49; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.ricci` | C2; A1/F1/J1/N1 | inventory |
-| Bishop--Gromov relative comparison `BishopGromov`, Theorem 1.34, p. 49; `morganTian2007`, `cheegerGromovTaylor1982` Prop. 4.1 | `Comparison.bishopGromov` | C3; A2/C2/N1 | inventory |
-| Lower volume from injectivity `injvol`, Proposition 1.35, p. 50; `morganTian2007` | `Comparison.volume_lower_of_inj` | L1; C1 (including the upper sectional comparison)/C3/N1 | inventory |
-| Volume-to-injectivity `volinj`, Theorem 1.36, p. 50; `morganTian2007`, `cheegerGromovTaylor1982` Thm. 4.3 and (4.22), p. 46; `cheegerEbin1975` Thm. 5.8, p. 96 | `Comparison.inj_lower_of_volume` | L1; human depth gate | inventory |
+| Riemannian metric and metric ball, Definition 1.1, p. 35; `morganTian2007` | Mathlib metric bridge, `Metric` | G2; Mathlib metric audit | G1-audited substrate/gap S01 |
+| Fundamental theorem of Levi--Civita, Theorem 1.2, pp. 35--36; `morganTian2007`, `doCarmo1992` Ch. 2, pp. 44--51 | `Connection.covariantDerivative` | G2 then F1 | G1-audited gap S02 |
+| Christoffel formula (1.1), p. 36; `morganTian2007` | `Connection.christoffel_formula` | F1, chart bridge | G1-audited gap S03 |
+| Hessian definition (1.2) and `Hessformula`, Lemma 1.3, pp. 36--37; `morganTian2007` | `Connection.hessian`, symmetry/formula lemmas | F1 | G1-audited gap S04 |
+| Function Laplacian as Hessian trace, p. 37; `morganTian2007` | `Connection.laplacian` | F1 | G1-audited gap S05 |
+| Curvature `(1,3)` and `(0,4)` definitions and coordinate formula, Definition 1.4, pp. 37--38; `morganTian2007` | `Curvature.curvature`, `curvature₄` | F1; sign gate | G1-audited gap S06 |
+| Symmetries and first/second Bianchi, Claim 1.5, p. 38; `morganTian2007` | `Curvature.bianchi₁`, `bianchi₂` | F1 | G1-audited gap S07 |
+| Sectional curvature and curvature operator, Definitions 1.6--1.7, pp. 38--39; `morganTian2007` | `sectionalCurvature`, `curvatureOperator` | F1 | G1-audited gap S08 |
+| Ricci and scalar curvature, Definition 1.8, p. 39; `morganTian2007` | `ricci`, `scalarCurvature` | F1 | G1-audited gap S09 |
+| Naturality of Riemann, Ricci, and scalar curvature under diffeomorphism pullback, unnumbered paragraph after Definition 1.8, p. 39; `morganTian2007` | `Curvature.curvature_naturality`, `ricci_naturality`, `scalarCurvature_naturality` | F1; metric/connection pullback bridge | G1-audited gap S10 |
+| Contracted Bianchi/divergence of Ricci, Lemma 1.9 (`divRic`), p. 39; `morganTian2007` | `divRic` | F1 | G1-audited gap S11 |
+| Second covariant derivative and connection Laplacian on tensors of arbitrary rank, unnumbered definitions before `lapformula`, pp. 39--40; `morganTian2007` | `Connection.secondCovariantDerivative`, `Connection.connectionLaplacian` | F1; tensor-bundle trace bridge | G1-audited gap S12 |
+| Bochner/Laplacian identity, Lemma 1.10 (`lapformula`), p. 40; `morganTian2007`, `gallotHulinLafontaine2004` (claimed cross-check: Proposition 4.36, p. 168, per Morgan--Tian; 2004 edition text unavailable, so unverified) | `bochnerFormula`, `laplacianDistance` | F1; Morgan--Tian primary, Gallot cross-check unverified | G1-audited gap S13 |
+| Uniformization statement, Theorem 1.11, p. 40; `morganTian2007` | Chapter 1 exported interface or gated external theorem | F3; preserve strength with a `2 <= n` non-vacuity gate | G1-audited gap S14 |
+| Einstein definition/consequences, Definition 1.12 and Example 1.13, p. 40; `morganTian2007` | `Models.einstein`, constant-curvature contractions | F3 | G1-audited gap S15 |
+| Cone metric definition, Definition 1.14 (`conedefn`), p. 40; `morganTian2007` | `Models.coneMetric` | F3 | G1-audited gap S16 |
+| Cone curvature proposition, Proposition 1.15 (`conecurv`) and eigenvalue corollary 1.16, pp. 40--41; `morganTian2007` | `Models.coneCurvature`, `coneCurvatureEigenvalue` | F3 | G1-audited gap S17 |
+| Geodesic definition/coordinate IVP, Definition 1.17, p. 41; `morganTian2007`, `doCarmo1992` Ch. 3, pp. 61--75 | `Geodesic.isGeodesic`, IVP | F2 | G1-audited gap/partial prior art S18 |
+| Hopf--Rinow, Theorem 1.18, pp. 41--42; `morganTian2007`, `doCarmo1992` Ch. 7, pp. 157--166 | `Geodesic.hopfRinow` adapter | F2/G2 | G1-audited gap S19 |
+| Length, energy, Cauchy--Schwarz, first variation, and geodesic criticality, pp. 41--43; `morganTian2007`, `doCarmo1992` Ch. 9, pp. 185--201 | `Geodesic.energy`, `Variation.firstEnergyVariation` | F2 | G1-audited substrate/gap S20 |
+| Geodesic variations and Jacobi equation, pp. 43--44; `morganTian2007`, `doCarmo1992` Ch. 5, pp. 101--121 | `Jacobi.jacobiEquation`, variation bridge | J1; F1/F2 | G1-audited gap S21 |
+| Conjugate point definition, Definition 1.19, p. 44; `morganTian2007` | `Jacobi.IsConjugate` | J1 | G1-audited gap S22 |
+| Index-form second variation and arbitrary-family boundary term, pp. 43--45; `morganTian2007`, `doCarmo1992` Ch. 9, pp. 185--201 | `IndexForm.secondVariation` | V1; exact regularity gate | G1-audited gap S23 |
+| Minimal subsegments/no conjugate points, Proposition 1.20 (`jacmin`), pp. 44--45; `morganTian2007`, `petersen2006` Ch. 5, Prop. 19/Lem. 14, pp. 139--140 | `IndexForm.minimizer_no_conjugate` | V1 | G1-audited gap S24 |
+| Jacobi null-space claim 1.21, p. 44; `morganTian2007` | `IndexForm.nullspace_iff_jacobi` | V1 | G1-audited gap S25 |
+| Exponential map/maximal star domain, Definition 1.22, p. 45; `morganTian2007`, `doCarmo1992` Ch. 3, pp. 61--75 | `Geodesic.exp`, maximal domain | F2 | G1-audited gap S26 |
+| Differential of exponential via Jacobi fields and local diffeomorphism `star`, Corollary 1.23, pp. 45--46; `morganTian2007` | `Jacobi.dExp_eq_endpoint`, `Geodesic.exp_local_diffeomorph` | J1/F2 | G1-audited gap S27 |
+| Cut locus and exponential diffeomorphism, Definition 1.24/Proposition 1.25, p. 46; `morganTian2007`, `petersen2006` Ch. 5, Lem. 12, p. 133 and Prop. 19, p. 139 | `Normal.cutLocus`, `Normal.exp_on_regular_domain` | N1 | G1-audited gap S28 |
+| Injectivity radius and frontier/conjugate alternatives, Definition 1.26, p. 46; `morganTian2007`, `petersen2006` Ch. 5 | `Normal.injectivityRadius`, equivalences | N1 | G1-audited gap S29 |
+| Gaussian normal metric expansion `metricexp`, equation (1.5), p. 46; `morganTian2007`, `sakai1996` Prop. 3.1, p. 41, with sign conversion | `Normal.metricExpansion` | F3/N1; term audit | G1-audited gap S30 |
+| Gauss lemma, polar metric and volume element, p. 47; `morganTian2007`, `petersen2006` Ch. 5, Lem. 12, p. 133 | `Normal.gaussLemma`, polar Jacobian | N1/A2 | G1-audited gap S31 |
+| Gaussian-coordinate Laplacian, Lemma 1.27, p. 47; `morganTian2007` | `Normal.laplacianGaussian` | F1/N1 | G1-audited gap S32 |
+| Distance-Laplacian local expansion `Delta r = (n-1)/r - (r/3) Ric(v,v) + O(r^2)`, unnumbered computation before Exercise 1.28, p. 48; `morganTian2007`, `petersen2006` pp. 265--268 | `Normal.laplacianDistance_asymptotic` | F3/N1; `metricexp` and Gaussian-Laplacian consumers | G1-audited gap S33 |
+| Calabi weak/distributional distance-Laplacian inequality and test-function formulation, Exercise 1.28 and Remark 1.29, p. 48; `morganTian2007`, `petersen2006` Lemma 42, p. 284 | `Comparison.laplacianDistance_weak` | C2; require `2 <= n` locally for the all-manifold distributional theorem; F1/N1 plus checked distribution/test-function integration API | G1-audited gap S34 |
+| Hyperbolic/flat model functions `sn_k` and `ct_k`, Definition 1.30, pp. 48--49; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.sn`, `Comparison.ct` | A1; define the radial coefficient piecewise at `k = 0` | G1-audited partial implementation S35; vector/operator consumers pending |
+| Positive-curvature spherical model for the upper comparison, implicit in the unnumbered analogue before `localdiffeo`, p. 49; `morganTian2007`, `petersen2016` Section 6.4, Cor. 6.4.2 and Thms. 6.4.3/6.4.6, pp. 254--257 | `Comparison.snPos`, `Comparison.logDerivPos`, positivity and first-zero facts | A1; for `K > 0`, valid on `0 < r < pi / sqrt K`; explicit C1 input | G1-audited partial implementation S36; normalized limits and Sturm consumers pending |
+| Sectional curvature comparison `SCC`, Theorem 1.31, p. 49; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.sectional` | C1; A1/J1/N1 | G1-audited gap S37 |
+| Upper sectional-curvature comparison on a regular polar segment: if `K > 0`, `sec <= K`, and `0 < r < min (r_0, pi / sqrt K)`, then `(snPos' K r / snPos K r) * g_r <= Hess r`, `snPos K r ^ 2 * g_S <= g_r`, and `snPos K r ^ (n - 1) <= J(r, theta)` for the normalized polar Jacobian; unnumbered analogue immediately before `localdiffeo`, p. 49; `morganTian2007`, `petersen2006` Ch. 9, Section 1; `petersen2016` Thms. 6.4.3/6.4.6, pp. 255--257 | `Comparison.sectional_upper` | C1; A1 positive model/J1/N1, and an explicit prerequisite for L1 `injvol` | G1-audited gap S38 |
+| Curvature-norm local diffeomorphism `localdiffeo`, Lemma 1.32, p. 49; `morganTian2007` | `Comparison.exp_local_diffeomorph_of_curvature_bound` | C1; A1 positive model/J1/N1; use an unbounded radius when `K = 0`, and `pi / sqrt K` when `K > 0` | G1-audited gap S39 |
+| Ricci comparison `riccurvcomp`, Theorem 1.33, p. 49; `morganTian2007`, `petersen2006` Ch. 9, Section 1 | `Comparison.ricci` | C2; A1/F1/J1/N1 | G1-audited gap S40 |
+| Bishop--Gromov relative comparison `BishopGromov`, Theorem 1.34, p. 49; `morganTian2007`, `cheegerGromovTaylor1982` Prop. 4.1 | `Comparison.bishopGromov` | C3; A2/C2/N1 | G1-audited gap S41 |
+| Lower volume from injectivity `injvol`, Proposition 1.35, p. 50; `morganTian2007` | `Comparison.volume_lower_of_inj` | L1; C1 (including the upper sectional comparison)/C3/N1 | G1-audited gap S42 |
+| Volume-to-injectivity `volinj`, Theorem 1.36, p. 50; `morganTian2007`, `cheegerGromovTaylor1982` Thm. 4.3 and (4.22), p. 46; `cheegerEbin1975` Thm. 5.8, p. 96 | `Comparison.inj_lower_of_volume` | L1; human depth gate | G1-audited gap S43 |
 
 The unlabelled rows are anchored by section, numbered statement where the PDF
 has one, and printed page.  The source's later Chapters 2 and 3 are not
