@@ -1,6 +1,6 @@
 /-
 Copyright (c) 2025 Michael Rothgang. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+Released under Apache 2.0 license as described in the file LICENSES/Apache-2.0.txt.
 Authors: Patrick Massot, Michael Rothgang, Heather Macbeth
 
 This file contains modified code adapted from Mathlib PR #36845 at revision
@@ -657,7 +657,7 @@ variable [IsManifold I ∞ M] [FiniteDimensional ℝ E]
 
 /-- The Levi--Civita connection of the explicit smooth metric `g`, as
 Mathlib's bundled covariant derivative on the tangent bundle. -/
-noncomputable def covariantDerivative
+noncomputable def leviCivitaConnection
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) :
     CovariantDerivative I E (TangentSpace I : M → Type _) := by
   letI : RiemannianBundle (TangentSpace I : M → Type _) :=
@@ -665,32 +665,32 @@ noncomputable def covariantDerivative
   exact bundledCovariantDerivative (I := I)
 
 /-- The Levi--Civita connection is compatible with the explicit metric. -/
-theorem covariantDerivative_isMetricCompatible
+theorem isMetricCompatible_leviCivitaConnection
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) :
     letI : RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
-    (covariantDerivative g).IsMetricCompatible (M := M) (V := TangentSpace I) := by
+    (leviCivitaConnection g).IsMetricCompatible (M := M) (V := TangentSpace I) := by
   letI : RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   exact isMetricCompatible_bundledCovariantDerivative (I := I)
 
 /-- The torsion tensor of the Levi--Civita connection vanishes. -/
-theorem covariantDerivative_torsion_eq_zero
+theorem torsion_leviCivitaConnection_eq_zero
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) :
     letI : RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
-    (covariantDerivative g).torsion = 0 := by
+    (leviCivitaConnection g).torsion = 0 := by
   letI : RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   exact torsion_bundledCovariantDerivative (I := I)
 
 /-- The Levi--Civita connection of a smooth metric has the smooth regularity
 expected by Mathlib's curvature and geodesic consumers. -/
-theorem covariantDerivative_contMDiff
+theorem contMDiff_leviCivitaConnection
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) :
     letI : RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
-    CovariantDerivative.ContMDiffCovariantDerivative (covariantDerivative g) ∞ := by
+    CovariantDerivative.ContMDiffCovariantDerivative (leviCivitaConnection g) ∞ := by
   letI : RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   exact contMDiffCovariantDerivative_bundled (I := I)
@@ -699,13 +699,13 @@ theorem covariantDerivative_contMDiff
 
 The order is Morgan--Tian's: the final bracket terms are
 `-⟨X,[Y,Z]⟩ + ⟨Y,[Z,X]⟩ + ⟨Z,[X,Y]⟩`. -/
-theorem covariantDerivative_koszul
+theorem leviCivitaConnection_koszul
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {X Y Z : ∀ x : M, TangentSpace I x} {x : M}
     (hX : MDiffAt (T% X) x) (hY : MDiffAt (T% Y) x) (hZ : MDiffAt (T% Z) x) :
     letI : RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
-    inner ℝ (covariantDerivative g Y x (X x)) (Z x) =
+    inner ℝ (leviCivitaConnection g Y x (X x)) (Z x) =
       (d% (fun p ↦ inner ℝ (Y p) (Z p)) x (X x)
         + d% (fun p ↦ inner ℝ (Z p) (X p)) x (Y x)
         - d% (fun p ↦ inner ℝ (X p) (Y p)) x (Z x)
@@ -724,10 +724,10 @@ theorem covariantDerivative_koszul
   ring
 
 /-- Any metric-compatible torsion-free Mathlib covariant derivative agrees
-with `covariantDerivative g` when the differentiated vector field is
+with `leviCivitaConnection g` when the differentiated vector field is
 differentiable at the point.  The direction is an arbitrary tangent vector;
 no differentiability hypothesis on an extending direction field is exposed. -/
-theorem covariantDerivative_eq_at_of_isMetricCompatible_of_torsion_eq_zero
+theorem leviCivitaConnection_eq_at_of_isMetricCompatible_of_torsion_eq_zero
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {cov : CovariantDerivative I E (TangentSpace I : M → Type _)}
     (hmetric :
@@ -740,7 +740,7 @@ theorem covariantDerivative_eq_at_of_isMetricCompatible_of_torsion_eq_zero
       cov.torsion = 0)
     {Y : ∀ x : M, TangentSpace I x} {x : M} (hY : MDiffAt (T% Y) x)
     (X₀ : TangentSpace I x) :
-    covariantDerivative g Y x X₀ = cov Y x X₀ := by
+    leviCivitaConnection g Y x X₀ = cov Y x X₀ := by
   letI : RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   apply injective_inner_mdifferentiableAt_vectorField (I := I) x
