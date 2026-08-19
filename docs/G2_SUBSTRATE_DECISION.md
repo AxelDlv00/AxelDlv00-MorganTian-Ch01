@@ -222,8 +222,9 @@ This contract formalizes Morgan--Tian, Definition 1.1 and the metric-ball
 paragraph on p. 35; it does not add a stronger global hypothesis to that local
 definition.
 
-`Ch01.Metric.SmoothPath` fixes the parameter interval to `[0, 1]`, records the
-two endpoints explicitly, and requires `CMDiff` regularity there.
+`MorganTianLib.Ch01.SmoothPath`, defined in module `Ch01.Metric`, fixes the
+parameter interval to `[0, 1]`, records the two endpoints explicitly, and
+requires `CMDiff` regularity there.
 `PiecewiseSmoothPath` is an endpoint-typed finite chain of such segments, with
 length the sum of their canonical `Manifold.pathELength`s.  The corresponding
 auxiliary infima install no ambient metric structure.  The module proves
@@ -416,7 +417,6 @@ integration, exponential Jacobian, or cut-locus claim.
 
 Local diagnostics and axiom/source scans support review of this revision; the
 protected `Lean CI / lake-build (pull_request)` status remains the authoritative
-build check.  G2 remains open until the
-endpoint-preserving, length-controlled approximation and reverse infimum
-comparison complete the source-distance correspondence.  F1, F2, and A2
-therefore remain blocked.
+build check.  G2 remains open until the endpoint-preserving, length-controlled
+approximation and reverse infimum comparison complete the source-distance
+correspondence.  F1, F2, and A2 therefore remain blocked.

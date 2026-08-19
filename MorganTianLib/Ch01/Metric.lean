@@ -100,9 +100,11 @@ theorem tangent_topology_eq_norm_topology
 
 /-- A source-facing smooth path from `x` to `y`.
 
-The parameter interval is the closed interval `[0, 1]`; values outside that
-interval do not enter either the regularity condition or the length.  This is
-the smooth path class in Morgan--Tian, Definition 1.1, p. 35. -/
+This structure models the smooth paths used to define distance in the paragraph
+following Morgan--Tian, Definition 1.1, p. 35.  The Lean encoding uses a map on
+all of `ℝ`, fixes its endpoints at `0` and `1`, and requires `CMDiff` regularity
+on `[0, 1]`.  Values outside that interval do not enter either the regularity
+condition or the length. -/
 structure SmoothPath (I : ModelWithCorners ℝ E H) (x y : M) where
   /-- The underlying map, defined on all of `ℝ` so it can be passed directly to
   `Manifold.pathELength`. -/
@@ -116,8 +118,33 @@ structure SmoothPath (I : ModelWithCorners ℝ E H) (x y : M) where
 
 namespace SmoothPath
 
-instance {x y : M} : CoeFun (SmoothPath I x y) (fun _ ↦ ℝ → M) :=
-  ⟨SmoothPath.toFun⟩
+omit [IsManifold I ∞ M] in
+instance {x y : M} : FunLike (SmoothPath I x y) ℝ M where
+  coe p := p.toFun
+  coe_injective p q h := by
+    cases p
+    cases q
+    congr
+
+omit [IsManifold I ∞ M] in
+@[ext]
+protected theorem ext {x y : M} {p q : SmoothPath I x y}
+    (h : (p : ℝ → M) = q) : p = q :=
+  DFunLike.coe_injective h
+
+variable {x y : M} (p : SmoothPath I x y)
+
+omit [IsManifold I ∞ M] in
+/-- A smooth path takes the prescribed value at the source endpoint. -/
+@[simp]
+protected theorem source : p 0 = x :=
+  p.source_eq
+
+omit [IsManifold I ∞ M] in
+/-- A smooth path takes the prescribed value at the target endpoint. -/
+@[simp]
+protected theorem target : p 1 = y :=
+  p.target_eq
 
 /-- The extended length of a smooth path, measured by Mathlib's canonical
 Riemannian path-length functional on `[0, 1]`. -/
@@ -138,13 +165,14 @@ omit [IsManifold I ∞ M] in
 theorem eLength_refl
     [Bundle.RiemannianBundle (TangentSpace I : M → Type _)] (x : M) :
     (refl (I := I) x).eLength = 0 := by
-  simp [eLength, refl, Manifold.pathELength_eq_lintegral_mfderiv_Icc]
+  change Manifold.pathELength I (fun _ : ℝ ↦ x) 0 1 = 0
+  simp [Manifold.pathELength_eq_lintegral_mfderiv_Icc]
 
 /-- Reverse the orientation of a smooth path. -/
 def reverse {x y : M} (p : SmoothPath I x y) : SmoothPath I y x where
   toFun := p ∘ fun t : ℝ ↦ 1 - t
-  source_eq := by simp [p.target_eq]
-  target_eq := by simp [p.source_eq]
+  source_eq := by simp
+  target_eq := by simp
   smoothOn := by
     apply p.smoothOn.comp
     · rw [contMDiffOn_iff_contDiffOn]
@@ -167,7 +195,8 @@ theorem eLength_reverse [∀ x : M, ENorm (TangentSpace I x)]
     dsimp
     linarith
   · fun_prop
-  · simpa using p.smoothOn.mdifferentiableOn (by simp)
+  · simpa only [sub_self, sub_zero, show (p : ℝ → M) = p.toFun from rfl] using
+      p.smoothOn.mdifferentiableOn (by simp)
 
 end SmoothPath
 
@@ -197,10 +226,15 @@ def append {x y z : M} :
   | .nil _, q => q
   | .cons head tail, q => .cons head (tail.append q)
 
+/-- Reverse the first path into an accumulator with the same source. -/
+def reverseAux {x y z : M} :
+    PiecewiseSmoothPath I x y → PiecewiseSmoothPath I x z → PiecewiseSmoothPath I y z
+  | .nil _, q => q
+  | .cons head tail, q => tail.reverseAux (.cons head.reverse q)
+
 /-- Reverse every segment and their order. -/
-def reverse {x y : M} : PiecewiseSmoothPath I x y → PiecewiseSmoothPath I y x
-  | .nil _ => .nil _
-  | .cons head tail => tail.reverse.append (.cons head.reverse (.nil _))
+def reverse {x y : M} (p : PiecewiseSmoothPath I x y) : PiecewiseSmoothPath I y x :=
+  p.reverseAux (.nil _)
 
 /-- The length of a finite piecewise-smooth path is the sum of the canonical
 `Manifold.pathELength` of its segments. -/
@@ -228,6 +262,19 @@ theorem eLength_toPiecewise [∀ x : M, ENorm (TangentSpace I x)]
   simp [SmoothPath.toPiecewise, eLength]
 
 omit [IsManifold I ∞ M] in
+/-- Reversing into an accumulator adds the lengths of the input paths. -/
+@[simp]
+theorem eLength_reverseAux
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)]
+    {x y z : M} (p : PiecewiseSmoothPath I x y) (q : PiecewiseSmoothPath I x z) :
+    (p.reverseAux q).eLength = p.eLength + q.eLength := by
+  induction p with
+  | nil => simp [reverseAux, eLength]
+  | cons head tail ih =>
+      simp [reverseAux, eLength, ih, add_comm, add_left_comm]
+
+omit [IsManifold I ∞ M] in
 /-- Reversing all segments preserves the total piecewise-smooth length. -/
 @[simp]
 theorem eLength_reverse
@@ -235,10 +282,7 @@ theorem eLength_reverse
     [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)]
     {x y : M} (p : PiecewiseSmoothPath I x y) :
     p.reverse.eLength = p.eLength := by
-  induction p with
-  | nil => simp [reverse, eLength]
-  | cons head tail ih =>
-      simp [reverse, eLength, ih, add_comm]
+  simp [reverse, eLength]
 
 omit [IsManifold I ∞ M] in
 /-- Mathlib's `C^1` Riemannian distance is at most the length of every finite
@@ -254,7 +298,7 @@ theorem riemannianEDist_le_eLength
       exact Manifold.riemannianEDist_triangle.trans
         (add_le_add
           (Manifold.riemannianEDist_le_pathELength
-            (head.smoothOn.of_le (by simp)) head.source_eq head.target_eq zero_le_one)
+            (head.smoothOn.of_le (by simp)) head.source head.target zero_le_one)
           ih)
 
 end PiecewiseSmoothPath
@@ -298,7 +342,7 @@ theorem riemannianEDist_le_piecewiseSmoothPathEDist
 
 omit [IsManifold I ∞ M] in
 /-- In particular, the canonical Mathlib `C^1` distance is bounded above by
-the infimum over globally smooth paths. -/
+the infimum over paths smooth on `[0, 1]`. -/
 theorem riemannianEDist_le_smoothPathEDist
     [∀ x : M, ENorm (TangentSpace I x)]
     [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)] (x y : M) :

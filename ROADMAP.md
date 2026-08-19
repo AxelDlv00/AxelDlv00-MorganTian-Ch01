@@ -18,10 +18,10 @@ source-facing smooth and finite piecewise-smooth paths, their canonical lengths
 and infima, the comparison from Mathlib's distance to both infima, and finite
 piecewise-smooth witnesses on preconnected manifolds.  Endpoint-preserving,
 length-controlled approximation of `C^1` paths and the reverse infimum
-comparison remain pending, so G2 and its descendants remain open.  This file is the
-repository-owned route for the Chapter 1 library.  It is not a transcription
-of the project brief, and each implementation claim is limited to the exact
-audited revision named below.
+comparison remain pending, so G2 and its descendants remain open.  This file is
+the repository-owned route for the Chapter 1 library.  It is not a
+transcription of the project brief, and each implementation claim is limited
+to the exact audited revision named below.
 
 ## Authority and evidence
 
