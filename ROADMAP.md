@@ -198,9 +198,13 @@ choices are:
   raw `μH` itself.  `Ch01.Volume.riemannianVolume` selects that measure over
   the original Borel structure, and the volume module proves its metric,
   measurable-ball, raw-Hausdorff, and finite-dimensional inner-product-space
-  normalization facts.  A2 owns chart/polar integration and Jacobians.  A
-  ratio for an arbitrary density is an A1/A2 analytic lemma only; it is not
-  Bishop--Gromov until N1/C3 prove the density and metric-ball equalities.
+  normalization facts.  A2 owns the measure-theoretic primitives needed before
+  cut-locus nullity: chart Jacobians, Sard/change-of-variables lemmas,
+  measurability, sphere/radial integration, and ratio-of-integrals lemmas that
+  do not mention normal geometry.  N2 owns the post-N1 polar Jacobian and its
+  equality with this measure.  A ratio for an arbitrary density is an A1/A2
+  analytic lemma only; it is not Bishop--Gromov until N2/C3 prove the density
+  and metric-ball equalities.
 
 ### Hypotheses and proof architecture
 
@@ -252,10 +256,11 @@ them.  In particular:
 
 Proofs proceed from intrinsic public objects to private adapters: connection
 and curvature first; geodesic and Jacobi chart ODEs with equivalence theorems;
-frame-level index/Riccati arguments; then cut/polar geometric producers; and
-finally measure/change-of-variables consumers.  A1's analytic comparison
+frame-level index/Riccati arguments; and measure/Sard/change-of-variables
+primitives independently of normal geometry.  Cut geometry then feeds the N2
+polar/Gaussian producers and measure identities.  A1's analytic comparison
 theorems intentionally accept abstract functions or operators.  They become
-Morgan--Tian comparison results only when J1/N1/C1/C2 supply and identify the
+Morgan--Tian comparison results only when J1/N2/C1/C2 supply and identify the
 geometric producer.  This direction prevents an assumed density or chart
 matrix from being mistaken for a manifold theorem.
 
@@ -308,7 +313,7 @@ claims the result.
 | S11 | Contracted Bianchi identity: Lemma 1.9 (`divRic`), p. 39; `morganTian2007` | `Curvature.divRic` | F1 | S07, S09 and divergence | verify contraction order and `dR = 2 div Ric` with the source Laplacian/divergence signs | Open |
 | S12 | Second covariant derivative and connection Laplacian for arbitrary-rank tensors: definitions before Lemma 1.10, pp. 39--40; `morganTian2007` | `Connection.secondCovariantDerivative`, `connectionLaplacian` | F1 | S02 and tensor-bundle contractions | theorem must be rank-generic; a one-form-only wrapper is insufficient | Open |
 | S13 | One-form Bochner identity: Lemma 1.10 (`lapformula`), p. 40; `morganTian2007`; `gallotHulinLafontaine2004`, Prop. 4.36, p. 168, **unverified cross-check reported by Morgan--Tian** | `Curvature.bochnerFormula` | F1 | S05, S09, S12 | reconcile `df`, metric dual, Ricci contraction, and connection-Laplacian signs | Open |
-| S14 | Space-form uniformization and quotient consequence: Theorem 1.11 and following paragraph, p. 40; `morganTian2007` | `Models.spaceFormClassification`, `spaceForm_quotient` or an explicit external theorem interface | F3 | S08, Hopf--Rinow interface, universal-cover/covering/isometry theory | retain completeness and simple connectivity in the classification, freeness/discreteness in the quotient, and add only the reviewed `2 <= n` non-vacuity gate | Open; human decision required if the classification proof exceeds Chapter 1 infrastructure |
+| S14 | Space-form uniformization and quotient consequence: Theorem 1.11 and following paragraph, p. 40; `morganTian2007` | `Models.spaceFormClassification`, `spaceForm_quotient` or an explicit external theorem interface | F3 | S08, S19/F2 Hopf--Rinow interface, universal-cover/covering/isometry theory | retain completeness and simple connectivity in the classification, freeness/discreteness in the quotient, and add only the reviewed `2 <= n` non-vacuity gate | Open; human decision required if the classification proof exceeds Chapter 1 infrastructure |
 | S15 | Einstein definition and dimension 2/3 consequence: Definition 1.12 and Example 1.13, p. 40; `morganTian2007` | `Models.einstein`, `einstein_constantCurvature_of_dim_le_three` | F3 | S08--S09 | state exact dimension alternatives and factor `lambda / (n - 1)` | Open |
 | S16 | Open cone metric: Definition 1.14 (`conedefn`), p. 40; `morganTian2007` | `Models.coneMetric` | F3 | S01 and product-manifold metric | enforce positive radial coordinate and avoid a public coordinate-dependent metric | Open |
 | S17 | Cone curvature block and eigenvalues: Proposition 1.15 (`conecurv`) and Corollary 1.16, pp. 40--41; `morganTian2007` | `Models.coneCurvature`, `coneCurvatureEigenvalue` | F3 | S08, S16, S03 | verify exterior-square block order, zero multiplicity, and `s^-2 (lambda_i - 1)` scaling | Open |
@@ -321,20 +326,20 @@ claims the result.
 | S24 | Unique minimizing subsegments and no interior conjugate point: Proposition 1.20 (`jacmin`), pp. 44--45; `morganTian2007`; `petersen2006`, Ch. 5, Prop. 19 and Lemma 14, pp. 139--140 | `IndexForm.minimizer_no_conjugate` | V1 | S22--S23 | justify corner shortening and piecewise-field smoothing rather than formalizing the source sketch as an axiom | Open |
 | S25 | Index-form null space equals endpoint-vanishing Jacobi fields: Claim 1.21, p. 44; `morganTian2007` | `IndexForm.nullspace_iff_jacobi` | V1 | S21 and S23 | supply the fundamental-lemma/density argument at the selected field regularity | Open |
 | S26 | Exponential map on the maximal star domain and complete case: Definition 1.22, p. 45; `morganTian2007`; `doCarmo1992`, Ch. 3, pp. 61--75 | `Geodesic.exp`, `expDomain` | F2 | S18; S19 only for the complete case; `I.IsInteriorPoint p` at a fixed base point, or `[BoundarylessManifold I M]` for the source-facing all-base-points family | codomain/domain must retain the incomplete and unbounded cases; state the base-point interior hypothesis on local maps and the weakest manifold-level class on the global family; complete-only helpers are private | Open |
-| S27 | Normal-neighborhood/Gaussian coordinates, surjectivity when complete, differential of `exp` via Jacobi fields, and local diffeomorphism: paragraphs after Definition 1.22 and Corollary 1.23 (`star`), pp. 45--46; `morganTian2007` | `Normal.normalNeighborhood`, `Jacobi.dExp_eq_endpoint`, `Geodesic.exp_localDiffeomorph` | J1 + N1 | S19, S21--S22, and S24--S26; `I.IsInteriorPoint p` for point-local conclusions, or `[BoundarylessManifold I M]` for the all-points/complete conclusions | prove the kernel/conjugacy equivalence before the inverse function theorem; propagate the exact interior/boundaryless contract and distinguish the local normal ball from the maximal/complete domain | Open |
-| S28 | On a complete boundaryless manifold, regular minimizing domain, closed/null cut locus, and exponential diffeomorphism: the complete-manifold scope sentence before Definition 1.24 and Definition 1.24/Proposition 1.25, p. 46; `morganTian2007`; `petersen2006`, Ch. 5, Lemma 12, p. 133 and Prop. 19, p. 139 | `Normal.cutLocus`, `exp_on_regularDomain` | N1 | S19 completeness/Hopf--Rinow and `[BoundarylessManifold I M]`, F2, J1, V1; A2 for nullity | state completeness and the weakest manifold-level no-boundary class on the global theorem while keeping local exp-domain/cut-time definitions point-local under the required interior hypotheses; prove measurability/nullity using checked Sard/change-of-variables APIs, with no assumed-null facade | Open |
+| S27 | Normal-neighborhood/Gaussian coordinates, surjectivity when complete, differential of `exp` via Jacobi fields, and local diffeomorphism: paragraphs after Definition 1.22 and Corollary 1.23 (`star`), pp. 45--46; `morganTian2007` | `Normal.normalNeighborhood`, `Jacobi.dExp_eq_endpoint`, `Geodesic.exp_localDiffeomorph` | J1 -> N1 | S19, S21--S22, and S24--S26; `I.IsInteriorPoint p` for point-local conclusions, or `[BoundarylessManifold I M]` for the all-points/complete conclusions | prove the J1 kernel/conjugacy bridge before N1 invokes the inverse function theorem; propagate the exact interior/boundaryless contract and distinguish the local normal ball from the maximal/complete domain | Open |
+| S28 | On a complete boundaryless manifold, regular minimizing domain, closed/null cut locus, and exponential diffeomorphism: the complete-manifold scope sentence before Definition 1.24 and Definition 1.24/Proposition 1.25, p. 46; `morganTian2007`; `petersen2006`, Ch. 5, Lemma 12, p. 133 and Prop. 19, p. 139 | `Normal.cutLocus`, `exp_on_regularDomain` | N1 | S19 completeness/Hopf--Rinow and `[BoundarylessManifold I M]`, F2, J1, V1, and A2's pre-N1 Sard/change-of-variables and measurability primitives | state completeness and the weakest manifold-level no-boundary class on the global theorem while keeping local exp-domain/cut-time definitions point-local under the required interior hypotheses; prove measurability/nullity using checked Sard/change-of-variables APIs, with no assumed-null facade | Open |
 | S29 | On a complete boundaryless manifold, injectivity radius, frontier/cut-distance equalities, and broken-geodesic/conjugate alternative: Definition 1.26 and following paragraph under the complete-manifold scope, p. 46; `morganTian2007` | `Normal.injectivityRadius`, equivalence theorems | N1 | S19 and S28, including `[BoundarylessManifold I M]` for the global equivalences | retain infinity, keep completeness separate from boundarylessness, and prove all three characterizations plus the alternative; local injectivity-radius/exp-domain definitions are point-local under their exact interior hypotheses | Open |
-| S30 | Gaussian metric expansion through `O(r^5)`: equation (1.5) (`metricexp`), p. 46; `morganTian2007`; `sakai1996`, Prop. 3.1, p. 41, **cross-check unavailable locally** | `Normal.metricExpansion` | F3 + N1 | S03, S06--S09, S27 | audit every coefficient, derivative order, remainder, and Sakai-to-Morgan--Tian sign conversion | Open |
-| S31 | Gauss lemma, polar metric, and polar volume element: p. 47; `morganTian2007`; `petersen2006`, Ch. 5, Lemma 12, p. 133 | `Normal.gaussLemma`, `Normal.polarMetric`, `Volume.polarJacobian` | N1 + A2 | S26--S28 and canonical measure | prove Jacobian/change-of-variables equality with `riemannianVolume`; coordinate density is private | **Partial substrate only.** `Ch01.Volume` fixes normalized measure; no polar producer is present |
-| S32 | Coordinate Laplacian formula: Lemma 1.27, p. 47; `morganTian2007` | `Normal.laplacianGaussian` | F1 + N1 | S05 and S30 | determinant-density formula must agree with the Hessian-trace sign | Open |
-| S33 | Local distance-Laplacian expansion and following mean-curvature/shape-operator identification, p. 48; `morganTian2007`; `petersen2006`, pp. 265--268 | `Normal.laplacianDistance_asymptotic`, `radialShape_eq_hessian`, `trace_radialShape` | F3 + N1 | S30--S32 | prove `Delta r = (n-1)/r - (r/3) Ric(v,v) + O(r^2)` with exact coefficient/remainder and identify the Hessian and mean-curvature traces | Open |
-| S34 | Calabi distributional inequality and test-function formulation: Exercise 1.28 and Remark 1.29 (`calabi`), p. 48; `morganTian2007`; `petersen2006`, Lemma 42, p. 284 | `Comparison.laplacianDistance_weak` | C2 | F1, N1, S31, and distribution/test-function integration | add `2 <= n` only here; prove Lipschitz/Sobolev and integration-by-parts semantics | Open |
+| S30 | Gaussian metric expansion through `O(r^5)`: equation (1.5) (`metricexp`), p. 46; `morganTian2007`; `sakai1996`, Prop. 3.1, p. 41, **cross-check unavailable locally** | `Normal.metricExpansion` | N2 | S03, S06--S09, and S27; hence the completed F1 curvature and N1 normal-neighborhood APIs | audit every coefficient, derivative order, remainder, and Sakai-to-Morgan--Tian sign conversion | Open |
+| S31 | Gauss lemma, polar metric, and polar volume element: p. 47; `morganTian2007`; `petersen2006`, Ch. 5, Lemma 12, p. 133 | `Normal.gaussLemma`, `Normal.polarMetric`, `Volume.polarJacobian` | N2 | S26--S28, A2's measure/change-of-variables primitives, and canonical measure | prove the post-N1 Jacobian/change-of-variables equality with `riemannianVolume`; coordinate density is private | **Partial substrate only.** `Ch01.Volume` fixes normalized measure; no polar producer is present |
+| S32 | Coordinate Laplacian formula: Lemma 1.27, p. 47; `morganTian2007` | `Normal.laplacianGaussian` | N2 | S05 and S30 | determinant-density formula must agree with the Hessian-trace sign | Open |
+| S33 | Local distance-Laplacian expansion and following mean-curvature/shape-operator identification, p. 48; `morganTian2007`; `petersen2006`, pp. 265--268 | `Normal.laplacianDistance_asymptotic`, `radialShape_eq_hessian`, `trace_radialShape` | N2 | S30--S32 | prove `Delta r = (n-1)/r - (r/3) Ric(v,v) + O(r^2)` with exact coefficient/remainder and identify the Hessian and mean-curvature traces | Open |
+| S34 | Calabi distributional inequality and test-function formulation: Exercise 1.28 and Remark 1.29 (`calabi`), p. 48; `morganTian2007`; `petersen2006`, Lemma 42, p. 284 | `Comparison.laplacianDistance_weak` | C2 | F1, N2 including S31, and distribution/test-function integration | add `2 <= n` only here; prove Lipschitz/Sobolev and integration-by-parts semantics | Open |
 | S35 | Flat/hyperbolic `sn_k`, `ct_k`, ODE, and radial coefficient: Definition 1.30 and following formulas, pp. 48--49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1 | `Comparison.Model` plus Riccati/trace/determinant consumers | A1 | G0 and scalar/linear analysis | totalize `k = 0` without division by `sqrt 0`; analytic theorems may not claim a manifold producer | **Analytic layer implemented.** Model, scalar/operator/trace Riccati, determinant, `normDet`, and abstract density results exist; vector Sturm and geometric producers remain open |
 | S36 | Positive-curvature model needed by the upper analogue: unnumbered paragraph before Lemma 1.32, p. 49; `morganTian2007`; `petersen2016`, Sec. 6.4, Cor. 6.4.2 and Thms. 6.4.3/6.4.6, pp. 254--257 | `Comparison.snPos`, `logDerivPos`, positive Riccati/Sturm/density consumers | A1 | scalar and finite-dimensional operator analysis | restrict to `K > 0` and the first-pole interval; separate analytic inputs from C1 geometry | **Analytic layer implemented.** Origin limits, first pole, scalar/operator comparison, and abstract density results exist; no geometric lower-Jacobian producer exists |
-| S37 | Lower sectional-curvature comparison (`SCC`): Theorem 1.31, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1; `lee2018`, Thm. 11.7(b) | `Comparison.sectional` | C1 | A1, J1, N1 | translate sectional bounds to the Jacobi/Riccati order and prove shape and angular-metric inequalities on the regular segment | Open |
-| S38 | Upper sectional analogue: paragraph before Lemma 1.32, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1; `petersen2016`, Thms. 6.4.3/6.4.6, pp. 255--257; `lee2018`, Thm. 11.7(a) | `Comparison.sectional_upper` | C1 | A1 positive model, J1, N1 | on `0 < r < min (r0, pi/sqrt K)`, prove lower Hessian, angular metric, and normalized Jacobian with the accepted inequality directions | Open; required by S42 |
+| S37 | Lower sectional-curvature comparison (`SCC`): Theorem 1.31, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1; `lee2018`, Thm. 11.7(b) | `Comparison.sectional` | C1 | A1, J1, and N2 | translate sectional bounds to the Jacobi/Riccati order and prove shape and angular-metric inequalities on the regular segment | Open |
+| S38 | Upper sectional analogue: paragraph before Lemma 1.32, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1; `petersen2016`, Thms. 6.4.3/6.4.6, pp. 255--257; `lee2018`, Thm. 11.7(a) | `Comparison.sectional_upper` | C1 | A1 positive model, J1, and N2 | on `0 < r < min (r0, pi/sqrt K)`, prove lower Hessian, angular metric, and normalized Jacobian with the accepted inequality directions | Open; required by S42 |
 | S39 | On a complete boundaryless manifold, curvature-norm local diffeomorphism: Lemma 1.32 (`localdiffeo`) under the complete-manifold scope, p. 49; `morganTian2007` | `Comparison.exp_localDiffeomorph_of_curvatureBound` | C1 | S19, S27, and S36--S38, including `[BoundarylessManifold I M]` | use boundarylessness together with completeness to put the full tangent ball in the exponential domain, including the infinite radius at `K = 0`; check norm-to-sectional conversion and exact source domain/codomain while leaving point-local comparison results on their actual exp domains | Open |
-| S40 | Ricci comparison (`riccurvcomp`): Theorem 1.33, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1 | `Comparison.ricci` | C2 | A1, F1, J1, N1 | connect trace Riccati to the actual radial shape and normalized polar Jacobian | Open; only assumed-producer analytic consumers exist |
+| S40 | Ricci comparison (`riccurvcomp`): Theorem 1.33, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1 | `Comparison.ricci` | C2 | A1, F1, J1, and N2 | connect trace Riccati to the actual radial shape and normalized polar Jacobian | Open; only assumed-producer analytic consumers exist |
 | S41 | Relative Bishop--Gromov comparison: Theorem 1.34 (`BishopGromov`), p. 49; `morganTian2007`; `cheegerGromovTaylor1982`, Prop. 4.1; `lee2018`, Thm. 11.19 | `Comparison.bishopGromov` | C3 | A2, C2, N1 | preserve compact-closure/local Ricci hypotheses, cut-locus nullity, metric-ball identity, and limit-one normalization | Open; canonical volume exists but no geometric ratio theorem does |
 | S42 | Injectivity-to-volume estimate (`injvol`): Proposition 1.35, p. 50; `morganTian2007` | `Comparison.volume_lower_of_inj` | L1 | C1 including S38, C3, N1 | retain completeness, curvature norm, and dependence `delta(n, epsilon)`; normalize with `r^-2 g`, correcting the source proof's `r^2 g` typo without changing the theorem | Open |
 | S43 | Volume-to-injectivity estimate (`volinj`): Theorem 1.36, p. 50; `morganTian2007`; `cheegerGromovTaylor1982`, Thm. 4.3 and (4.22), p. 46; `cheegerEbin1975`, Thm. 5.8, p. 96, **alternative unavailable locally** | `Comparison.inj_lower_of_volume` | L1 | C3, N1, local covering/compactness package | retain source hypotheses, scale, and `delta(n, epsilon)`; human decides whether the proof package is in-project or a separately reviewed dependency | Open; human depth gate remains |
@@ -403,33 +408,38 @@ statements, proofs, documentation, imports, and source anchors pass review.
 
 ```text
 G0 --> G1 --> G2
- |              |--> F1 --> F3
+ |              |--> F1
  |              |--> F2
  |              `--> A2
  |--> A1
  `--> E1
 
-F1 + F2                  --> J1 --> V1
-F2 + J1 + V1             --> N1
-A1 + J1 + N1             --> C1
-A1 + F1 + J1 + N1        --> C2
-A2 + C2 + N1             --> C3
-C1 + C3 + N1             --> L1
-G0 + G1 + G2 + E1 + F1 + F2 + F3 + A1 + A2 + J1 + V1 + N1 + C1 + C2 + C3 + L1
-                           --> Z1
+F1 + F2                       --> F3
+F1 + F2                       --> J1 --> V1
+F2 + A2 + J1 + V1            --> N1
+F1 + A2 + N1                 --> N2
+A1 + J1 + N2                 --> C1
+A1 + F1 + J1 + N2            --> C2
+A2 + C2 + N1                 --> C3
+C1 + C3 + N1                 --> L1
+G0 + G1 + G2 + E1 + F1 + F2 + F3 + A1 + A2 + J1 + V1 + N1 + N2 + C1 + C2 + C3 + L1
+                               --> Z1
 ```
 
 The frontiers are intentional: A1 and E1 start directly after G0 and run in
 parallel with G1 and the human-gated substrate route.  E1 proves only
 finite-dimensional existence of a smooth metric; it does not block work
 carried out with a supplied metric and is not an additional G2 coherence gate.
-After G2, F1, F2, and A2 run in
-parallel while A1 may continue; F3 starts after F1 and joins Z1 independently.
-J1 waits only for F1/F2, V1 waits for J1, and N1 waits for F2/J1/V1.  C1 and C2
-then run in parallel with their listed A1, foundation, Jacobi, and normal
-prerequisites.  C3 waits for A2/C2/N1, not C1.  L1 waits for C1/C3/N1, and Z1
-waits for every prior node and therefore every inventory row, including E1 and
-F3.
+After G2, F1, F2, and the normal-geometry-independent A2 measure primitives run
+in parallel while A1 may continue.  F3 waits for both F1 and F2 because S14
+consumes Hopf--Rinow, then joins Z1 independently of the normal/comparison
+branch.  J1 waits only for F1/F2 and V1 waits for J1.  N1 waits for
+F2/A2/J1/V1 so S28 can prove cut-locus nullity from completed measure primitives.
+N2 then waits for F1/A2/N1 and closes the post-cut polar and Gaussian rows
+S30--S33.  C1 and C2 run in parallel only after N2, with their listed analytic,
+foundation, and Jacobi inputs.  C3 waits for A2/C2/N1, not C1.  L1 waits for
+C1/C3/N1, and Z1 waits for every prior node and therefore every inventory row,
+including E1, F3, and N2.
 
 Node contracts:
 
@@ -465,8 +475,9 @@ Node contracts:
   assumption table.  Completeness is added separately only for Hopf--Rinow and
   global extension; none of these hypotheses is added to G2 supplied-metric,
   measure, or connection contracts.
-- **F3** (`F1`): space forms, Einstein consequences, cones, coordinate curvature, and
-  normal-coordinate prerequisites.
+- **F3** (`F1`, `F2`): space-form classification and quotient consequences,
+  Einstein consequences, and cone metric/curvature.  Its F2 edge is required by
+  S14's Hopf--Rinow input; it owns no post-N1 normal-coordinate claim.
 - **A1** (`G0`): hyperbolic/flat `sn`/`ct`, the positive-curvature `snPos` and
   logarithmic derivative with validity/first-zero facts, scalar/vector/operator
   Sturm and Riccati comparison, determinant/trace inequalities, and
@@ -480,20 +491,29 @@ Node contracts:
   direction-generic normalized positive-density adapters are implemented by
   issue #10.  Vector Sturm remains open.  The
   positive-curvature geometric lower-Jacobian conclusion remains gated on the
-  C1/J1/N1 producers and is not claimed by A1.
-- **A2** (`G2`): Riemannian measure/Jacobian, sphere/radial integration,
-  measurability, and ratio-of-integrals lemmas.
+  C1/J1/N2 producers and is not claimed by A1.
+- **A2** (`G2`): the pre-N1 measure toolkit: chart Jacobians, checked
+  Sard/change-of-variables and measurability primitives, sphere/radial
+  integration, and ratio-of-integrals lemmas independent of cut, exponential,
+  or polar geometry.  It supplies S28 nullity but owns no post-N1 polar-density
+  equality; that work is N2.
 - **J1** (`F1`, `F2`): intrinsic Jacobi equation, existence/uniqueness/linearity, chart and
   frame reductions, geodesic variations, and `d exp`.
 - **V1** (`J1`): exact regularity for arbitrary-family first/second variation,
   intrinsic/frame index equality, fundamental lemma, negative directions, and
   the minimizer/no-conjugate theorem.
-- **N1** (`F2`, `J1`, `V1`): point-local segment/exp-domain and cut-time
-  definitions under their exact interior hypotheses; under completeness and
-  `[BoundarylessManifold I M]`, the S28--S29 global cut-locus nullity,
-  injectivity-radius equivalences, and exponential diffeomorphism; plus Gauss
-  lemma, polar metric/shape/volume, and Gaussian claims.
-- **C1** (`A1`, `J1`, `N1`): the lower-bound SCC statement, its unnumbered
+- **N1** (`F2`, `A2`, `J1`, `V1`): close S27--S29: point-local normal
+  neighborhoods, segment/exp-domain and cut-time definitions under their exact
+  interior hypotheses; then, under completeness and
+  `[BoundarylessManifold I M]`, cut-locus nullity, injectivity-radius
+  equivalences, and exponential diffeomorphism.  N1 consumes A2's completed
+  measure primitives but does not produce polar integration or Gaussian
+  expansions.
+- **N2** (`F1`, `A2`, `N1`): close S30--S33 after their curvature,
+  normal-neighborhood, cut, and measure inputs exist: Gaussian metric expansion,
+  Gauss lemma, polar metric and volume/Jacobian equality, coordinate Laplacian,
+  local distance-Laplacian expansion, and radial shape/trace identifications.
+- **C1** (`A1`, `J1`, `N2`): the lower-bound SCC statement, its unnumbered
   upper-sectional-bound analogue, and the complete-and-boundaryless
   `localdiffeo` consequence without an extra curvature hypothesis.  On a
   regular polar segment, the upper comparison consumes A1's positive-curvature
@@ -501,7 +521,7 @@ Node contracts:
   `0 < r < min (r_0, pi / sqrt K)` and gives the lower shape, angular-metric,
   and normalized-Jacobian directions stated in `Comparison.sectional_upper`.
   It is required by the lower sphere-volume estimate in `injvol`.
-- **C2** (`A1`, `F1`, `J1`, `N1`): radial Jacobi matrix and trace/determinant
+- **C2** (`A1`, `F1`, `J1`, `N2`): radial Jacobi matrix and trace/determinant
   comparison producing the manifold `riccurvcomp` theorem, plus the resulting
   weak/distributional Calabi inequality rather than merely a producer-shaped
   inequality.  The `2 <= n` gate applies only to the global all-manifold weak
@@ -513,7 +533,8 @@ Node contracts:
   compactness/covering layer is a separate reviewable boundary.
 - **Z1** (all prior nodes): stable root API,
   source-fidelity/axiom/`sorry`/import/doc/citation audits, and downstream
-  Chapter 1 interface checks.  In particular, F3-owned rows cannot bypass Z1.
+  Chapter 1 interface checks.  In particular, F3- and N2-owned rows cannot
+  bypass Z1.
 
 ## Dependency alternatives and hard gates
 
@@ -601,7 +622,7 @@ complete kernel's protected CI status, are reviewed.
 | --- | --- | --- |
 | Chart-coordinate `(J,DJ)` pairs, state-transition flows, chart partitions, parallel frames | Private proof reductions for J1/V1/C1/C2; duplicate coordinates and increase bridge obligations | Intrinsic Jacobi existence plus chart/frame equivalence theorem lands; final theorem signatures contain no chart artifact |
 | Complete-space `globalGeodesic`/`expMapGlobal` helpers | F2 exploration only; they hide maximal-domain and local-domain cases | F2 proves the canonical maximal exponential API and a complete-case equivalence |
-| `IsRadialJacobi`, polar-density, cut-time, cut-locus, local-isometry, and injectivity-radius facades | A1/A2/N1 integration scaffolding only; producer semantics are otherwise absent | Retire or make private when N1/C2 proves the named geometric producer/equivalence; no final source theorem quantifies over the facade |
+| `IsRadialJacobi`, polar-density, cut-time, cut-locus, local-isometry, and injectivity-radius facades | A1/A2/N1/N2 integration scaffolding only; producer semantics are otherwise absent | Retire or make private when N1/N2/C2 proves the named geometric producer/equivalence; no final source theorem quantifies over the facade |
 | Abstract `expBallVolume` density ratios | Analytic ratio lemmas only; not a manifold volume theorem | C3 proves polar density = Riemannian measure and exp preimage = metric ball off the null cut locus |
 | `Option`-valued exceptional cut time, radius, or exponential-domain helpers | Private construction aid only; `none` is easy to misread and duplicates the canonical extended value | Replace at the public boundary by the proved `WithTop`/maximal-domain representation; delete after N1 equivalences land |
 | Wrappers duplicating Mathlib/shared declarations | Temporary compatibility only with a named caller | Delete after migration to the canonical declaration |
@@ -672,7 +693,7 @@ reviewed commit.  The audit history is:
 | `A1-trace-determinant` / `6e7b502a79debd00299b1c3bf7751a0889a9df7f` | Added trace Cauchy--Schwarz including dimension zero, flat/hyperbolic traced Riccati comparison, the basis-free logarithmic derivative of `abs (det J)`, upper/lower normalized-density monotonicity for `sn`/`snPos`, explicit flat reductions, origin-normalized consequences, and equality-model regressions | Morgan--Tian `prelim.tex` Definition 1.30 and `riccurvcomp`, pp. 48--49; Petersen (2006), Chapter 9, Section 1; Petersen (2016), Section 6.4, Cor. 6.4.2; pinned Mathlib trace/determinant/to-matrix/continuous-multilinear derivative APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; reference `TraceRiccati.lean`, `MatrixCalculus.lean`, and `VolumeElement.lean` as prior art only | Keep the analytic API in A1, use private matrices only to prove Jacobi's formula, and leave vector/operator Riccati and every geometric producer/coherence theorem to C1/C2/C3/N1 |
 | `A1-trace-determinant-review-response` / `d3d049b0467d3f1bff9edcf254f7d0a592c553d7` | Weakened determinant-only assumptions to finite-dimensional real normed spaces, made `hasDerivAt_div_pow` pointwise, added nonconstant flat upper/lower direction regressions while retaining the equality models, and corrected the Petersen 2016 printed-page offsets | Pinned Mathlib pointwise quotient/power derivative and determinant APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; Petersen (2016), Section 6.4, Cor. 6.4.2 on pp. 254--255 and Thms. 6.4.3/6.4.6 on pp. 255--257; focused elaboration and public-signature checks | Require an inner product only for symmetric trace/Riccati consequences, keep the public comparison conclusions and private matrix boundary unchanged, and retain all geometric debt at C1/C2/C3/N1 |
 | `A1-trace-determinant-architecture-response` / `345f10db3c1fb4d9d595ddf8a82c6de26933c8d7` | Replaced written inner-product equalities with `LinearMap.IsSymmetric`, transported the inner-product traced consequences from the normed-space absolute determinant to `LinearMap.normDet`, and restored `Comparison.PositiveRiccati` as an independent direct Chapter 1 umbrella import | Pinned Mathlib `Trace.lean` and `NormDet.lean` at `520045ab14e26149ee970e2e617ca04b09bde5d6`, including `normDet_eq_abs_det` and `hausdorffMeasure_image`; focused dependency-chain elaboration, root export probes, public-signature checks, and representative axiom checks | Keep `endomorphismAbsDet` only as the more general normed-space calculus; use `normDet` directly for inner-product volume-factor consumers.  Accept the canonical facade's exact public import cost (`Adjoint`, `GramMatrix`, `SingularValues`, and `Geometry.Euclidean.Volume.Measure`) because C2/N1/C3 need the measure-facing API; add no compatibility wrapper or deferred replacement debt.  Keep `PositiveRiccati` independent of `DeterminantDensity` and export both public leaves directly from `Ch01.lean` |
-| `issue-15-governance` / audited baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Recast S01--S43 as a field-complete source-to-API ledger; added independent finite-dimensional E1 for the previously hidden metric-existence claim; made the complete-and-boundaryless scope explicit for the geodesic IVP descendants S19 and S26--S29 and for S39; connected every bibliography entry to exact rows; distinguished checked, unavailable, and unverified evidence; recorded the `r^-2 g` normalization correcting the S42 proof typo | Original Morgan--Tian arXiv v2 `prelim.tex` and PDF through Theorem 1.36, including its ordinary smooth-manifold convention, the `n`-dimensional opening, and the complete-manifold scope before Definition 1.24; pinned Mathlib `IntegralCurve.ExistUnique` and `IsManifold.InteriorBoundary`, which distinguish `I.IsInteriorPoint p`, `[BoundarylessManifold I M]`, and the stronger `[I.Boundaryless]`; [Mathlib PR #33714](https://github.com/leanprover-community/mathlib4/pull/33714), with `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, and `T2Space B` as prior-art existence assumptions; pinned Mathlib `ContMDiffRiemannianMetric` source for the existing-fiber-topology requirement; retained do Carmo, Petersen 2016, Lee 2018, and CGT copies; absence audit for Petersen 2006, Gallot--Hulin--Lafontaine 2004, Sakai 1996, and Cheeger--Ebin 1975; metric/curvature/volume scaling; project modules/imports and workflow at exact baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Keep the accepted Mathlib-native route, canonical representations, and CI contract.  Add E1 as a G0-parallel finite-dimensional final-completeness obligation, with a topology-compatible model inner product and the actual partition-of-unity hypotheses, without changing G2 descendants or supplied-metric generality.  Require `I.IsInteriorPoint p` for point-local geodesic/exponential statements and the weakest `[BoundarylessManifold I M]` class for source-facing all-points contracts; add completeness separately to S28--S29's global cut conclusions and S39's full-ball conclusion.  Preserve S42's statement while using the corrected proof normalization.  G2 debt remains the smooth/piecewise-smooth distance bridge, bundled connection producer/regularity, and curvature regressions; unavailable cross-checks are verification debt with removal-or-verification triggers |
+| `issue-15-governance` / audited baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Recast S01--S43 as a field-complete source-to-API ledger; added independent finite-dimensional E1 for the previously hidden metric-existence claim; made the complete-and-boundaryless scope explicit for the geodesic IVP descendants S19 and S26--S29 and for S39; reconciled every ledger prerequisite with an acyclic node schedule by adding `F2 -> F3`, placing pre-cut measure primitives in A2, and adding post-cut polar/Gaussian node N2 for S30--S33; connected every bibliography entry to exact rows; distinguished checked, unavailable, and unverified evidence; recorded the `r^-2 g` normalization correcting the S42 proof typo | Original Morgan--Tian arXiv v2 `prelim.tex` and PDF through Theorem 1.36, including its ordinary smooth-manifold convention, the `n`-dimensional opening, the complete-manifold scope before Definition 1.24, and the S14/S27--S34 producer order; the ledger's hard prerequisites checked against the milestone graph, frontier prose, and node contracts; pinned Mathlib `IntegralCurve.ExistUnique` and `IsManifold.InteriorBoundary`, which distinguish `I.IsInteriorPoint p`, `[BoundarylessManifold I M]`, and the stronger `[I.Boundaryless]`; [Mathlib PR #33714](https://github.com/leanprover-community/mathlib4/pull/33714), with `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, and `T2Space B` as prior-art existence assumptions; pinned Mathlib `ContMDiffRiemannianMetric` source for the existing-fiber-topology requirement; retained do Carmo, Petersen 2016, Lee 2018, and CGT copies; absence audit for Petersen 2006, Gallot--Hulin--Lafontaine 2004, Sakai 1996, and Cheeger--Ebin 1975; metric/curvature/volume scaling; project modules/imports and workflow at exact baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Keep the accepted Mathlib-native route, canonical representations, and CI contract.  Add E1 as a G0-parallel finite-dimensional final-completeness obligation, with a topology-compatible model inner product and the actual partition-of-unity hypotheses, without changing G2 descendants or supplied-metric generality.  Require `I.IsInteriorPoint p` for point-local geodesic/exponential statements and the weakest `[BoundarylessManifold I M]` class for source-facing all-points contracts; add completeness separately to S28--S29's global cut conclusions and S39's full-ball conclusion.  Schedule F3 after F2, N1 after A2, and N2 after F1/A2/N1 so every row has an ordered closer and C1/C2 consume completed polar/Gaussian producers.  Preserve S42's statement while using the corrected proof normalization.  G2 debt remains the smooth/piecewise-smooth distance bridge, bundled connection producer/regularity, and curvature regressions; unavailable cross-checks are verification debt with removal-or-verification triggers |
 
 ## Review and completion checklist
 
