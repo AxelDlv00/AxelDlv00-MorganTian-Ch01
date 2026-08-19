@@ -204,10 +204,12 @@ choices are:
 
 ### Hypotheses and proof architecture
 
-Morgan--Tian's standing manifold convention is smooth, paracompact, and
-Hausdorff.  Lean statements spell out the Mathlib chart, topology, and bundle
-instances they actually consume; they do not add connectedness, completeness,
-finite dimension, or no-boundary assumptions globally.  In particular:
+Morgan--Tian's standing manifold convention is smooth, finite-dimensional
+(`n`-dimensional), paracompact, and Hausdorff.  Lean statements spell out the
+Mathlib chart, topology, and bundle instances they actually consume.  They do
+not impose connectedness, completeness, finite dimension, or no-boundary
+assumptions globally on supplied-metric results that remain valid without
+them.  In particular:
 
 - the public metric is smooth (`∞`), while the source-distance bridge compares
   smooth and accepted piecewise-smooth paths with Mathlib's `C^1` paths;
@@ -216,10 +218,19 @@ finite dimension, or no-boundary assumptions globally.  In particular:
   regularity needed to differentiate curvature; uniqueness is stated on the
   differentiable vector fields on which Mathlib's connection axioms determine
   a value;
-- finite-dimensional hypotheses occur at traces, determinants, Riemannian
-  volume, curvature contractions, and finite-dimensional ODE/linear-algebra
-  consumers.  The special `2 <= n` hypotheses occur only in S14 and S34, while
-  S15 records its exact dimension 2/3 alternatives;
+- E1 retains the source's finite-dimensional metric-existence contract.  Its
+  partition-of-unity bundle theorem assumes a topology-compatible model-fiber
+  inner product (`InnerProductSpace ℝ F`), a finite-dimensional base model
+  (`FiniteDimensional ℝ EB`), and `SigmaCompactSpace B` and `T2Space B`, in
+  addition to the chart, smooth-manifold, and smooth-vector-bundle instances.
+  The tangent-bundle corollary must construct or transport a compatible model
+  inner product for an arbitrary finite-dimensional model; it may not assert
+  that an arbitrary Banach model is Hilbertizable.  These E1 hypotheses do not
+  constrain G2 or later theorems stated for a supplied metric;
+- elsewhere, finite-dimensional hypotheses occur at traces, determinants,
+  Riemannian volume, curvature contractions, and finite-dimensional
+  ODE/linear-algebra consumers.  The special `2 <= n` hypotheses occur only in
+  S14 and S34, while S15 records its exact dimension 2/3 alternatives;
 - preconnectedness is used only to make the induced extended distance finite;
   connectedness, completeness, compact closure, sigma compactness, and absence
   of boundary are introduced row by row where the source theorem or a checked
@@ -273,7 +284,7 @@ claims the result.
 
 | ID | Source claim and precise evidence | Public owner/API | Node | Hard prerequisites | Proof-risk gate | Status at `599f524` |
 | --- | --- | --- | --- | --- | --- | --- |
-| S01 | Metric, existence on every standing-hypothesis manifold, smooth-path distance, and metric balls: Definition 1.1 and following paragraphs, p. 35; `morganTian2007` | `Metric`: direct Mathlib metric, an existence theorem, and distance/topology/ball bridges | E1 + G2 | partition-of-unity for E1; pinned bundle metric and path-length APIs for G2 | prove metric existence without a second representation, and prove smooth and accepted piecewise-smooth path infima equal Mathlib's `C^1` infimum | **Partial.** `Ch01.Metric` proves coherence for a supplied metric; E1 metric existence and the source-distance bridge are open |
+| S01 | Metric, finite-dimensional existence under the source's standing manifold convention, smooth-path distance, and metric balls: Definition 1.1 and following paragraphs, p. 35; `morganTian2007` | `Metric`: direct Mathlib metric, a finite-dimensional existence theorem, and distance/topology/ball bridges | E1 + G2 | E1: topology-compatible `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, `T2Space B`, and the smooth bundle/manifold instances used by partition of unity; G2: pinned bundle metric and path-length APIs | derive the arbitrary finite-dimensional tangent-bundle corollary without a second metric representation or an arbitrary-Banach existence claim, and prove smooth and accepted piecewise-smooth path infima equal Mathlib's `C^1` infimum | **Partial.** `Ch01.Metric` proves coherence for a supplied metric without imposing E1's finite-dimensional hypotheses; E1 metric existence and the source-distance bridge are open |
 | S02 | Levi--Civita existence and uniqueness: Theorem 1.2, pp. 35--36; `morganTian2007`; `doCarmo1992`, Ch. 2, pp. 44--51; `lee2018`, Thm. 5.10 | `Connection.covariantDerivative` | G2 -> F1 | S01 and bundled `CovariantDerivative` producer | construct the connection from the metric and prove compatibility, torsion zero, Koszul, regularity, and uniqueness on the same field class | **Open.** G2 selected the Mathlib type, not a producer |
 | S03 | Christoffel equation (1.1) (`Gamma`), p. 36; `morganTian2007` | `Connection.christoffel_formula` | F1 | S02 and chart differentiation | chart formula must be proved equivalent to the bundled connection; chart data stays private | Open |
 | S04 | Hessian equation (1.2) and Lemma 1.3 (`Hessian`, `Hessformula`), pp. 36--37; `morganTian2007` | `Connection.hessian` and symmetry/tensor/coordinate lemmas | F1 | S02--S03 | align covector versus gradient conventions and prove tensoriality at the advertised regularity | Open |
@@ -300,8 +311,8 @@ claims the result.
 | S25 | Index-form null space equals endpoint-vanishing Jacobi fields: Claim 1.21, p. 44; `morganTian2007` | `IndexForm.nullspace_iff_jacobi` | V1 | S21 and S23 | supply the fundamental-lemma/density argument at the selected field regularity | Open |
 | S26 | Exponential map on the maximal star domain and complete case: Definition 1.22, p. 45; `morganTian2007`; `doCarmo1992`, Ch. 3, pp. 61--75 | `Geodesic.exp`, `expDomain` | F2 | S18--S19 | codomain/domain must retain the incomplete and unbounded cases; complete-only helpers are private | Open |
 | S27 | Normal-neighborhood/Gaussian coordinates, surjectivity when complete, differential of `exp` via Jacobi fields, and local diffeomorphism: paragraphs after Definition 1.22 and Corollary 1.23 (`star`), pp. 45--46; `morganTian2007` | `Normal.normalNeighborhood`, `Jacobi.dExp_eq_endpoint`, `Geodesic.exp_localDiffeomorph` | J1 + N1 | S19, S21--S22, and S24--S26 | prove the kernel/conjugacy equivalence before the inverse function theorem; distinguish the local normal ball from the maximal/complete domain | Open |
-| S28 | Regular minimizing domain, closed/null cut locus, and exponential diffeomorphism: Definition 1.24 and Proposition 1.25, p. 46; `morganTian2007`; `petersen2006`, Ch. 5, Lemma 12, p. 133 and Prop. 19, p. 139 | `Normal.cutLocus`, `exp_on_regularDomain` | N1 | F2, J1, V1; A2 for nullity | prove measurability/nullity using checked Sard/change-of-variables APIs; no assumed-null facade | Open |
-| S29 | Injectivity radius, frontier/cut-distance equalities, and broken-geodesic/conjugate alternative: Definition 1.26 and following paragraph, p. 46; `morganTian2007` | `Normal.injectivityRadius`, equivalence theorems | N1 | S28 | retain infinity and prove all three characterizations plus the alternative | Open |
+| S28 | On a complete manifold, regular minimizing domain, closed/null cut locus, and exponential diffeomorphism: the complete-manifold scope sentence before Definition 1.24 and Definition 1.24/Proposition 1.25, p. 46; `morganTian2007`; `petersen2006`, Ch. 5, Lemma 12, p. 133 and Prop. 19, p. 139 | `Normal.cutLocus`, `exp_on_regularDomain` | N1 | S19 completeness/Hopf--Rinow, F2, J1, V1; A2 for nullity | state completeness on the global theorem while keeping local exp-domain/cut-time definitions general; prove measurability/nullity using checked Sard/change-of-variables APIs, with no assumed-null facade | Open |
+| S29 | On a complete manifold, injectivity radius, frontier/cut-distance equalities, and broken-geodesic/conjugate alternative: Definition 1.26 and following paragraph under the complete-manifold scope, p. 46; `morganTian2007` | `Normal.injectivityRadius`, equivalence theorems | N1 | S19 and S28 | retain infinity, state completeness on the global equivalences, and prove all three characterizations plus the alternative; the local injectivity-radius/exp-domain definition remains general | Open |
 | S30 | Gaussian metric expansion through `O(r^5)`: equation (1.5) (`metricexp`), p. 46; `morganTian2007`; `sakai1996`, Prop. 3.1, p. 41, **cross-check unavailable locally** | `Normal.metricExpansion` | F3 + N1 | S03, S06--S09, S27 | audit every coefficient, derivative order, remainder, and Sakai-to-Morgan--Tian sign conversion | Open |
 | S31 | Gauss lemma, polar metric, and polar volume element: p. 47; `morganTian2007`; `petersen2006`, Ch. 5, Lemma 12, p. 133 | `Normal.gaussLemma`, `Normal.polarMetric`, `Volume.polarJacobian` | N1 + A2 | S26--S28 and canonical measure | prove Jacobian/change-of-variables equality with `riemannianVolume`; coordinate density is private | **Partial substrate only.** `Ch01.Volume` fixes normalized measure; no polar producer is present |
 | S32 | Coordinate Laplacian formula: Lemma 1.27, p. 47; `morganTian2007` | `Normal.laplacianGaussian` | F1 + N1 | S05 and S30 | determinant-density formula must agree with the Hessian-trace sign | Open |
@@ -311,7 +322,7 @@ claims the result.
 | S36 | Positive-curvature model needed by the upper analogue: unnumbered paragraph before Lemma 1.32, p. 49; `morganTian2007`; `petersen2016`, Sec. 6.4, Cor. 6.4.2 and Thms. 6.4.3/6.4.6, pp. 254--257 | `Comparison.snPos`, `logDerivPos`, positive Riccati/Sturm/density consumers | A1 | scalar and finite-dimensional operator analysis | restrict to `K > 0` and the first-pole interval; separate analytic inputs from C1 geometry | **Analytic layer implemented.** Origin limits, first pole, scalar/operator comparison, and abstract density results exist; no geometric lower-Jacobian producer exists |
 | S37 | Lower sectional-curvature comparison (`SCC`): Theorem 1.31, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1; `lee2018`, Thm. 11.7(b) | `Comparison.sectional` | C1 | A1, J1, N1 | translate sectional bounds to the Jacobi/Riccati order and prove shape and angular-metric inequalities on the regular segment | Open |
 | S38 | Upper sectional analogue: paragraph before Lemma 1.32, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1; `petersen2016`, Thms. 6.4.3/6.4.6, pp. 255--257; `lee2018`, Thm. 11.7(a) | `Comparison.sectional_upper` | C1 | A1 positive model, J1, N1 | on `0 < r < min (r0, pi/sqrt K)`, prove lower Hessian, angular metric, and normalized Jacobian with the accepted inequality directions | Open; required by S42 |
-| S39 | Curvature-norm local diffeomorphism: Lemma 1.32 (`localdiffeo`), p. 49; `morganTian2007` | `Comparison.exp_localDiffeomorph_of_curvatureBound` | C1 | S27 and S36--S38 | use infinite radius at `K = 0`; check norm-to-sectional conversion and exact source domain/codomain | Open |
+| S39 | On a complete manifold, curvature-norm local diffeomorphism: Lemma 1.32 (`localdiffeo`) under the complete-manifold scope, p. 49; `morganTian2007` | `Comparison.exp_localDiffeomorph_of_curvatureBound` | C1 | S19, S27, and S36--S38 | use completeness to put the full tangent ball in the exponential domain, including the infinite radius at `K = 0`; check norm-to-sectional conversion and exact source domain/codomain while leaving local comparison results exp-domain based | Open |
 | S40 | Ricci comparison (`riccurvcomp`): Theorem 1.33, p. 49; `morganTian2007`; `petersen2006`, Ch. 9, Sec. 1 | `Comparison.ricci` | C2 | A1, F1, J1, N1 | connect trace Riccati to the actual radial shape and normalized polar Jacobian | Open; only assumed-producer analytic consumers exist |
 | S41 | Relative Bishop--Gromov comparison: Theorem 1.34 (`BishopGromov`), p. 49; `morganTian2007`; `cheegerGromovTaylor1982`, Prop. 4.1; `lee2018`, Thm. 11.19 | `Comparison.bishopGromov` | C3 | A2, C2, N1 | preserve compact-closure/local Ricci hypotheses, cut-locus nullity, metric-ball identity, and limit-one normalization | Open; canonical volume exists but no geometric ratio theorem does |
 | S42 | Injectivity-to-volume estimate (`injvol`): Proposition 1.35, p. 50; `morganTian2007` | `Comparison.volume_lower_of_inj` | L1 | C1 including S38, C3, N1 | retain completeness, curvature norm, and dependence `delta(n, epsilon)`; normalize with `r^-2 g`, correcting the source proof's `r^2 g` typo without changing the theorem | Open |
@@ -348,9 +359,12 @@ before they become Lean APIs:
   `snPos K r ^ 2 * g_S <= g_r`, and
   `snPos K r ^ (n - 1) <= J(r, theta)` for the normalized polar Jacobian.
   The hyperbolic lower-curvature family above remains unchanged.
-- The radius in `localdiffeo` is an extended radius: it is unbounded when
-  `K = 0` and is `pi / sqrt K` when `K > 0`.  The formal statement must not
-  obtain a spurious zero radius from total division by `sqrt 0`.
+- Under S39's complete-manifold hypothesis, the radius in `localdiffeo` is an
+  extended radius: it is unbounded when `K = 0` and is `pi / sqrt K` when
+  `K > 0`.  Completeness supplies the full exponential domain needed for that
+  conclusion; the local comparison statements remain restricted to their
+  actual exp domains.  The formal statement must not obtain a spurious zero
+  radius from total division by `sqrt 0`.
 - The printed Theorem 1.11 has no dimension hypothesis.  The formal
   classification contract adds `2 <= n` (or an equivalent non-vacuity
   assumption), because the constant-curvature tensor identity is vacuous in
@@ -393,9 +407,10 @@ G0 + G1 + G2 + E1 + F1 + F2 + F3 + A1 + A2 + J1 + V1 + N1 + C1 + C2 + C3 + L1
 ```
 
 The frontiers are intentional: A1 and E1 start directly after G0 and run in
-parallel with G1 and the human-gated substrate route.  E1 proves only existence
-of a smooth metric; it does not block work carried out with a supplied metric
-and is not an additional G2 coherence gate.  After G2, F1, F2, and A2 run in
+parallel with G1 and the human-gated substrate route.  E1 proves only
+finite-dimensional existence of a smooth metric; it does not block work
+carried out with a supplied metric and is not an additional G2 coherence gate.
+After G2, F1, F2, and A2 run in
 parallel while A1 may continue; F3 starts after F1 and joins Z1 independently.
 J1 waits only for F1/F2, V1 waits for J1, and N1 waits for F2/J1/V1.  C1 and C2
 then run in parallel with their listed A1, foundation, Jacobi, and normal
@@ -407,10 +422,15 @@ Node contracts:
 
 - **G0**: this roadmap, bibliography, package, toolchain, manifest, root
   module, and workflow. No mathematical implementation.
-- **E1** (`G0`): prove existence of a smooth Mathlib-native tangent-bundle
-  Riemannian metric under the standing paracompact smooth-manifold hypotheses.
-  This discharges the source's partition-of-unity existence paragraph without
-  changing the explicit metric parameter used by every geometric theorem.
+- **E1** (`G0`): first prove the partition-of-unity bundle theorem for a
+  topology-compatible model-fiber `InnerProductSpace ℝ F`, a
+  `FiniteDimensional ℝ EB` base model, and `SigmaCompactSpace B` and
+  `T2Space B`, with the required chart, smooth-manifold, and smooth-vector-bundle
+  instances.  Then derive the source-strength tangent-bundle corollary for an
+  arbitrary finite-dimensional manifold by constructing or transporting a
+  compatible model inner product.  This discharges the source's
+  finite-dimensional existence paragraph without changing the explicit metric
+  parameter or generality of the supplied-metric geometric theorems.
 - **G1** (`G0`): close the table above with current Mathlib and candidate dependency
   signatures, import graph, and exact source anchors.
 - **G2** (`G1`, human gate): first merge the repository-owned substrate
@@ -449,13 +469,14 @@ Node contracts:
 - **V1** (`J1`): exact regularity for arbitrary-family first/second variation,
   intrinsic/frame index equality, fundamental lemma, negative directions, and
   the minimizer/no-conjugate theorem.
-- **N1** (`F2`, `J1`, `V1`): segment domain, uniqueness, cut time/locus, nullity, injectivity
-  radius, exponential diffeomorphism, Gauss lemma, polar metric/shape/volume,
-  and Gaussian claims.
+- **N1** (`F2`, `J1`, `V1`): general local segment/exp-domain and cut-time
+  definitions; under completeness, the S28--S29 global cut-locus nullity,
+  injectivity-radius equivalences, and exponential diffeomorphism; plus Gauss
+  lemma, polar metric/shape/volume, and Gaussian claims.
 - **C1** (`A1`, `J1`, `N1`): the lower-bound SCC statement, its unnumbered
-  upper-sectional-bound analogue, and the `localdiffeo` consequence without
-  an extra curvature hypothesis.  On a regular polar segment, the upper
-  comparison consumes A1's positive-curvature model only for
+  upper-sectional-bound analogue, and the complete-manifold `localdiffeo`
+  consequence without an extra curvature hypothesis.  On a regular polar
+  segment, the upper comparison consumes A1's positive-curvature model only for
   `0 < r < min (r_0, pi / sqrt K)` and gives the lower shape, angular-metric,
   and normalized-Jacobian directions stated in `Comparison.sectional_upper`.
   It is required by the lower sphere-volume estimate in `injvol`.
@@ -628,7 +649,7 @@ reviewed commit.  The audit history is:
 | `A1-trace-determinant` / `6e7b502a79debd00299b1c3bf7751a0889a9df7f` | Added trace Cauchy--Schwarz including dimension zero, flat/hyperbolic traced Riccati comparison, the basis-free logarithmic derivative of `abs (det J)`, upper/lower normalized-density monotonicity for `sn`/`snPos`, explicit flat reductions, origin-normalized consequences, and equality-model regressions | Morgan--Tian `prelim.tex` Definition 1.30 and `riccurvcomp`, pp. 48--49; Petersen (2006), Chapter 9, Section 1; Petersen (2016), Section 6.4, Cor. 6.4.2; pinned Mathlib trace/determinant/to-matrix/continuous-multilinear derivative APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; reference `TraceRiccati.lean`, `MatrixCalculus.lean`, and `VolumeElement.lean` as prior art only | Keep the analytic API in A1, use private matrices only to prove Jacobi's formula, and leave vector/operator Riccati and every geometric producer/coherence theorem to C1/C2/C3/N1 |
 | `A1-trace-determinant-review-response` / `d3d049b0467d3f1bff9edcf254f7d0a592c553d7` | Weakened determinant-only assumptions to finite-dimensional real normed spaces, made `hasDerivAt_div_pow` pointwise, added nonconstant flat upper/lower direction regressions while retaining the equality models, and corrected the Petersen 2016 printed-page offsets | Pinned Mathlib pointwise quotient/power derivative and determinant APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; Petersen (2016), Section 6.4, Cor. 6.4.2 on pp. 254--255 and Thms. 6.4.3/6.4.6 on pp. 255--257; focused elaboration and public-signature checks | Require an inner product only for symmetric trace/Riccati consequences, keep the public comparison conclusions and private matrix boundary unchanged, and retain all geometric debt at C1/C2/C3/N1 |
 | `A1-trace-determinant-architecture-response` / `345f10db3c1fb4d9d595ddf8a82c6de26933c8d7` | Replaced written inner-product equalities with `LinearMap.IsSymmetric`, transported the inner-product traced consequences from the normed-space absolute determinant to `LinearMap.normDet`, and restored `Comparison.PositiveRiccati` as an independent direct Chapter 1 umbrella import | Pinned Mathlib `Trace.lean` and `NormDet.lean` at `520045ab14e26149ee970e2e617ca04b09bde5d6`, including `normDet_eq_abs_det` and `hausdorffMeasure_image`; focused dependency-chain elaboration, root export probes, public-signature checks, and representative axiom checks | Keep `endomorphismAbsDet` only as the more general normed-space calculus; use `normDet` directly for inner-product volume-factor consumers.  Accept the canonical facade's exact public import cost (`Adjoint`, `GramMatrix`, `SingularValues`, and `Geometry.Euclidean.Volume.Measure`) because C2/N1/C3 need the measure-facing API; add no compatibility wrapper or deferred replacement debt.  Keep `PositiveRiccati` independent of `DeterminantDensity` and export both public leaves directly from `Ch01.lean` |
-| `issue-15-governance` / audited baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Recast S01--S43 as a field-complete source-to-API ledger; added independent E1 for the previously hidden metric-existence claim; connected every bibliography entry to exact rows; distinguished checked, unavailable, and unverified evidence; recorded the `r^-2 g` normalization correcting the S42 proof typo | Original Morgan--Tian arXiv v2 `prelim.tex` and PDF through Theorem 1.36; retained do Carmo, Petersen 2016, Lee 2018, and CGT copies; absence audit for Petersen 2006, Gallot--Hulin--Lafontaine 2004, Sakai 1996, and Cheeger--Ebin 1975; metric/curvature/volume scaling; project modules/imports and workflow at exact baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Keep the accepted Mathlib-native route, canonical representations, and CI contract.  Add E1 as a G0-parallel final-completeness obligation without changing G2 descendants or gates.  Preserve S42's statement while using the corrected proof normalization.  G2 debt remains the smooth/piecewise-smooth distance bridge, bundled connection producer/regularity, and curvature regressions; unavailable cross-checks are verification debt with removal-or-verification triggers |
+| `issue-15-governance` / audited baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Recast S01--S43 as a field-complete source-to-API ledger; added independent finite-dimensional E1 for the previously hidden metric-existence claim; made the complete-manifold scope explicit for S28, S29, and S39; connected every bibliography entry to exact rows; distinguished checked, unavailable, and unverified evidence; recorded the `r^-2 g` normalization correcting the S42 proof typo | Original Morgan--Tian arXiv v2 `prelim.tex` and PDF through Theorem 1.36, including the `n`-dimensional opening and the complete-manifold scope before Definition 1.24; [Mathlib PR #33714](https://github.com/leanprover-community/mathlib4/pull/33714), with `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, and `T2Space B` as prior-art existence assumptions; pinned Mathlib `ContMDiffRiemannianMetric` source for the existing-fiber-topology requirement; retained do Carmo, Petersen 2016, Lee 2018, and CGT copies; absence audit for Petersen 2006, Gallot--Hulin--Lafontaine 2004, Sakai 1996, and Cheeger--Ebin 1975; metric/curvature/volume scaling; project modules/imports and workflow at exact baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Keep the accepted Mathlib-native route, canonical representations, and CI contract.  Add E1 as a G0-parallel finite-dimensional final-completeness obligation, with a topology-compatible model inner product and the actual partition-of-unity hypotheses, without changing G2 descendants or supplied-metric generality.  Require completeness only on S28--S29's global cut conclusions and S39's full-ball conclusion; keep their local definitions/comparisons general.  Preserve S42's statement while using the corrected proof normalization.  G2 debt remains the smooth/piecewise-smooth distance bridge, bundled connection producer/regularity, and curvature regressions; unavailable cross-checks are verification debt with removal-or-verification triggers |
 
 ## Review and completion checklist
 
