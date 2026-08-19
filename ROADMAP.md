@@ -7,16 +7,17 @@ Status: accepted bootstrap route at repository commit
 trace, and determinant/density comparison increments and completed G1 evidence
 audit recorded below.  The Mathlib-native G2 route in
 [`docs/G2_SUBSTRATE_DECISION.md`](docs/G2_SUBSTRATE_DECISION.md) was accepted
-at `aa45255fc76b3de3870f6411dde9b1c733e39074`.  At audited repository baseline
-`599f5241fee042dd50e9e60a3a343a1cbac7aa39`, the current revision implements
-its metric and Mathlib `C^1` distance/topology substrate in `Ch01.Metric`, and
-its normalized-volume family in `Ch01.Volume`.  The correspondence with
-Morgan--Tian's smooth-path distance remains pending.  G2 remains open until
-that smooth/piecewise-smooth source bridge, the bundled `CovariantDerivative`
-producer and its consumer regularity, and the curvature sign/order regressions
-are implemented and reviewed.  This file is the repository-owned route for the
-Chapter 1 library.  It is not a transcription of the project brief, and each
-implementation claim is limited to the exact audited revision named below.
+at `aa45255fc76b3de3870f6411dde9b1c733e39074`.  At accepted roadmap baseline
+`80bdb7f7eb6bd1efb3b52b91cbb1293b52dd928d`, `Ch01.Metric` implements the
+metric and Mathlib `C^1` distance/topology substrate, and `Ch01.Volume`
+implements the normalized-volume family.  This revision adds the independent
+inner-product-space curvature sign/order kernel and its five regressions in
+`Ch01.Curvature`.  The correspondence with Morgan--Tian's smooth-path distance
+and the bundled `CovariantDerivative` producer with its consumer regularity
+remain pending, so G2 and its descendants remain open.  This file is the
+repository-owned route for the Chapter 1 library.  It is not a transcription
+of the project brief, and each implementation claim is limited to the exact
+audited revision named below.
 
 ## Authority and evidence
 
@@ -77,8 +78,9 @@ exact pinned signatures and imports, the candidate's license and producer
 gaps, a disposition for every source row, and the bounded alternatives and
 questions for G2.  The G2 decision record resolves those questions, records
 the exact re-audit, freezes the implementation contract, and now records which
-metric and volume contracts have Lean evidence.  Connection and curvature-sign
-contracts remain pending.
+metric, volume, and algebraic curvature-sign contracts have Lean evidence.
+The source-distance correspondence and bundled connection contract remain
+pending.
 
 ## End state and boundaries
 
@@ -298,17 +300,17 @@ printed Chapter 1 pages in the checked arXiv v2 PDF; labels in parentheses are
 the source's TeX labels.  `Open` means no repository declaration presently
 claims the result.
 
-| ID | Source claim and precise evidence | Public owner/API | Node | Hard prerequisites | Proof-risk gate | Status at `599f524` |
+| ID | Source claim and precise evidence | Public owner/API | Node | Hard prerequisites | Proof-risk gate | Status in this revision |
 | --- | --- | --- | --- | --- | --- | --- |
 | S01 | Metric, finite-dimensional existence under the source's standing manifold convention, smooth-path distance, and metric balls: Definition 1.1 and following paragraphs, p. 35; `morganTian2007` | `Metric`: direct Mathlib metric, a finite-dimensional existence theorem, and distance/topology/ball bridges | E1 + G2 | E1: topology-compatible `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, `T2Space B`, and the smooth bundle/manifold instances used by partition of unity; G2: pinned bundle metric and path-length APIs | derive the arbitrary finite-dimensional tangent-bundle corollary without a second metric representation or an arbitrary-Banach existence claim, and prove smooth and accepted piecewise-smooth path infima equal Mathlib's `C^1` infimum | **Partial.** `Ch01.Metric` proves coherence for a supplied metric without imposing E1's finite-dimensional hypotheses; E1 metric existence and the source-distance bridge are open |
 | S02 | Levi--Civita existence and uniqueness: Theorem 1.2, pp. 35--36; `morganTian2007`; `doCarmo1992`, Ch. 2, pp. 44--51; `lee2018`, Thm. 5.10 | `Connection.covariantDerivative` | G2 -> F1 | S01 and bundled `CovariantDerivative` producer | construct the connection from the metric and prove compatibility, torsion zero, Koszul, regularity, and uniqueness on the same field class | **Open.** G2 selected the Mathlib type, not a producer |
 | S03 | Christoffel equation (1.1) (`Gamma`), p. 36; `morganTian2007` | `Connection.christoffel_formula` | F1 | S02 and chart differentiation | chart formula must be proved equivalent to the bundled connection; chart data stays private | Open |
 | S04 | Hessian equation (1.2) and Lemma 1.3 (`Hessian`, `Hessformula`), pp. 36--37; `morganTian2007` | `Connection.hessian` and symmetry/tensor/coordinate lemmas | F1 | S02--S03 | align covector versus gradient conventions and prove tensoriality at the advertised regularity | Open |
 | S05 | Function Laplacian and equation (1.4) (`laplacformula`), p. 37; `morganTian2007` | `Connection.laplacian` | F1 | S04 and finite-dimensional trace | preserve the source sign: nonnegative at a local minimum and nonpositive spectrum | Open |
-| S06 | `(1,3)`/`(0,4)` curvature and coordinate formula: Definition 1.4, pp. 37--38; `morganTian2007` | `Curvature.curvature`, `Curvature.curvature4` | F1 | S02--S03 | constant-curvature regression must verify argument order and the frozen sign convention | **Open.** The sign/order contract is documented but has no Lean regression |
+| S06 | `(1,3)`/`(0,4)` curvature and coordinate formula: Definition 1.4, pp. 37--38; `morganTian2007` | `Curvature.curvature`, `Curvature.curvature4` | F1 | S02--S03 | constant-curvature regression must verify argument order and the frozen sign convention | **Partial.** `Ch01.Curvature` proves the algebraic model operator/four-tensor pairing and exact component regression; the connection-produced manifold curvature and coordinate theorem remain open in F1 |
 | S07 | Curvature symmetries and both Bianchi identities: Claim 1.5 (`Bianchi`), p. 38; `morganTian2007` | `Curvature.symm`, `bianchi1`, `bianchi2` | F1 | S06 and tensor covariant derivative | permutations and second-derivative regularity must match the chosen `(0,4)` order | Open |
-| S08 | Sectional curvature, constant-curvature tensor identity, spherical/Euclidean/hyperbolic examples, and curvature operator: Definitions 1.6--1.7 and intervening model paragraph, pp. 38--39; `morganTian2007` | `Curvature.sectionalCurvature`, `constantCurvature`, `curvatureOperator`; `Models.standardSpaceCurvature` | F1 -> F3 | S06--S07 and exterior-square API; F1 curvature API for F3 models | fix orthonormal-pair independence and wedge normalization before positivity claims; standard models are sign regressions, not assumed examples | Open |
-| S09 | Ricci and scalar curvature: Definition 1.8, p. 39; `morganTian2007` | `Curvature.ricci`, `scalarCurvature` | F1 | S06--S07, the F1 curvature API in S08, and finite-dimensional trace | contractions must reproduce the constant-curvature values with the frozen slot order | Open |
+| S08 | Sectional curvature, constant-curvature tensor identity, spherical/Euclidean/hyperbolic examples, and curvature operator: Definitions 1.6--1.7 and intervening model paragraph, pp. 38--39; `morganTian2007` | `Curvature.sectionalCurvature`, `constantCurvature`, `curvatureOperator`; `Models.standardSpaceCurvature` | F1 -> F3 | S06--S07 and exterior-square API; F1 curvature API for F3 models | fix orthonormal-pair independence and wedge normalization before positivity claims; standard models are sign regressions, not assumed examples | **Partial.** `Ch01.Curvature` supplies only the algebraic constant-curvature model and its orthonormal-pair sign regression; geometric sectional curvature, curvature operators, and standard-space examples remain open |
+| S09 | Ricci and scalar curvature: Definition 1.8, p. 39; `morganTian2007` | `Curvature.ricci`, `scalarCurvature` | F1 | S06--S07, the F1 curvature API in S08, and finite-dimensional trace | contractions must reproduce the constant-curvature values with the frozen slot order | **Open geometric API.** The required second/fourth-slot algebraic contraction regression is proved in `Ch01.Curvature`, including dimensions zero and one; manifold Ricci and scalar curvature remain open |
 | S10 | Pullback naturality of Riemann, Ricci, and scalar curvature: paragraph after Definition 1.8, p. 39; `morganTian2007` | `Curvature.curvature_naturality`, `ricci_naturality`, `scalarCurvature_naturality` | F1 | S02, S06, S09 and metric pullback | transport the canonical connection; no chart-isometry surrogate in the public theorem | Open |
 | S11 | Contracted Bianchi identity: Lemma 1.9 (`divRic`), p. 39; `morganTian2007` | `Curvature.divRic` | F1 | S07, S09 and divergence | verify contraction order and `dR = 2 div Ric` with the source Laplacian/divergence signs | Open |
 | S12 | Second covariant derivative and connection Laplacian for arbitrary-rank tensors: definitions before Lemma 1.10, pp. 39--40; `morganTian2007` | `Connection.secondCovariantDerivative`, `connectionLaplacian` | F1 | S02 and tensor-bundle contractions | theorem must be rank-generic; a one-form-only wrapper is insufficient | Open |
@@ -460,10 +462,11 @@ Node contracts:
   selection in `docs/G2_SUBSTRATE_DECISION.md`; then implement and prove its
   metric/distance/measure and connection bridges, audit assumptions, and
   freeze curvature signs.  The metric and Mathlib `C^1` distance/topology
-  families are present in `Ch01.Metric`, and the measure/volume family is
-  present in `Ch01.Volume`; the source smooth/piecewise-smooth correspondence,
-  bundled connection producer/regularity, and sign/order regressions still
-  block every descendant.
+  families are present in `Ch01.Metric`, the measure/volume family is present
+  in `Ch01.Volume`, and the algebraic sign/order model and all five regressions
+  are present in `Ch01.Curvature`.  The source smooth/piecewise-smooth
+  correspondence and bundled connection producer/regularity still block every
+  descendant; the algebraic kernel does not claim a manifold curvature API.
 - **F1** (`G2`): connection, Hessian/function and tensor connection
   Laplacians, curvature, Bianchi, Ricci/scalar, divergence/Bochner,
   naturality, and rescaling.
@@ -611,10 +614,11 @@ Hard gates are recorded in the decision:
   signature, instance, axiom, and source-fidelity audit.
 
 The selected route was accepted through human review and merge at
-`aa45255fc76b3de3870f6411dde9b1c733e39074`.  G2 remains open until the
-smooth/piecewise-smooth source-distance correspondence, bundled connection
-producer/regularity, and curvature sign/order regressions, together with the
-complete kernel's protected CI status, are reviewed.
+`aa45255fc76b3de3870f6411dde9b1c733e39074`.  The curvature sign/order kernel
+now has an algebraic Lean implementation.  G2 remains open until that slice is
+reviewed at its protected CI head and the smooth/piecewise-smooth
+source-distance correspondence and bundled connection producer/regularity are
+implemented and reviewed.
 
 ## Provisional debt and replacement triggers
 
@@ -694,6 +698,7 @@ reviewed commit.  The audit history is:
 | `A1-trace-determinant-review-response` / `d3d049b0467d3f1bff9edcf254f7d0a592c553d7` | Weakened determinant-only assumptions to finite-dimensional real normed spaces, made `hasDerivAt_div_pow` pointwise, added nonconstant flat upper/lower direction regressions while retaining the equality models, and corrected the Petersen 2016 printed-page offsets | Pinned Mathlib pointwise quotient/power derivative and determinant APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; Petersen (2016), Section 6.4, Cor. 6.4.2 on pp. 254--255 and Thms. 6.4.3/6.4.6 on pp. 255--257; focused elaboration and public-signature checks | Require an inner product only for symmetric trace/Riccati consequences, keep the public comparison conclusions and private matrix boundary unchanged, and retain all geometric debt at C1/C2/C3/N1 |
 | `A1-trace-determinant-architecture-response` / `345f10db3c1fb4d9d595ddf8a82c6de26933c8d7` | Replaced written inner-product equalities with `LinearMap.IsSymmetric`, transported the inner-product traced consequences from the normed-space absolute determinant to `LinearMap.normDet`, and restored `Comparison.PositiveRiccati` as an independent direct Chapter 1 umbrella import | Pinned Mathlib `Trace.lean` and `NormDet.lean` at `520045ab14e26149ee970e2e617ca04b09bde5d6`, including `normDet_eq_abs_det` and `hausdorffMeasure_image`; focused dependency-chain elaboration, root export probes, public-signature checks, and representative axiom checks | Keep `endomorphismAbsDet` only as the more general normed-space calculus; use `normDet` directly for inner-product volume-factor consumers.  Accept the canonical facade's exact public import cost (`Adjoint`, `GramMatrix`, `SingularValues`, and `Geometry.Euclidean.Volume.Measure`) because C2/N1/C3 need the measure-facing API; add no compatibility wrapper or deferred replacement debt.  Keep `PositiveRiccati` independent of `DeterminantDensity` and export both public leaves directly from `Ch01.lean` |
 | `issue-15-governance` / audited baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Recast S01--S43 as a field-complete source-to-API ledger; added independent finite-dimensional E1 for the previously hidden metric-existence claim; made the complete-and-boundaryless scope explicit for the geodesic IVP descendants S19 and S26--S29 and for S39; reconciled every ledger prerequisite with an acyclic node schedule by adding `F2 -> F3`, placing pre-cut measure primitives in A2, and adding post-cut polar/Gaussian node N2 for S30--S33; connected every bibliography entry to exact rows; distinguished checked, unavailable, and unverified evidence; recorded the `r^-2 g` normalization correcting the S42 proof typo | Original Morgan--Tian arXiv v2 `prelim.tex` and PDF through Theorem 1.36, including its ordinary smooth-manifold convention, the `n`-dimensional opening, the complete-manifold scope before Definition 1.24, and the S14/S27--S34 producer order; the ledger's hard prerequisites checked against the milestone graph, frontier prose, and node contracts; pinned Mathlib `IntegralCurve.ExistUnique` and `IsManifold.InteriorBoundary`, which distinguish `I.IsInteriorPoint p`, `[BoundarylessManifold I M]`, and the stronger `[I.Boundaryless]`; [Mathlib PR #33714](https://github.com/leanprover-community/mathlib4/pull/33714), with `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, and `T2Space B` as prior-art existence assumptions; pinned Mathlib `ContMDiffRiemannianMetric` source for the existing-fiber-topology requirement; retained do Carmo, Petersen 2016, Lee 2018, and CGT copies; absence audit for Petersen 2006, Gallot--Hulin--Lafontaine 2004, Sakai 1996, and Cheeger--Ebin 1975; metric/curvature/volume scaling; project modules/imports and workflow at exact baseline `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | Keep the accepted Mathlib-native route, canonical representations, and CI contract.  Add E1 as a G0-parallel finite-dimensional final-completeness obligation, with a topology-compatible model inner product and the actual partition-of-unity hypotheses, without changing G2 descendants or supplied-metric generality.  Require `I.IsInteriorPoint p` for point-local geodesic/exponential statements and the weakest `[BoundarylessManifold I M]` class for source-facing all-points contracts; add completeness separately to S28--S29's global cut conclusions and S39's full-ball conclusion.  Schedule F3 after F2, N1 after A2, and N2 after F1/A2/N1 so every row has an ordered closer and C1/C2 consume completed polar/Gaussian producers.  Preserve S42's statement while using the corrected proof normalization.  G2 debt remains the smooth/piecewise-smooth distance bridge, bundled connection producer/regularity, and curvature regressions; unavailable cross-checks are verification debt with removal-or-verification triggers |
+| `G2-curvature-kernel` / `MorganTianLib/Ch01/Curvature.lean` | Added the basis-free constant-curvature model operator and four-tensor, proved their Morgan--Tian third/fourth-slot pairing, and proved the component, Jacobi, index-form, orthonormal-sectional, and finite-orthonormal-basis contraction regressions | Accepted roadmap baseline `80bdb7f7eb6bd1efb3b52b91cbb1293b52dd928d`; Morgan--Tian Definition 1.4 and coordinate formula, pp. 37--38, Definition 1.8, p. 39, and Jacobi/index formulas, pp. 43--44; pinned Mathlib real inner-product and orthonormal-basis APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6` | Keep the algebraic API independent of an unimplemented connection and impose no unnecessary dimension bound; dimensions zero and one remain covered by the contraction theorem.  Make no constant-curvature-manifold, sectional-curvature, or Ricci-curvature claim; keep G2 and F1 blocked on the source-distance and bundled-connection gates |
 
 ## Review and completion checklist
 

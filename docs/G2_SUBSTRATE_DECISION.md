@@ -1,13 +1,14 @@
 # G2 substrate decision
 
 Status: the Mathlib-native construction route was accepted at repository
-commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  The current issue #8
-revision implements the metric, smooth/continuous bundle, Mathlib `C^1`
-distance/topology substrate in `Ch01.Metric`, and the measure/volume bridge
-family in `Ch01.Volume`.  It does not yet identify that distance with
-Morgan--Tian's smooth-path infimum.  G2 is not complete: that source bridge,
-the connection producer, and the curvature-sign regressions below must still
-be implemented and reviewed before F1, F2, or A2 starts.
+commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  `Ch01.Metric` implements the
+metric, smooth/continuous bundle, and Mathlib `C^1` distance/topology substrate;
+`Ch01.Volume` implements the measure/volume bridge family.  The issue #19
+revision adds the independent inner-product-space curvature convention kernel
+and all five algebraic sign/order regressions in `Ch01.Curvature`.  G2 is not
+complete: the distance has not yet been identified with Morgan--Tian's
+smooth-path infimum, and the bundled connection producer remains pending.
+Those gates must be implemented and reviewed before F1, F2, or A2 starts.
 
 Decision date: 2026-08-19 (Asia/Shanghai).
 
@@ -173,11 +174,12 @@ and no second public vocabulary.
 
 ## Frozen coherence contracts
 
-Issue #8 implements these contracts in reviewable dependency slices.  The
-metric through volume sections now have Lean owners named in the bridge ledger;
-the connection and curvature sections remain mandatory before G2 is complete.
-Names are ownership descriptions; review may improve a declaration name
-without changing its representation or semantics.
+The contracts are implemented in reviewable dependency slices.  The metric,
+volume, and algebraic curvature-sign sections now have Lean owners named in the
+bridge ledger; the source-distance correspondence and connection section
+remain mandatory before G2 is complete.  Names are ownership descriptions;
+review may improve a declaration name without changing its representation or
+semantics.
 
 ### Metric, norm, and topology
 
@@ -294,8 +296,9 @@ R_K X Y W = K * (g Y W * X - g X W * Y),
 R4_K X Y Z W = K * (g X Z * g Y W - g X W * g Y Z).
 ```
 
-Before F1 exports curvature, formal regressions must establish all of the
-following signs:
+`Ch01.Curvature` encodes these formulas without a connection or manifold
+producer and establishes all of the following signs before F1 exports
+geometric curvature:
 
 | Consumer boundary | Required regression |
 | --- | --- |
@@ -309,6 +312,13 @@ These are algebraic convention tests, not a claim that a geometric
 constant-curvature manifold has already been constructed.  The later chart
 curvature theorem must be tested against the same operator rather than
 introducing a sign-changing adapter.
+
+The finite-basis contraction theorem assumes only a finitely indexed
+`OrthonormalBasis`.  It needs neither a nontriviality assumption nor a lower
+dimension bound: in dimension zero the paired inner product vanishes, and in
+dimension one the coefficient `finrank Real E - 1` vanishes.  The later
+two-plane and comparison gates retain their separate `2 <= finrank Real E`
+hypotheses.
 
 The source anchor is Morgan--Tian, Definition 1.4 and the coordinate formula,
 pp. 37--38; the Ricci contraction check also fixes the order used by Definition
@@ -344,7 +354,7 @@ The seven mandatory bridge families have these owners and completion tests:
 | Measure/volume | `Ch01.Volume` | Euclidean Hausdorff definition, explicit Borel result type, metric dependence, Euclidean normalization | Implemented by `riemannianVolume`, its explicit Borel indexing, and its open-set, ball, raw-Hausdorff, and Euclidean normalization theorems |
 | Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, and uniqueness | Pending; blocks G2 |
 | Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed | Pending F2 after G2; no compatibility adapter exists |
-| Curvature signs | `Ch01.Curvature` | kernel equation and all five constant-curvature regressions | Pending; blocks G2 |
+| Curvature signs | `Ch01.Curvature` | algebraic model/operator pairing and all five constant-curvature regressions | Implemented by `modelCurvature`, `modelCurvature4`, their pairing and component theorems, the Jacobi/index/sectional regressions, and `sum_modelCurvature4_orthonormalBasis` |
 
 The G2 implementation may split these into focused modules, but the Chapter 1
 umbrella must import every completed public contract.  No module may import a
@@ -372,18 +382,21 @@ Chapter 2/3 file, the reference workspace, or an unmerged PR tree.
 ## Implementation status
 
 The accepted decision slice changed no Lean declaration, package pin,
-workflow, or canonical theorem.  This focused implementation revision adds
-`Ch01.Metric` and `Ch01.Volume`, updates the Chapter 1 umbrella and source
-inventory, and covers the metric, smooth/continuous-bundle, and measure/volume
-rows plus the Mathlib `C^1` side of the distance/topology row without adding a
-compatibility adapter.
-It deliberately adds no smooth-path-infimum equivalence, connection,
-coordinate geodesic, curvature, polar integration, exponential Jacobian, or
+workflow, or canonical theorem.  Subsequent focused revisions add
+`Ch01.Metric`, `Ch01.Volume`, and the algebraic `Ch01.Curvature` kernel to the
+Chapter 1 umbrella.  Together they cover the metric,
+smooth/continuous-bundle, measure/volume, and curvature-sign rows plus the
+Mathlib `C^1` side of the distance/topology row without adding a compatibility
+adapter.  The curvature module defines only an inner-product-space model; it
+does not define the connection-produced manifold curvature API owned by F1.
+These revisions deliberately add no smooth-path-infimum equivalence,
+connection, coordinate geodesic, polar integration, exponential Jacobian, or
 cut-locus claim.
 
 Local diagnostics and axiom/source scans support review of this revision; the
 protected `Lean CI / lake-build (pull_request)` status remains the authoritative
-build check.  Even after this slice merges, G2 remains open until the
-smooth/piecewise-smooth source-distance correspondence, connection producer,
-and all five curvature-sign regressions are reviewed.  F1, F2, and A2 therefore
-remain blocked.
+build check.  The algebraic curvature regressions still require review at their
+exact protected CI head.  Even after this slice merges, G2 remains open until
+the smooth/piecewise-smooth source-distance correspondence and bundled
+connection producer/regularity are implemented and reviewed.  F1, F2, and A2
+therefore remain blocked.
