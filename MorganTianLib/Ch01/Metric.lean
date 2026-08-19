@@ -9,11 +9,14 @@ This module installs an explicit smooth tangent metric through Mathlib's scoped
 There is no project-owned metric type: public statements use
 `Bundle.ContMDiffRiemannianMetric` and `Manifold.riemannianEDist` directly.
 
-The extended Riemannian distance induces the original manifold topology.  On a
-preconnected manifold it is finite: the finite-distance component is clopen,
-and Mathlib's path-infimum API then supplies an actual `C^1` path of finite
-length.  Only the separating extended-metric constructor needs `T3Space`; only
-the finiteness and real-distance results need `PreconnectedSpace`.
+The extended Riemannian distance induces the original manifold topology.  This
+module also records the source-facing notion of a smooth path on `[0, 1]` and
+its finite piecewise-smooth closure, whose length is the sum of Mathlib
+`pathELength`s.  On a preconnected manifold the distance is finite: the
+points reachable by finite piecewise-smooth paths form a nonempty clopen set,
+using smooth inverse-chart segments locally.  Only the separating
+extended-metric constructor needs `T3Space`; only the finiteness and
+real-distance results need `PreconnectedSpace`.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
 Definition 1.1 and the metric-ball discussion on p. 35.
@@ -93,15 +96,388 @@ theorem tangent_topology_eq_norm_topology
     ⟨g.toRiemannianMetric⟩
   rfl
 
+/-! ## Smooth and piecewise-smooth paths -/
+
+/-- A source-facing smooth path from `x` to `y`.
+
+The parameter interval is the closed interval `[0, 1]`; values outside that
+interval do not enter either the regularity condition or the length.  This is
+the smooth path class in Morgan--Tian, Definition 1.1, p. 35. -/
+structure SmoothPath (I : ModelWithCorners ℝ E H) (x y : M) where
+  /-- The underlying map, defined on all of `ℝ` so it can be passed directly to
+  `Manifold.pathELength`. -/
+  toFun : ℝ → M
+  /-- The path starts at `x`. -/
+  source_eq : toFun 0 = x
+  /-- The path ends at `y`. -/
+  target_eq : toFun 1 = y
+  /-- The path is smooth on its parameter interval. -/
+  smoothOn : CMDiff[Set.Icc 0 1] ∞ toFun
+
+namespace SmoothPath
+
+instance {x y : M} : CoeFun (SmoothPath I x y) (fun _ ↦ ℝ → M) :=
+  ⟨SmoothPath.toFun⟩
+
+/-- The extended length of a smooth path, measured by Mathlib's canonical
+Riemannian path-length functional on `[0, 1]`. -/
+noncomputable def eLength [∀ x : M, ENorm (TangentSpace I x)] {x y : M}
+    (p : SmoothPath I x y) : ℝ≥0∞ :=
+  Manifold.pathELength I p 0 1
+
+/-- The constant smooth path. -/
+def refl (x : M) : SmoothPath I x x where
+  toFun := fun _ ↦ x
+  source_eq := rfl
+  target_eq := rfl
+  smoothOn := contMDiffOn_const
+
+omit [IsManifold I ∞ M] in
+/-- A constant smooth path has zero length. -/
+@[simp]
+theorem eLength_refl
+    [Bundle.RiemannianBundle (TangentSpace I : M → Type _)] (x : M) :
+    (refl (I := I) x).eLength = 0 := by
+  simp [eLength, refl, Manifold.pathELength_eq_lintegral_mfderiv_Icc]
+
+/-- Reverse the orientation of a smooth path. -/
+def reverse {x y : M} (p : SmoothPath I x y) : SmoothPath I y x where
+  toFun := p ∘ fun t : ℝ ↦ 1 - t
+  source_eq := by simp [p.target_eq]
+  target_eq := by simp [p.source_eq]
+  smoothOn := by
+    apply p.smoothOn.comp
+    · rw [contMDiffOn_iff_contDiffOn]
+      fun_prop
+    · intro t ht
+      constructor <;> linarith [ht.1, ht.2]
+
+omit [IsManifold I ∞ M] in
+/-- Reversing a smooth path preserves its Riemannian length. -/
+@[simp]
+theorem eLength_reverse [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)]
+    {x y : M} (p : SmoothPath I x y) :
+    p.reverse.eLength = p.eLength := by
+  change Manifold.pathELength I (p ∘ fun t : ℝ ↦ 1 - t) 0 1 =
+    Manifold.pathELength I p 0 1
+  rw [Manifold.pathELength_comp_of_antitoneOn zero_le_one]
+  · norm_num
+  · intro a _ b _ hab
+    dsimp
+    linarith
+  · fun_prop
+  · simpa using p.smoothOn.mdifferentiableOn (by simp)
+
+end SmoothPath
+
+/-- A finite piecewise-smooth path, represented as a typed list of smooth
+segments.  Every segment uses `[0, 1]`; the endpoint indices in `cons` require
+successive segments to meet exactly. -/
+inductive PiecewiseSmoothPath (I : ModelWithCorners ℝ E H) : M → M → Type _
+  /-- The empty path at a point. -/
+  | nil (x : M) : PiecewiseSmoothPath I x x
+  /-- Prepend one smooth segment to a finite piecewise-smooth path. -/
+  | cons {x y z : M} (head : SmoothPath I x y) (tail : PiecewiseSmoothPath I y z) :
+      PiecewiseSmoothPath I x z
+
+namespace SmoothPath
+
+/-- Regard one smooth path as a one-segment piecewise-smooth path. -/
+def toPiecewise {x y : M} (p : SmoothPath I x y) : PiecewiseSmoothPath I x y :=
+  .cons p (.nil _)
+
+end SmoothPath
+
+namespace PiecewiseSmoothPath
+
+/-- Concatenate two finite piecewise-smooth paths. -/
+def append {x y z : M} :
+    PiecewiseSmoothPath I x y → PiecewiseSmoothPath I y z → PiecewiseSmoothPath I x z
+  | .nil _, q => q
+  | .cons head tail, q => .cons head (tail.append q)
+
+/-- Reverse every segment and their order. -/
+def reverse {x y : M} : PiecewiseSmoothPath I x y → PiecewiseSmoothPath I y x
+  | .nil _ => .nil _
+  | .cons head tail => tail.reverse.append (.cons head.reverse (.nil _))
+
+/-- The length of a finite piecewise-smooth path is the sum of the canonical
+`Manifold.pathELength` of its segments. -/
+noncomputable def eLength [∀ x : M, ENorm (TangentSpace I x)] {x y : M} :
+    PiecewiseSmoothPath I x y → ℝ≥0∞
+  | .nil _ => 0
+  | .cons head tail => head.eLength + tail.eLength
+
+omit [IsManifold I ∞ M] in
+/-- Length is additive under concatenation of finite piecewise-smooth paths. -/
+@[simp]
+theorem eLength_append [∀ x : M, ENorm (TangentSpace I x)]
+    {x y z : M} (p : PiecewiseSmoothPath I x y) (q : PiecewiseSmoothPath I y z) :
+    (p.append q).eLength = p.eLength + q.eLength := by
+  induction p with
+  | nil => simp [append, eLength]
+  | cons head tail ih => simp [append, eLength, ih, add_assoc]
+
+omit [IsManifold I ∞ M] in
+/-- A smooth path and its one-segment piecewise form have the same length. -/
+@[simp]
+theorem eLength_toPiecewise [∀ x : M, ENorm (TangentSpace I x)]
+    {x y : M} (p : SmoothPath I x y) :
+    p.toPiecewise.eLength = p.eLength := by
+  simp [SmoothPath.toPiecewise, eLength]
+
+omit [IsManifold I ∞ M] in
+/-- Reversing all segments preserves the total piecewise-smooth length. -/
+@[simp]
+theorem eLength_reverse
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)]
+    {x y : M} (p : PiecewiseSmoothPath I x y) :
+    p.reverse.eLength = p.eLength := by
+  induction p with
+  | nil => simp [reverse, eLength]
+  | cons head tail ih =>
+      simp [reverse, eLength, ih, add_comm]
+
+omit [IsManifold I ∞ M] in
+/-- Mathlib's `C^1` Riemannian distance is at most the length of every finite
+piecewise-smooth path with the same endpoints. -/
+theorem riemannianEDist_le_eLength
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)]
+    {x y : M} (p : PiecewiseSmoothPath I x y) :
+    Manifold.riemannianEDist I x y ≤ p.eLength := by
+  induction p with
+  | nil x => simp [eLength, Manifold.riemannianEDist_self]
+  | @cons x y z head tail ih =>
+      exact Manifold.riemannianEDist_triangle.trans
+        (add_le_add
+          (Manifold.riemannianEDist_le_pathELength
+            (head.smoothOn.of_le (by simp)) head.source_eq head.target_eq zero_le_one)
+          ih)
+
+end PiecewiseSmoothPath
+
+/-! ### Source-facing length infima -/
+
+/-- The infimum of lengths of smooth paths from `x` to `y`.
+
+This is an auxiliary value used only to state correspondence with
+`Manifold.riemannianEDist`; it does not install another ambient distance or
+metric structure. -/
+noncomputable def smoothPathEDist
+    (I : ModelWithCorners ℝ E H) [∀ x : M, ENorm (TangentSpace I x)] (x y : M) : ℝ≥0∞ :=
+  ⨅ p : SmoothPath I x y, p.eLength
+
+/-- The infimum of the summed lengths of finite piecewise-smooth paths from
+`x` to `y`.  The empty infimum is `∞`. -/
+noncomputable def piecewiseSmoothPathEDist
+    (I : ModelWithCorners ℝ E H) [∀ x : M, ENorm (TangentSpace I x)] (x y : M) : ℝ≥0∞ :=
+  ⨅ p : PiecewiseSmoothPath I x y, p.eLength
+
+omit [IsManifold I ∞ M] in
+/-- Allowing finitely many smooth pieces can only decrease the smooth-path
+length infimum. -/
+theorem piecewiseSmoothPathEDist_le_smoothPathEDist
+    [∀ x : M, ENorm (TangentSpace I x)] (x y : M) :
+    piecewiseSmoothPathEDist I x y ≤ smoothPathEDist I x y := by
+  rw [smoothPathEDist]
+  refine le_iInf fun p ↦ ?_
+  exact iInf_le_of_le p.toPiecewise (PiecewiseSmoothPath.eLength_toPiecewise p).le
+
+omit [IsManifold I ∞ M] in
+/-- The canonical Mathlib `C^1` distance is bounded above by the
+piecewise-smooth path-length infimum. -/
+theorem riemannianEDist_le_piecewiseSmoothPathEDist
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)] (x y : M) :
+    Manifold.riemannianEDist I x y ≤ piecewiseSmoothPathEDist I x y := by
+  rw [piecewiseSmoothPathEDist]
+  exact le_iInf fun p ↦ p.riemannianEDist_le_eLength
+
+omit [IsManifold I ∞ M] in
+/-- In particular, the canonical Mathlib `C^1` distance is bounded above by
+the infimum over globally smooth paths. -/
+theorem riemannianEDist_le_smoothPathEDist
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)] (x y : M) :
+    Manifold.riemannianEDist I x y ≤ smoothPathEDist I x y :=
+  (riemannianEDist_le_piecewiseSmoothPathEDist x y).trans
+    (piecewiseSmoothPathEDist_le_smoothPathEDist x y)
+
+omit [IsManifold I ∞ M] in
+/-- The smooth-path length infimum vanishes on the diagonal. -/
+@[simp]
+theorem smoothPathEDist_self
+    [Bundle.RiemannianBundle (TangentSpace I : M → Type _)] (x : M) :
+    smoothPathEDist I x x = 0 := by
+  apply le_antisymm _ bot_le
+  exact (iInf_le (fun p : SmoothPath I x x ↦ p.eLength) (SmoothPath.refl x)).trans_eq
+    (SmoothPath.eLength_refl x)
+
+omit [IsManifold I ∞ M] in
+/-- The piecewise-smooth path-length infimum vanishes on the diagonal. -/
+@[simp]
+theorem piecewiseSmoothPathEDist_self
+    [∀ x : M, ENorm (TangentSpace I x)] (x : M) :
+    piecewiseSmoothPathEDist I x x = 0 := by
+  apply le_antisymm _ bot_le
+  exact (iInf_le (fun p : PiecewiseSmoothPath I x x ↦ p.eLength) (.nil x)).trans_eq rfl
+
+/-! ### Local smooth chart segments -/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Every point has a neighborhood whose points are joined to it by smooth
+paths of finite Riemannian length.
+
+The path is the inverse-chart image of an affine segment.  The convexity of a
+model-with-corners range keeps the segment in the chart, while a local bound on
+the inverse chart derivative gives the finite-length estimate. -/
+theorem eventually_exists_smoothPath_eLength_lt_top
+    [Bundle.RiemannianBundle (TangentSpace I : M → Type _)]
+    [IsContinuousRiemannianBundle E (TangentSpace I : M → Type _)] (x : M) :
+    ∀ᶠ y in 𝓝 x, ∃ p : SmoothPath I x y, p.eLength < ⊤ := by
+  letI (z : E) : NormedAddCommGroup (TangentSpace 𝓘(ℝ, E) z) :=
+    normedAddCommGroupTangentSpaceVectorSpace z
+  letI (z : E) : NormedSpace ℝ (TangentSpace 𝓘(ℝ, E) z) :=
+    normedSpaceTangentSpaceVectorSpace z
+  rcases eventually_enorm_mfderivWithin_symm_extChartAt_lt I x with
+    ⟨C, C_pos, hC⟩
+  obtain ⟨r, r_pos, hr⟩ : ∃ r > 0,
+      Metric.ball (extChartAt I x x) r ∩ range I ⊆ (extChartAt I x).target ∩
+        {y | ‖mfderiv[range I] (extChartAt I x).symm y‖ₑ < C} :=
+    Metric.mem_nhdsWithin_iff.1 (inter_mem (extChartAt_target_mem_nhdsWithin x) hC)
+  have hgood :
+      (extChartAt I x) ⁻¹' (Metric.ball (extChartAt I x x) r ∩ range I) ∈ 𝓝 x := by
+    apply extChartAt_preimage_mem_nhds_of_mem_nhdsWithin (by simp)
+    rw [inter_comm]
+    exact inter_mem_nhdsWithin _ (Metric.ball_mem_nhds _ r_pos)
+  filter_upwards [hgood, chart_source_mem_nhds H x] with y hy hysource
+  let η := ContinuousAffineMap.lineMap (R := ℝ) (extChartAt I x x) (extChartAt I x y)
+  let γ := (extChartAt I x).symm ∘ η
+  have hη : Icc 0 1 ⊆ ⇑η ⁻¹' ((extChartAt I x).target ∩
+      {y | ‖mfderiv[range I] (extChartAt I x).symm y‖ₑ < C}) := by
+    simp only [← image_subset_iff, ContinuousAffineMap.coe_lineMap_eq,
+      ← segment_eq_image_lineMap, η]
+    apply Subset.trans _ hr
+    exact ((convex_ball _ _).inter I.convex_range).segment_subset (by simp [r_pos]) hy
+  simp only [preimage_inter, subset_inter_iff] at hη
+  have η_smooth : CMDiff[Icc 0 1] ∞ η := by
+    apply ContMDiff.contMDiffOn
+    rw [contMDiff_iff_contDiff]
+    exact ContinuousAffineMap.contDiff _
+  have γ_smooth : CMDiff[Icc 0 1] ∞ γ :=
+    (contMDiffOn_extChartAt_symm x).comp η_smooth hη.1
+  let p : SmoothPath I x y :=
+    { toFun := γ
+      source_eq := by simp [γ, η, ContinuousAffineMap.coe_lineMap_eq]
+      target_eq := by simp [γ, η, ContinuousAffineMap.coe_lineMap_eq, hysource]
+      smoothOn := γ_smooth }
+  refine ⟨p, ?_⟩
+  change Manifold.pathELength I γ 0 1 < ⊤
+  have hlength :
+      Manifold.pathELength I γ 0 1 ≤
+        C * edist (extChartAt I x x) (extChartAt I x y) := by
+    rw [← lintegral_fderiv_lineMap_eq_edist,
+      Manifold.pathELength_eq_lintegral_mfderivWithin_Icc,
+      ← MeasureTheory.lintegral_const_mul' _ _ ENNReal.coe_ne_top]
+    apply MeasureTheory.setLIntegral_mono' measurableSet_Icc (fun t ht ↦ ?_)
+    have hderiv : mfderiv[Icc 0 1] γ t =
+        (mfderiv[range I] (extChartAt I x).symm (η t)) ∘L
+          (mfderiv[Icc 0 1] η t) := by
+      apply mfderivWithin_comp
+      · exact mdifferentiableWithinAt_extChartAt_symm (hη.1 ht)
+      · exact η_smooth.mdifferentiableOn (by simp) t ht
+      · exact hη.1.trans (preimage_mono (extChartAt_target_subset_range x))
+      · rw [uniqueMDiffWithinAt_iff_uniqueDiffWithinAt]
+        exact uniqueDiffOn_Icc zero_lt_one t ht
+    have hderiv_apply : mfderiv[Icc 0 1] γ t 1 =
+        (mfderiv[range I] (extChartAt I x).symm (η t))
+          (mfderiv[Icc 0 1] η t 1) := congr($hderiv 1)
+    rw [hderiv_apply]
+    apply (ContinuousLinearMap.le_opENorm _ _).trans
+    gcongr
+    · exact (hη.2 ht).le
+    · simp only [mfderivWithin_eq_fderivWithin]
+      exact le_of_eq rfl
+  exact hlength.trans_lt
+    (ENNReal.mul_lt_top ENNReal.coe_lt_top (edist_lt_top _ _))
+
+/-- Any two points of a preconnected manifold are joined by a finite
+piecewise-smooth path of finite Riemannian length.
+
+This upgrades the regularity of `exists_contMDiff_path` without adding
+finite-dimensionality, completeness, boundarylessness, or separation
+assumptions. -/
+theorem exists_piecewiseSmooth_path [PreconnectedSpace M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    ∃ p : PiecewiseSmoothPath I x y, p.eLength < ⊤ := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
+    continuousRiemannianBundle g
+  let s : Set M :=
+    {z | ∃ p : PiecewiseSmoothPath I x z, p.eLength < ⊤}
+  have hs_open : IsOpen s := by
+    rw [isOpen_iff_mem_nhds]
+    intro z hz
+    change ∃ p : PiecewiseSmoothPath I x z, p.eLength < ⊤ at hz
+    rcases hz with ⟨p, hp⟩
+    filter_upwards [eventually_exists_smoothPath_eLength_lt_top (I := I) z] with w hw
+    rcases hw with ⟨q, hq⟩
+    change ∃ p : PiecewiseSmoothPath I x w, p.eLength < ⊤
+    refine ⟨p.append q.toPiecewise, ?_⟩
+    rw [PiecewiseSmoothPath.eLength_append, PiecewiseSmoothPath.eLength_toPiecewise]
+    exact ENNReal.add_lt_top.2 ⟨hp, hq⟩
+  have hs_compl_open : IsOpen sᶜ := by
+    rw [isOpen_iff_mem_nhds]
+    intro z hz
+    change ¬∃ p : PiecewiseSmoothPath I x z, p.eLength < ⊤ at hz
+    filter_upwards [eventually_exists_smoothPath_eLength_lt_top (I := I) z] with w hw
+    rcases hw with ⟨q, hq⟩
+    change ¬∃ p : PiecewiseSmoothPath I x w, p.eLength < ⊤
+    intro hw_reachable
+    rcases hw_reachable with ⟨p, hp⟩
+    apply hz
+    refine ⟨p.append q.reverse.toPiecewise, ?_⟩
+    rw [PiecewiseSmoothPath.eLength_append, PiecewiseSmoothPath.eLength_toPiecewise,
+      SmoothPath.eLength_reverse]
+    exact ENNReal.add_lt_top.2 ⟨hp, hq⟩
+  have hs_clopen : IsClopen s := ⟨isOpen_compl_iff.mp hs_compl_open, hs_open⟩
+  have hs_nonempty : s.Nonempty := by
+    refine ⟨x, ?_⟩
+    change ∃ p : PiecewiseSmoothPath I x x, p.eLength < ⊤
+    exact ⟨.nil x, by simp [PiecewiseSmoothPath.eLength]⟩
+  have hs_univ : s = Set.univ := hs_clopen.eq_univ hs_nonempty
+  have hy : y ∈ s := by rw [hs_univ]; exact Set.mem_univ y
+  exact hy
+
+/-- On a preconnected manifold the auxiliary piecewise-smooth path-length
+infimum is finite, under the same assumption boundary as
+`riemannianEDist_lt_top`. -/
+theorem piecewiseSmoothPathEDist_lt_top [PreconnectedSpace M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    piecewiseSmoothPathEDist I x y < ⊤ := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  rcases exists_piecewiseSmooth_path g x y with ⟨p, hp⟩
+  exact (iInf_le (fun q : PiecewiseSmoothPath I x y ↦ q.eLength) p).trans_lt hp
+
 /-! ## Extended and finite Riemannian distance -/
 
 /-- On a preconnected manifold, the Riemannian extended distance associated to
 an explicit smooth metric is finite.  No separation, dimension, boundary, or
 completeness hypothesis is needed.
 
-The proof shows that the points at finite distance from `x` form a nonempty
-clopen set.  Local chart segments make this set and its complement open; then
-preconnectedness makes it all of `M`. -/
+The finite piecewise-smooth witness supplied by
+`exists_piecewiseSmooth_path` bounds the canonical `C^1` infimum. -/
 theorem riemannianEDist_lt_top [PreconnectedSpace M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (x y : M) :
@@ -110,42 +486,8 @@ theorem riemannianEDist_lt_top [PreconnectedSpace M]
     Manifold.riemannianEDist I x y < ⊤ := by
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
-  letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
-    continuousRiemannianBundle g
-  let s : Set M := {z | Manifold.riemannianEDist I x z < ⊤}
-  have hs_open : IsOpen s := by
-    rw [isOpen_iff_mem_nhds]
-    intro p hp
-    filter_upwards
-      [eventually_riemannianEDist_lt I p (show (0 : ℝ≥0∞) < 1 by simp)] with q hpq
-    change Manifold.riemannianEDist I x q < ⊤
-    exact Manifold.riemannianEDist_triangle.trans_lt
-      (ENNReal.add_lt_top.2 ⟨hp, hpq.trans (by simp)⟩)
-  have hs_compl_open : IsOpen sᶜ := by
-    rw [isOpen_iff_mem_nhds]
-    intro p hp
-    change ¬Manifold.riemannianEDist I x p < ⊤ at hp
-    have hxp : Manifold.riemannianEDist I x p = ⊤ := top_unique (not_lt.mp hp)
-    filter_upwards
-      [eventually_riemannianEDist_lt I p (show (0 : ℝ≥0∞) < 1 by simp)] with q hpq
-    change ¬Manifold.riemannianEDist I x q < ⊤
-    intro hxq
-    have hsum :
-        Manifold.riemannianEDist I x q + Manifold.riemannianEDist I q p < ⊤ :=
-      ENNReal.add_lt_top.2
-        ⟨hxq, (Manifold.riemannianEDist_comm.trans_lt hpq).trans (by simp)⟩
-    have htri :
-        Manifold.riemannianEDist I x p ≤
-          Manifold.riemannianEDist I x q + Manifold.riemannianEDist I q p :=
-      Manifold.riemannianEDist_triangle
-    rw [hxp] at htri
-    exact (not_le_of_gt hsum) htri
-  have hs_clopen : IsClopen s := ⟨isOpen_compl_iff.mp hs_compl_open, hs_open⟩
-  have hs_nonempty : s.Nonempty :=
-    ⟨x, by simp [s, Manifold.riemannianEDist_self]⟩
-  have hs_univ : s = Set.univ := hs_clopen.eq_univ hs_nonempty
-  have hy : y ∈ s := by rw [hs_univ]; exact Set.mem_univ y
-  exact hy
+  rcases exists_piecewiseSmooth_path g x y with ⟨p, hp⟩
+  exact p.riemannianEDist_le_eLength.trans_lt hp
 
 /-- Any two points of a preconnected manifold are joined by a `C^1` path of
 finite Riemannian length.  This is the path witness underlying
