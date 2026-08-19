@@ -10,15 +10,18 @@ audit recorded below.  The Mathlib-native G2 route in
 at `aa45255fc76b3de3870f6411dde9b1c733e39074`.  At accepted roadmap baseline
 `80bdb7f7eb6bd1efb3b52b91cbb1293b52dd928d`, `Ch01.Metric` implements the
 metric and Mathlib `C^1` distance/topology substrate, and `Ch01.Volume`
-implements the normalized-volume family.  The merged `Ch01.Curvature` module
-implements the independent inner-product-space sign/order kernel and its five
-regressions, while this revision adds the bundled Levi--Civita producer and
-smooth consumer regularity in `Ch01.Connection`.  The correspondence with
-Morgan--Tian's smooth-path distance remains pending, so G2 and its descendants
-remain open.  This file is the
-repository-owned route for the Chapter 1 library.  It is not a transcription
-of the project brief, and each implementation claim is limited to the exact
-audited revision named below.
+implements the normalized-volume family.  `Ch01.Curvature` implements the
+independent inner-product-space curvature sign/order kernel and its five
+regressions, and the merged `Ch01.Connection` module implements the bundled
+Levi--Civita producer with smooth consumer regularity.  This revision adds
+source-facing smooth and finite piecewise-smooth paths, their canonical lengths
+and infima, the comparison from Mathlib's distance to both infima, and finite
+piecewise-smooth witnesses on preconnected manifolds.  Endpoint-preserving,
+length-controlled approximation of `C^1` paths and the reverse infimum
+comparison remain pending, so G2 and its descendants remain open.  This file is
+the repository-owned route for the Chapter 1 library.  It is not a
+transcription of the project brief, and each implementation claim is limited
+to the exact audited revision named below.
 
 ## Authority and evidence
 
@@ -301,7 +304,7 @@ claims the result.
 
 | ID | Source claim and precise evidence | Public owner/API | Node | Hard prerequisites | Proof-risk gate | Status in this revision |
 | --- | --- | --- | --- | --- | --- | --- |
-| S01 | Metric, finite-dimensional existence under the source's standing manifold convention, smooth-path distance, and metric balls: Definition 1.1 and following paragraphs, p. 35; `morganTian2007` | `Metric`: direct Mathlib metric, a finite-dimensional existence theorem, and distance/topology/ball bridges | E1 + G2 | E1: topology-compatible `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, `T2Space B`, and the smooth bundle/manifold instances used by partition of unity; G2: pinned bundle metric and path-length APIs | derive the arbitrary finite-dimensional tangent-bundle corollary without a second metric representation or an arbitrary-Banach existence claim, and prove smooth and accepted piecewise-smooth path infima equal Mathlib's `C^1` infimum | **Partial.** `Ch01.Metric` proves coherence for a supplied metric without imposing E1's finite-dimensional hypotheses; E1 metric existence and the source-distance bridge are open |
+| S01 | Metric, finite-dimensional existence under the source's standing manifold convention, smooth-path distance, and metric balls: Definition 1.1 and following paragraphs, p. 35; `morganTian2007` | `Metric`: direct Mathlib metric, a finite-dimensional existence theorem, and distance/topology/ball bridges | E1 + G2 | E1: topology-compatible `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, `T2Space B`, and the smooth bundle/manifold instances used by partition of unity; G2: pinned bundle metric and path-length APIs | derive the arbitrary finite-dimensional tangent-bundle corollary without a second metric representation or an arbitrary-Banach existence claim, and prove smooth and accepted piecewise-smooth path infima equal Mathlib's `C^1` infimum | **Partial.** `Ch01.Metric` proves supplied-metric coherence; defines smooth and finite piecewise-smooth paths with canonical length; proves `riemannianEDist ≤ piecewiseSmoothPathEDist ≤ smoothPathEDist`; and constructs finite piecewise-smooth witnesses on preconnected manifolds without extra dimension, completeness, boundary, or separation assumptions. E1 metric existence and the endpoint-preserving, length-controlled approximation needed for the reverse comparisons and equality are open |
 | S02 | Levi--Civita existence and uniqueness: Theorem 1.2, pp. 35--36; `morganTian2007`; `doCarmo1992`, Ch. 2, pp. 44--51; `lee2018`, Thm. 5.10 | `Connection.leviCivitaConnection` | G2 -> F1 | S01 and bundled `CovariantDerivative` producer | construct the connection from the metric and prove compatibility, torsion zero, Koszul, regularity, and uniqueness on the same field class | **Complete.** `Ch01.Connection` constructs Mathlib's exact bundled type and proves metric compatibility, zero torsion, the source-ordered Koszul formula, uniqueness for a differentiable field at a point and arbitrary tangent direction, and smooth `ContMDiffCovariantDerivative` regularity |
 | S03 | Christoffel equation (1.1) (`Gamma`), p. 36; `morganTian2007` | `Connection.christoffel_formula` | F1 | S02 and chart differentiation | chart formula must be proved equivalent to the bundled connection; chart data stays private | Open |
 | S04 | Hessian equation (1.2) and Lemma 1.3 (`Hessian`, `Hessformula`), pp. 36--37; `morganTian2007` | `Connection.hessian` and symmetry/tensor/coordinate lemmas | F1 | S02--S03 | align covector versus gradient conventions and prove tensoriality at the advertised regularity | Open |
@@ -460,13 +463,16 @@ Node contracts:
 - **G2** (`G1`, human gate): first merge the repository-owned substrate
   selection in `docs/G2_SUBSTRATE_DECISION.md`; then implement and prove its
   metric/distance/measure and connection bridges, audit assumptions, and
-  freeze curvature signs.  The metric and Mathlib `C^1` distance/topology
-  families are present in `Ch01.Metric`, the measure/volume family is present
-  in `Ch01.Volume`, and the bundled connection producer/regularity is present
-  in `Ch01.Connection`.  The algebraic sign/order model and all five regressions
-  are present in `Ch01.Curvature`; that kernel does not claim a manifold
-  curvature API.  The source smooth/piecewise-smooth correspondence still
-  blocks every descendant.
+  freeze curvature signs.  The metric, Mathlib `C^1` distance/topology, smooth
+  and finite piecewise-smooth path types, canonical-to-source infimum
+  inequalities, and finite preconnected witness are present in `Ch01.Metric`;
+  the measure/volume family is present in `Ch01.Volume`; the bundled connection
+  producer and regularity are present in `Ch01.Connection`; and the algebraic
+  sign/order model and all five regressions are present in `Ch01.Curvature`.
+  Endpoint-preserving, length-controlled approximation of near-minimizing
+  `C^1` paths and the resulting reverse inequalities/equalities remain open.
+  That analytic bridge still blocks every descendant; the algebraic kernel does
+  not claim a manifold curvature API.
 - **F1** (`G2`): connection, Hessian/function and tensor connection
   Laplacians, curvature, Bianchi, Ricci/scalar, divergence/Bochner,
   naturality, and rescaling.
@@ -614,11 +620,11 @@ Hard gates are recorded in the decision:
   signature, instance, axiom, and source-fidelity audit.
 
 The selected route was accepted through human review and merge at
-`aa45255fc76b3de3870f6411dde9b1c733e39074`.  G2 remains open until the
-current connection slice is reviewed at its protected CI head and the
-smooth/piecewise-smooth source-distance correspondence is implemented and
-reviewed.  The independent curvature sign/order kernel is already present from
-its merged implementation slice.
+`aa45255fc76b3de3870f6411dde9b1c733e39074`.  The curvature sign/order kernel
+and bundled connection producer/regularity are merged, and the
+smooth/piecewise-smooth path foundation now has a Lean implementation.
+G2 remains open until endpoint-preserving, length-controlled approximation
+proves the reverse source-distance comparison and equality.
 
 ## Provisional debt and replacement triggers
 
@@ -691,6 +697,7 @@ reviewed commit.  The audit history is:
 | `G1-review-response` / `67e2bff29b6c048a0f340808e3d2e44050f98212` | Replaced broad metric source-section assumptions with exact exported contexts, made the candidate source count reproducible, audited three concrete unmerged Mathlib proposals, and corrected the unsupported claim that both spherical normalized limits were already proved | Pinned Mathlib `@Bundle.RiemannianMetric`, `@Bundle.RiemannianBundle`, continuous, and smooth metric signatures; candidate `60c3e1f6493646d667a0bb645f99110a34d26e00` tree and line totals; Mathlib PR #36845 head `41e2b25a520d7a24f37062855d2b091dab7a5d9d`, PR #36036 head `31613e7e48c4559a8be4de48121c911d74586744`, and PR #33714 head `c4cbb8b896a4db75bf49cf1ab0a898232cede01e`; current `Comparison.Model` declarations | Keep Mathlib pinned at `520045ab`, keep G2 open, count no PR declaration as available source, and retain both positive-curvature normalized limits as pending A1 work |
 | `G2-selection` / `docs/G2_SUBSTRATE_DECISION.md` | Selected Mathlib-native construction, resolved all eight G1 questions, froze the explicit metric, Euclidean-normalized Hausdorff-volume, bundled-connection, assumption, and source-aligned curvature-sign contracts, and named migration triggers | Project baseline `2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2`; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` and Apache license; merged Mathlib PR #34697 and its pinned `μHE` source; unchanged candidate main `60c3e1f6493646d667a0bb645f99110a34d26e00`; open candidate PR #40 and unchanged Mathlib PR heads #36845, #36036, and #33714 on 2026-08-19 | Select route 3 only when this revision is merged; add no dependency or facade; keep G2 and all geometric descendants blocked until the coherence kernel lands |
 | `G2-metric-volume` / `MorganTianLib/Ch01/{Metric,Volume}.lean` | Installed one scoped Mathlib bundle metric; proved its smooth/continuous, fibre inner/norm/topology, finite `C^1`-path, Mathlib `edist`/`dist`/ball, Borel, and normalized-volume bridges; exported both focused modules through the Chapter 1 umbrella | Accepted route commit `aa45255fc76b3de3870f6411dde9b1c733e39074`; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` Riemannian bundle/`C^1` path-distance and Euclidean Hausdorff measure APIs; Morgan--Tian Definition 1.1 as the distinct smooth-path target and volume usage on pp. 35, 45--50; merged Mathlib PRs #27250, #27462, and #34697 as API provenance | Keep these direct Mathlib representations and introduce no compatibility adapter; retain S01 as partial until the smooth/piecewise-smooth path correspondence and equality of infima are proved; keep G2, F1, F2, and A2 blocked on that bridge, the connection producer, and all curvature-sign regressions |
+| `G2-smooth-path-foundation` / `MorganTianLib/Ch01/Metric.lean` | Added source-facing smooth paths on `[0, 1]`, endpoint-typed finite piecewise-smooth paths, summed canonical lengths, both canonical-to-source infimum inequalities, local smooth chart segments, and finite piecewise-smooth witnesses on preconnected manifolds; retained the existing weak assumption boundary and added no ambient metric structure | Morgan--Tian Definition 1.1 and following paragraph, p. 35; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` `Riemannian.PathELength` and `Riemannian.Basic`; [Mathlib PR #26778](https://github.com/leanprover-community/mathlib4/pull/26778) as provenance for the deliberate canonical `C^1` infimum | Keep the auxiliary infima only as correspondence statements. Retain S01 and G2 as partial until an endpoint-preserving, length-controlled approximation of near-minimizing `C^1` paths proves the reverse inequalities and equality; retain the separate E1 and bundled-connection gates |
 | `A1-positive-scalar` / `e874c4c7b6126984488c487cbb78077828233457` | Completed the positive-curvature scalar boundary in `Comparison.Model`: both requested origin limits, strong logarithmic-derivative normalization, the regular Riccati ODE, the lower Riccati comparison used by the upper-sectional branch, scalar Sturm comparison and positivity, public flat corollaries, and public exact-model regressions | Morgan--Tian Definition 1.30 and upper-comparison discussion, pp. 48--49; Petersen 2016 Section 6.4, where Cor. 6.4.2 directly supports the scalar Riccati theorem while Thms. 6.4.3/6.4.6 are geometric targets and cross-checks, not statements of the scalar Wronskian theorem; pinned Mathlib derivative-slope, logarithmic derivative, interval-integral fundamental theorem, trigonometric bound, and derivative-monotonicity APIs; pinned Mathlib source search found no packaged geometric Riccati/Sturm analogue | Keep the complete scalar implementation, including its interval-integral proof, in standalone analytic `Comparison.Model`; export the exact-model regressions with the public comparison theorems and flat corollaries; leave vector/operator Riccati, trace, determinant, and all manifold/Jacobi/polar bridges to dependent issues |
 | `A1-positive-scalar-review-response` / `24afcb8519006e44b680f6bf749aa64925d8f31e` | Replaced the unrelated real-log import with the canonical logarithmic-derivative owner; moved the interval-FTC-dependent Riccati proof to `Comparison.PositiveRiccati`; made both exact-model regressions private; qualified the Sturm/Jacobi producer and Petersen attribution without changing the public comparison theorems or flat corollaries | Pinned Mathlib `Mathlib/Analysis/Calculus/LogDeriv.lean` at `520045ab14e26149ee970e2e617ca04b09bde5d6` and the exact import-set LSP probe; Petersen 2016 Section 6.4, Cor. 6.4.2 and geometric Thms. 6.4.3/6.4.6, pp. 254--257; exact diffs from `e874c4c7b6126984488c487cbb78077828233457` and review artifacts for the import, visibility, source, and module-boundary findings | Keep model profiles, origin estimates, and ODE facts independent of measure integration; import focused `Comparison.PositiveRiccati` through the Chapter 1 umbrella; retain exact-model instantiations only as private compile-time checks; in the later Jacobi bridge apply scalar Sturm on the nonvanishing interval before a hypothetical first zero and extend to the endpoint by continuity |
 | `A1-operator-riccati` / `cc1ad4e3d445dee8878b760182b07375a15571b9` | Added quadratic-form operator Riccati comparison in both curvature directions, operator-norm singular normalization, flat corollaries, reusable minimum-Rayleigh facts, and private exact-model regressions; generalized the upper theorem beyond finite dimension and confined finite-dimensional nontriviality to the lower extremal-eigenvalue proof | Morgan--Tian Chapter 1 comparison discussion and Theorem 1.31, pp. 48--49; Petersen 2016 Section 6.4, Cor. 6.4.2 and geometric Thms. 6.4.3/6.4.6, pp. 254--257; pinned Mathlib `Analysis.InnerProductSpace.Rayleigh`, continuous-linear-map calculus, and left-slope fencing APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; [Mathlib PR #4920](https://github.com/leanprover-community/mathlib4/pull/4920) for `hasEigenvector_of_isMinOn`, [PR #35173](https://github.com/leanprover-community/mathlib4/pull/35173) ("Rayleigh quotients are bounded above by the operator norm"), and [PR #35464](https://github.com/leanprover-community/mathlib4/pull/35464) for sharp symmetric-operator norm bounds | Keep `Comparison.OperatorRiccati` manifold-free and expose it through the Chapter 1 umbrella; unlike the reference prior art, keep support-function and barrier machinery private and import no Jacobi records or geometric facades; leave vector Sturm, trace Riccati, determinant/volume-density consequences, and every manifold/Jacobi/polar producer pending |
