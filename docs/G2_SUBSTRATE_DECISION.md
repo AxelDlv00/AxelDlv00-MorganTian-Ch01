@@ -2,10 +2,12 @@
 
 Status: the Mathlib-native construction route was accepted at repository
 commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  The current issue #8
-revision implements the metric, smooth/continuous bundle, distance/topology,
-and measure/volume bridge families in `Ch01.Metric`.  G2 is not complete:
-the connection producer and curvature-sign regressions below must still be
-implemented and reviewed before F1, F2, or A2 starts.
+revision implements the metric, smooth/continuous bundle, Mathlib `C^1`
+distance/topology substrate, and measure/volume bridge families in
+`Ch01.Metric`.  It does not yet identify that distance with Morgan--Tian's
+smooth-path infimum.  G2 is not complete: that source bridge, the connection
+producer, and the curvature-sign regressions below must still be implemented
+and reviewed before F1, F2, or A2 starts.
 
 Decision date: 2026-08-19 (Asia/Shanghai).
 
@@ -213,6 +215,14 @@ This contract formalizes Morgan--Tian, Definition 1.1 and the metric-ball
 paragraph on p. 35; it does not add a stronger global hypothesis to that local
 definition.
 
+The current `Ch01.Metric.exists_contMDiff_path` theorem proves only a
+`CMDiff 1` (`C^1`) witness, exactly matching the regularity in Mathlib's
+`riemannianEDist` infimum.  A `C^1` path need not be smooth.  The required
+piecewise-smooth witness and equality between the Mathlib `C^1` infimum and
+Morgan--Tian's smooth-path infimum therefore remain pending; no additional
+completeness, boundarylessness, or finite-dimensionality assumption is needed
+or added to the existing theorem.
+
 ### Riemannian volume
 
 The sole volume measure is the full-dimensional Euclidean-normalized Hausdorff
@@ -328,7 +338,7 @@ The seven mandatory bridge families have these owners and completion tests:
 | --- | --- | --- | --- |
 | Metric data | `Ch01.Metric` | one installation path plus fibre inner/norm/topology equalities | Implemented by `contMDiffRiemannianBundle`, `inner_eq_metric`, `norm_eq_sqrt_metric`, and `tangent_topology_eq_norm_topology` |
 | Smooth/continuous bundle | `Ch01.Metric` | explicit successful instance synthesis at the selected regularity | Implemented by `contMDiffRiemannianBundle` and `continuousRiemannianBundle` |
-| Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, and ball equalities | Implemented, including the clopen finite-distance proof and its actual `C^1` path witness |
+| Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, ball equalities, and the accepted smooth/piecewise-smooth source correspondence | Partially implemented: the clopen proof, `C^1` witness, and all Mathlib `edist`/`dist`/topology/ball equalities are proved; the smooth/piecewise-smooth witness and equality with the source path infimum remain pending |
 | Measure/volume | focused section of `Ch01.Metric` | Euclidean Hausdorff definition, Borel facts, metric dependence, Euclidean normalization | Implemented by `riemannianVolume` and its Borel, ball, raw-Hausdorff, and Euclidean normalization theorems |
 | Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, and uniqueness | Pending; blocks G2 |
 | Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed | Pending F2 after G2; no compatibility adapter exists |
@@ -362,12 +372,15 @@ Chapter 2/3 file, the reference workspace, or an unmerged PR tree.
 The accepted decision slice changed no Lean declaration, package pin,
 workflow, or canonical theorem.  This focused implementation revision adds
 `Ch01.Metric`, updates the Chapter 1 umbrella and source inventory, and covers
-the first four bridge-ledger rows without adding a compatibility adapter.
-It deliberately adds no connection, coordinate geodesic, curvature, polar
-integration, exponential Jacobian, or cut-locus claim.
+the metric, smooth/continuous-bundle, and measure/volume rows plus the Mathlib
+`C^1` side of the distance/topology row without adding a compatibility adapter.
+It deliberately adds no smooth-path-infimum equivalence, connection,
+coordinate geodesic, curvature, polar integration, exponential Jacobian, or
+cut-locus claim.
 
 Local diagnostics and axiom/source scans support review of this revision; the
 protected `Lean CI / lake-build (pull_request)` status remains the authoritative
-build check.  Even after this slice merges, G2 remains open until the connection
-producer and all five curvature-sign regressions are reviewed.  F1, F2, and A2
-therefore remain blocked.
+build check.  Even after this slice merges, G2 remains open until the
+smooth/piecewise-smooth source-distance correspondence, connection producer,
+and all five curvature-sign regressions are reviewed.  F1, F2, and A2 therefore
+remain blocked.

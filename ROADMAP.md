@@ -5,9 +5,11 @@ Status: accepted bootstrap route at repository commit
 increment and completed G1 evidence audit recorded below.  The Mathlib-native
 G2 route in [`docs/G2_SUBSTRATE_DECISION.md`](docs/G2_SUBSTRATE_DECISION.md)
 was accepted at `aa45255fc76b3de3870f6411dde9b1c733e39074`.  The current
-revision implements its metric, distance, topology, and normalized-volume
-families in `Ch01.Metric`.  G2 remains open until the selected connection and
-curvature-sign kernel is implemented and reviewed.  This file is the
+revision implements its metric, Mathlib `C^1` distance/topology substrate, and
+normalized-volume families in `Ch01.Metric`.  The correspondence with
+Morgan--Tian's smooth-path distance remains pending.  G2 remains open until
+that source bridge, the selected connection, and the curvature-sign kernel are
+implemented and reviewed.  This file is the
 repository-owned route for the Chapter 1 library.  It is not a transcription
 of the project brief, and each implementation claim is limited to the exact
 audited revision named below.
@@ -148,8 +150,10 @@ choices are:
   local `Bundle.RiemannianBundle` installation.  There is no project or
   candidate metric alias.  `pathELength` and `riemannianEDist` are the induced
   length/distance infrastructure.  `Ch01.Metric` proves fibre inner, norm,
-  topology, ambient `edist`/`dist`, finite-path, and `Metric.ball` coherence.
-  Two unrelated public metric or distance structures are forbidden.
+  topology, ambient `edist`/`dist`, finite `C^1`-path, and `Metric.ball`
+  coherence for this Mathlib substrate.  Equality with Morgan--Tian's infimum
+  over smooth paths, including the accepted piecewise-smooth witness, remains
+  pending.  Two unrelated public metric or distance structures are forbidden.
 - **Connection.** The public connection is exactly Mathlib's
   `CovariantDerivative I E (TangentSpace I)`, constructed from the selected
   metric, with proved metric compatibility, zero torsion, the Koszul formula,
@@ -225,7 +229,7 @@ silently dropped.  Pages are printed Chapter 1 pages in arXiv v2.
 
 | Source claim and anchor | Intended API/module | Milestone and prerequisite | Current status |
 | --- | --- | --- | --- |
-| Riemannian metric and metric ball, Definition 1.1, p. 35; `morganTian2007` | Mathlib metric bridge, `Metric` | G2; Mathlib metric audit | G2 metric/distance/topology bridge implemented in `Ch01.Metric` S01; review and protected CI pending |
+| Riemannian metric and metric ball, Definition 1.1, p. 35; `morganTian2007` | Mathlib metric bridge, `Metric` | G2; Mathlib metric audit | Partial G2 implementation S01: `Ch01.Metric` proves the bundle metric, Mathlib `C^1` path-infimum distance, ambient metric/topology, and ball bridges; equality with the source smooth-path infimum and the accepted piecewise-smooth witness remain pending |
 | Fundamental theorem of Levi--Civita, Theorem 1.2, pp. 35--36; `morganTian2007`, `doCarmo1992` Ch. 2, pp. 44--51 | `Connection.covariantDerivative` | G2 then F1 | G2 Mathlib `CovariantDerivative` route selected; construction pending S02 |
 | Christoffel formula (1.1), p. 36; `morganTian2007` | `Connection.christoffel_formula` | F1, chart bridge | G1-audited gap S03 |
 | Hessian definition (1.2) and `Hessformula`, Lemma 1.3, pp. 36--37; `morganTian2007` | `Connection.hessian`, symmetry/formula lemmas | F1 | G1-audited gap S04 |
@@ -354,9 +358,10 @@ Node contracts:
 - **G2** (`G1`, human gate): first merge the repository-owned substrate
   selection in `docs/G2_SUBSTRATE_DECISION.md`; then implement and prove its
   metric/distance/measure and connection bridges, audit assumptions, and
-  freeze curvature signs.  The metric/distance/measure families are present in
-  the current `Ch01.Metric` revision; connection and sign regressions still
-  block every descendant.
+  freeze curvature signs.  The metric/measure families and Mathlib `C^1`
+  distance/topology substrate are present in the current `Ch01.Metric`
+  revision; the source smooth-path correspondence, connection, and sign
+  regressions still block every descendant.
 - **F1** (`G2`): connection, Hessian/function and tensor connection
   Laplacians, curvature, Bianchi, Ricci/scalar, divergence/Bochner,
   naturality, and rescaling.
@@ -451,8 +456,9 @@ Hard gates are recorded in the decision:
 
 The selected route was accepted through human review and merge at
 `aa45255fc76b3de3870f6411dde9b1c733e39074`.  G2 remains open until the
-remaining connection and curvature-sign kernel, together with the complete
-kernel's protected CI status, is reviewed.
+smooth/piecewise-smooth source-distance correspondence, remaining connection,
+and curvature-sign kernel, together with the complete kernel's protected CI
+status, are reviewed.
 
 ## Provisional debt and replacement triggers
 
@@ -538,7 +544,7 @@ reviewed commit.  The bootstrap record is:
 | `G1-substrate-audit` / `96f226c580bf12ff7db80bf2bcc8c61da44f17f2` | Added the declaration-level Mathlib and candidate audit, corrected the Christoffel and Gaussian-expansion equation anchors, and assigned every source-inventory row to an exact declaration or explicit milestone gap | Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6`; `palimpsest/Hopf-Rinow-DoCarmo` `60c3e1f6493646d667a0bb645f99110a34d26e00`; Morgan--Tian arXiv v2 Chapter 1 PDF and `prelim.tex`; current project declarations at baseline `aa150877959ca78c1b1f382d0257e4c5e9c7753a` | Mark G1 complete and present four bounded routes at G2; keep G2 open, add no dependency or facade, and preserve all accepted canonical representations |
 | `G1-review-response` / `67e2bff29b6c048a0f340808e3d2e44050f98212` | Replaced broad metric source-section assumptions with exact exported contexts, made the candidate source count reproducible, audited three concrete unmerged Mathlib proposals, and corrected the unsupported claim that both spherical normalized limits were already proved | Pinned Mathlib `@Bundle.RiemannianMetric`, `@Bundle.RiemannianBundle`, continuous, and smooth metric signatures; candidate `60c3e1f6493646d667a0bb645f99110a34d26e00` tree and line totals; Mathlib PR #36845 head `41e2b25a520d7a24f37062855d2b091dab7a5d9d`, PR #36036 head `31613e7e48c4559a8be4de48121c911d74586744`, and PR #33714 head `c4cbb8b896a4db75bf49cf1ab0a898232cede01e`; current `Comparison.Model` declarations | Keep Mathlib pinned at `520045ab`, keep G2 open, count no PR declaration as available source, and retain both positive-curvature normalized limits as pending A1 work |
 | `G2-selection` / `docs/G2_SUBSTRATE_DECISION.md` | Selected Mathlib-native construction, resolved all eight G1 questions, froze the explicit metric, Euclidean-normalized Hausdorff-volume, bundled-connection, assumption, and source-aligned curvature-sign contracts, and named migration triggers | Project baseline `2b48a6b6e6d4e115cb3d1c16e7ea7537c8bfd0f2`; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` and Apache license; merged Mathlib PR #34697 and its pinned `μHE` source; unchanged candidate main `60c3e1f6493646d667a0bb645f99110a34d26e00`; open candidate PR #40 and unchanged Mathlib PR heads #36845, #36036, and #33714 on 2026-08-19 | Select route 3 only when this revision is merged; add no dependency or facade; keep G2 and all geometric descendants blocked until the coherence kernel lands |
-| `G2-metric-volume` / `MorganTianLib/Ch01/Metric.lean` | Installed one scoped Mathlib bundle metric; proved its smooth/continuous, fibre inner/norm/topology, finite-path, `edist`/`dist`/ball, Borel, and normalized-volume bridges; exported the focused module through the Chapter 1 umbrella | Accepted route commit `aa45255fc76b3de3870f6411dde9b1c733e39074`; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` Riemannian bundle/path-distance and Euclidean Hausdorff measure APIs; Morgan--Tian Definition 1.1 and volume usage on pp. 35, 45--50; merged Mathlib PRs #27250, #27462, and #34697 as API provenance | Keep these direct Mathlib representations and introduce no compatibility adapter; keep G2, F1, F2, and A2 blocked until the connection producer and all curvature-sign regressions are reviewed |
+| `G2-metric-volume` / `MorganTianLib/Ch01/Metric.lean` | Installed one scoped Mathlib bundle metric; proved its smooth/continuous, fibre inner/norm/topology, finite `C^1`-path, Mathlib `edist`/`dist`/ball, Borel, and normalized-volume bridges; exported the focused module through the Chapter 1 umbrella | Accepted route commit `aa45255fc76b3de3870f6411dde9b1c733e39074`; Mathlib `520045ab14e26149ee970e2e617ca04b09bde5d6` Riemannian bundle/`C^1` path-distance and Euclidean Hausdorff measure APIs; Morgan--Tian Definition 1.1 as the distinct smooth-path target and volume usage on pp. 35, 45--50; merged Mathlib PRs #27250, #27462, and #34697 as API provenance | Keep these direct Mathlib representations and introduce no compatibility adapter; retain S01 as partial until the smooth/piecewise-smooth path correspondence and equality of infima are proved; keep G2, F1, F2, and A2 blocked on that bridge, the connection producer, and all curvature-sign regressions |
 | `A1-positive-scalar` / `e874c4c7b6126984488c487cbb78077828233457` | Completed the positive-curvature scalar boundary in `Comparison.Model`: both requested origin limits, strong logarithmic-derivative normalization, the regular Riccati ODE, the lower Riccati comparison used by the upper-sectional branch, scalar Sturm comparison and positivity, public flat corollaries, and public exact-model regressions | Morgan--Tian Definition 1.30 and upper-comparison discussion, pp. 48--49; Petersen 2016 Section 6.4, where Cor. 6.4.2 directly supports the scalar Riccati theorem while Thms. 6.4.3/6.4.6 are geometric targets and cross-checks, not statements of the scalar Wronskian theorem; pinned Mathlib derivative-slope, logarithmic derivative, interval-integral fundamental theorem, trigonometric bound, and derivative-monotonicity APIs; pinned Mathlib source search found no packaged geometric Riccati/Sturm analogue | Keep the complete scalar implementation, including its interval-integral proof, in standalone analytic `Comparison.Model`; export the exact-model regressions with the public comparison theorems and flat corollaries; leave vector/operator Riccati, trace, determinant, and all manifold/Jacobi/polar bridges to dependent issues |
 | `A1-positive-scalar-review-response` / `24afcb8519006e44b680f6bf749aa64925d8f31e` | Replaced the unrelated real-log import with the canonical logarithmic-derivative owner; moved the interval-FTC-dependent Riccati proof to `Comparison.PositiveRiccati`; made both exact-model regressions private; qualified the Sturm/Jacobi producer and Petersen attribution without changing the public comparison theorems or flat corollaries | Pinned Mathlib `Mathlib/Analysis/Calculus/LogDeriv.lean` at `520045ab14e26149ee970e2e617ca04b09bde5d6` and the exact import-set LSP probe; Petersen 2016 Section 6.4, Cor. 6.4.2 and geometric Thms. 6.4.3/6.4.6, pp. 254--257; exact diffs from `e874c4c7b6126984488c487cbb78077828233457` and review artifacts for the import, visibility, source, and module-boundary findings | Keep model profiles, origin estimates, and ODE facts independent of measure integration; import focused `Comparison.PositiveRiccati` through the Chapter 1 umbrella; retain exact-model instantiations only as private compile-time checks; in the later Jacobi bridge apply scalar Sturm on the nonvanishing interval before a hypothetical first zero and extend to the endpoint by continuity |
 | `A1-trace-determinant` / `6e7b502a79debd00299b1c3bf7751a0889a9df7f` | Added trace Cauchy--Schwarz including dimension zero, flat/hyperbolic traced Riccati comparison, the basis-free logarithmic derivative of `|det J|`, upper/lower normalized-density monotonicity for `sn`/`snPos`, explicit flat reductions, origin-normalized consequences, and equality-model regressions | Morgan--Tian `prelim.tex` Definition 1.30 and `riccurvcomp`, pp. 48--49; Petersen (2006), Chapter 9, Section 1; Petersen (2016), Section 6.4, Cor. 6.4.2; pinned Mathlib trace/determinant/to-matrix/continuous-multilinear derivative APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; reference `TraceRiccati.lean`, `MatrixCalculus.lean`, and `VolumeElement.lean` as prior art only | Keep the analytic API in A1, use private matrices only to prove Jacobi's formula, and leave vector/operator Riccati and every geometric producer/coherence theorem to C1/C2/C3/N1 |
