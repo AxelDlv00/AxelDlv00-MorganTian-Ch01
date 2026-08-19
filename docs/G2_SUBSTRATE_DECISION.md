@@ -3,11 +3,11 @@
 Status: the Mathlib-native construction route was accepted at repository
 commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  The current issue #8
 revision implements the metric, smooth/continuous bundle, Mathlib `C^1`
-distance/topology substrate, and measure/volume bridge families in
-`Ch01.Metric`.  It does not yet identify that distance with Morgan--Tian's
-smooth-path infimum.  G2 is not complete: that source bridge, the connection
-producer, and the curvature-sign regressions below must still be implemented
-and reviewed before F1, F2, or A2 starts.
+distance/topology substrate in `Ch01.Metric`, and the measure/volume bridge
+family in `Ch01.Volume`.  It does not yet identify that distance with
+Morgan--Tian's smooth-path infimum.  G2 is not complete: that source bridge,
+the connection producer, and the curvature-sign regressions below must still
+be implemented and reviewed before F1, F2, or A2 starts.
 
 Decision date: 2026-08-19 (Asia/Shanghai).
 
@@ -70,11 +70,12 @@ The inspected selected Mathlib surface is
 `CovariantDerivative` modules `Basic`, `Metric`, and `Torsion`,
 `Geometry.Euclidean.Volume.Measure` (and its imported raw Hausdorff measure), and
 `Analysis.InnerProductSpace.Dual`.  Implementations use focused imports rather
-than the `Mathlib` umbrella.  The current `Ch01.Metric` implementation has the
-four direct imports `Geometry.Manifold.Riemannian.Basic`,
-`Geometry.Euclidean.Volume.Measure`,
-`MeasureTheory.Constructions.BorelSpace.Metric`, and
-`Topology.Connected.Clopen`; it adds no Lake dependency or sibling path.
+than the `Mathlib` umbrella.  `Ch01.Metric` imports only
+`Geometry.Manifold.Riemannian.Basic` and `Topology.Connected.Clopen`.
+`Ch01.Volume` imports that focused metric module together with
+`Geometry.Euclidean.Volume.Measure` and
+`MeasureTheory.Constructions.BorelSpace.Metric`; neither adds a Lake
+dependency or sibling path.
 
 The selected `euclideanHausdorffMeasure` API was introduced by merged Mathlib
 PR [#34697](https://github.com/leanprover-community/mathlib4/pull/34697) at
@@ -227,9 +228,10 @@ or added to the existing theorem.
 
 The sole volume measure is the full-dimensional Euclidean-normalized Hausdorff
 measure `μHE[Module.finrank Real E]` of the metric just installed.  The
-foundation module must prove:
+`Ch01.Volume` foundation module must record:
 
-- its measurable space is the Borel space of the original topology;
+- its measurable space as the Borel space of the original topology in the
+  explicit result type of `riemannianVolume`;
 - every open set and every `Metric.ball` is measurable;
 - the measure definition unfolds to Mathlib's pinned dimension-dependent
   scalar multiple of raw Hausdorff measure for the selected Riemannian `edist`;
@@ -339,7 +341,7 @@ The seven mandatory bridge families have these owners and completion tests:
 | Metric data | `Ch01.Metric` | one installation path plus fibre inner/norm/topology equalities | Implemented by `contMDiffRiemannianBundle`, `inner_eq_metric`, `norm_eq_sqrt_metric`, and `tangent_topology_eq_norm_topology` |
 | Smooth/continuous bundle | `Ch01.Metric` | explicit successful instance synthesis at the selected regularity | Implemented by `contMDiffRiemannianBundle` and `continuousRiemannianBundle` |
 | Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, ball equalities, and the accepted smooth/piecewise-smooth source correspondence | Partially implemented: the clopen proof, `C^1` witness, and all Mathlib `edist`/`dist`/topology/ball equalities are proved; the smooth/piecewise-smooth witness and equality with the source path infimum remain pending |
-| Measure/volume | focused section of `Ch01.Metric` | Euclidean Hausdorff definition, Borel facts, metric dependence, Euclidean normalization | Implemented by `riemannianVolume` and its Borel, ball, raw-Hausdorff, and Euclidean normalization theorems |
+| Measure/volume | `Ch01.Volume` | Euclidean Hausdorff definition, explicit Borel result type, metric dependence, Euclidean normalization | Implemented by `riemannianVolume`, its explicit Borel indexing, and its open-set, ball, raw-Hausdorff, and Euclidean normalization theorems |
 | Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, and uniqueness | Pending; blocks G2 |
 | Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed | Pending F2 after G2; no compatibility adapter exists |
 | Curvature signs | `Ch01.Curvature` | kernel equation and all five constant-curvature regressions | Pending; blocks G2 |
@@ -371,9 +373,10 @@ Chapter 2/3 file, the reference workspace, or an unmerged PR tree.
 
 The accepted decision slice changed no Lean declaration, package pin,
 workflow, or canonical theorem.  This focused implementation revision adds
-`Ch01.Metric`, updates the Chapter 1 umbrella and source inventory, and covers
-the metric, smooth/continuous-bundle, and measure/volume rows plus the Mathlib
-`C^1` side of the distance/topology row without adding a compatibility adapter.
+`Ch01.Metric` and `Ch01.Volume`, updates the Chapter 1 umbrella and source
+inventory, and covers the metric, smooth/continuous-bundle, and measure/volume
+rows plus the Mathlib `C^1` side of the distance/topology row without adding a
+compatibility adapter.
 It deliberately adds no smooth-path-infimum equivalence, connection,
 coordinate geodesic, curvature, polar integration, exponential Jacobian, or
 cut-locus claim.
