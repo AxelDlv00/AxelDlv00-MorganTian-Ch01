@@ -3,12 +3,14 @@
 Status: the Mathlib-native construction route was accepted at repository
 commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  `Ch01.Metric` implements the
 metric, smooth/continuous bundle, and Mathlib `C^1` distance/topology substrate;
-`Ch01.Volume` implements the measure/volume bridge family.  The issue #19
-revision adds the independent inner-product-space curvature convention kernel
-and all five algebraic sign/order regressions in `Ch01.Curvature`.  G2 is not
-complete: the distance has not yet been identified with Morgan--Tian's
-smooth-path infimum, and the bundled connection producer remains pending.
-Those gates must be implemented and reviewed before F1, F2, or A2 starts.
+`Ch01.Volume` implements the measure/volume bridge family, and the merged
+`Ch01.Curvature` module implements the independent algebraic convention kernel
+and all five sign/order regressions.  This revision adds the bundled
+Levi--Civita producer with smooth consumer regularity in `Ch01.Connection`.
+G2 is not complete: this connection slice still requires review at its exact
+protected CI head, and the distance has not yet been identified with
+Morgan--Tian's smooth-path infimum.  Those gates must close before F1, F2, or A2
+starts.
 
 Decision date: 2026-08-19 (Asia/Shanghai).
 
@@ -150,9 +152,10 @@ and no second public vocabulary.
    and pointwise uniqueness use a `C^2` manifold, a `C^1` metric (provided by
    the chosen smooth metric), and finite-dimensional real model space.  The
    object is unique on differentiable vector fields because Mathlib leaves its
-   value on nondifferentiable fields unconstrained.  F1 must prove the separate
-   `ContMDiffCovariantDerivative` regularity required by its consumers before
-   defining their smooth curvature fields.
+   value on nondifferentiable fields unconstrained.  Smooth
+   `ContMDiffCovariantDerivative` regularity is a separate obligation from
+   existence and uniqueness; `Ch01.Connection` now proves it before F1 defines
+   smooth curvature fields.
 7. **Measure.** After installing the metric-induced `EMetricSpace` and its
    Borel measurable space, define Riemannian volume to be the pinned
    `MeasureTheory.Measure.euclideanHausdorffMeasure (Module.finrank Real E)`,
@@ -175,11 +178,10 @@ and no second public vocabulary.
 ## Frozen coherence contracts
 
 The contracts are implemented in reviewable dependency slices.  The metric,
-volume, and algebraic curvature-sign sections now have Lean owners named in the
-bridge ledger; the source-distance correspondence and connection section
-remain mandatory before G2 is complete.  Names are ownership descriptions;
-review may improve a declaration name without changing its representation or
-semantics.
+volume, connection, and algebraic curvature-sign sections now have Lean owners
+named in the bridge ledger; the source-distance correspondence remains
+mandatory before G2 is complete.  Names are ownership descriptions; review may
+improve a declaration name without changing its representation or semantics.
 
 ### Metric, norm, and topology
 
@@ -261,10 +263,12 @@ The implementation must prove separately:
 - `CovariantDerivative.IsMetricCompatible`;
 - `cov.torsion = 0`;
 - the Koszul formula; and
-- uniqueness on differentiable vector fields at a point.
+- uniqueness on differentiable vector fields at a point; and
+- smooth `CovariantDerivative.ContMDiffCovariantDerivative` regularity for
+  later curvature and geodesic consumers.
 
 This is the G2 producer for Morgan--Tian, Theorem 1.2, pp. 35--36, cross-checked
-against do Carmo (1992), Chapter 2, pp. 44--51.
+against do Carmo (1992), Chapter 2, pp. 44--51, and Lee (2018), Theorem 5.10.
 
 There is no second affine-connection structure.  Christoffel coefficients are
 future coordinate theorems about this `CovariantDerivative`.  Since no
@@ -352,7 +356,7 @@ The seven mandatory bridge families have these owners and completion tests:
 | Smooth/continuous bundle | `Ch01.Metric` | explicit successful instance synthesis at the selected regularity | Implemented by `contMDiffRiemannianBundle` and `continuousRiemannianBundle` |
 | Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, ball equalities, and the accepted smooth/piecewise-smooth source correspondence | Partially implemented: the clopen proof, `C^1` witness, and all Mathlib `edist`/`dist`/topology/ball equalities are proved; the smooth/piecewise-smooth witness and equality with the source path infimum remain pending |
 | Measure/volume | `Ch01.Volume` | Euclidean Hausdorff definition, explicit Borel result type, metric dependence, Euclidean normalization | Implemented by `riemannianVolume`, its explicit Borel indexing, and its open-set, ball, raw-Hausdorff, and Euclidean normalization theorems |
-| Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, and uniqueness | Pending; blocks G2 |
+| Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, uniqueness, and smooth consumer regularity | Implemented by `covariantDerivative`, `covariantDerivative_isMetricCompatible`, `covariantDerivative_torsion_eq_zero`, `covariantDerivative_koszul`, `covariantDerivative_eq_at_of_isMetricCompatible_of_torsion_eq_zero`, and `covariantDerivative_contMDiff` |
 | Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed | Pending F2 after G2; no compatibility adapter exists |
 | Curvature signs | `Ch01.Curvature` | algebraic model/operator pairing and all five constant-curvature regressions | Implemented by `modelCurvature`, `modelCurvature4`, their pairing and component theorems, the Jacobi/index/sectional regressions, and `sum_modelCurvature4_orthonormalBasis` |
 
@@ -382,21 +386,19 @@ Chapter 2/3 file, the reference workspace, or an unmerged PR tree.
 ## Implementation status
 
 The accepted decision slice changed no Lean declaration, package pin,
-workflow, or canonical theorem.  Subsequent focused revisions add
-`Ch01.Metric`, `Ch01.Volume`, and the algebraic `Ch01.Curvature` kernel to the
-Chapter 1 umbrella.  Together they cover the metric,
-smooth/continuous-bundle, measure/volume, and curvature-sign rows plus the
-Mathlib `C^1` side of the distance/topology row without adding a compatibility
-adapter.  The curvature module defines only an inner-product-space model; it
-does not define the connection-produced manifold curvature API owned by F1.
-These revisions deliberately add no smooth-path-infimum equivalence,
-connection, coordinate geodesic, polar integration, exponential Jacobian, or
-cut-locus claim.
+workflow, or canonical theorem.  Focused implementation revisions now add
+`Ch01.Metric`, `Ch01.Volume`, `Ch01.Connection`, and the algebraic
+`Ch01.Curvature` kernel to the Chapter 1 umbrella.  Together they cover the
+metric, smooth/continuous-bundle, measure/volume, connection, and
+curvature-sign rows plus the Mathlib `C^1` side of the distance/topology row
+without adding a compatibility adapter.  The curvature module defines only an
+inner-product-space model; it does not define the connection-produced manifold
+curvature API owned by F1.  These revisions deliberately add no
+smooth-path-infimum equivalence, coordinate geodesic, polar integration,
+exponential Jacobian, or cut-locus claim.
 
 Local diagnostics and axiom/source scans support review of this revision; the
 protected `Lean CI / lake-build (pull_request)` status remains the authoritative
-build check.  The algebraic curvature regressions still require review at their
-exact protected CI head.  Even after this slice merges, G2 remains open until
-the smooth/piecewise-smooth source-distance correspondence and bundled
-connection producer/regularity are implemented and reviewed.  F1, F2, and A2
-therefore remain blocked.
+build check.  After this connection slice merges, G2 remains open until the
+smooth/piecewise-smooth source-distance correspondence is implemented and
+reviewed.  F1, F2, and A2 therefore remain blocked.
