@@ -20,58 +20,14 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Check out the candidate commit
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 1
           persist-credentials: false
 
-      - name: Derive bounded cache keys
-        id: cache-key
-        shell: bash
-        run: |
-          set -euo pipefail
-          inputs=(lean-toolchain lake-manifest.json)
-          for input in "${inputs[@]}"; do test -s "$input"; done
-          fingerprint=$(sha256sum "${inputs[@]}" | sha256sum | cut -d' ' -f1)
-          generation=$(date -u +%G-W%V)
-          platform=${RUNNER_OS:-unknown}-${RUNNER_ARCH:-unknown}
-          echo "dependency-key=lake-$platform-deps-$fingerprint" >> "$GITHUB_OUTPUT"
-          echo "project-key=lake-$platform-main-$fingerprint-$generation" >> "$GITHUB_OUTPUT"
-          echo "project-prefix=lake-$platform-main-$fingerprint-" >> "$GITHUB_OUTPUT"
-
-      - name: Restore manifest-keyed dependency packages
-        id: dependency-cache
-        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809
+      - name: Build with Lean
+        uses: leanprover/lean-action@v1
         with:
-          path: .lake/packages
-          key: ${{ steps.cache-key.outputs.dependency-key }}
-
-      - name: Restore weekly main-branch project outputs
-        id: project-cache
-        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809
-        with:
-          path: .lake/build
-          key: ${{ steps.cache-key.outputs.project-key }}
-          restore-keys: ${{ steps.cache-key.outputs.project-prefix }}
-
-      - name: Download available Mathlib build artifacts
-        shell: bash
-        run: lake exe cache get
-
-      - name: Build the project
-        shell: bash
-        run: lake build
-
-      - name: Publish manifest-keyed dependency packages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.dependency-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809
-        with:
-          path: .lake/packages
-          key: ${{ steps.cache-key.outputs.dependency-key }}
-
-      - name: Publish weekly main-branch project outputs
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.project-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809
-        with:
-          path: .lake/build
-          key: ${{ steps.cache-key.outputs.project-key }}
+          build: true
+          test: false
+          lint: false
+          use-mathlib-cache: true
