@@ -16,8 +16,9 @@ theorem keeps the explicit smooth metric and the canonical bundled connection
 visible, so it does not introduce a second affine connection or metric.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, equation (1.1),
-printed p. 36.  Cross-checks: do Carmo (1992), Chapter 2, pp. 44--51, and Lee
-(2018), Chapter 5.
+printed p. 36.  Cross-checks: do Carmo (1992), Theorem 3.6 and Remark 3.7,
+formula (10), printed pp. 55--56, and Lee (2018), Corollary 5.11(b), equation
+(5.10), printed pp. 123--124.
 -/
 
 noncomputable section

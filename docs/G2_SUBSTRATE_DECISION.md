@@ -284,7 +284,9 @@ The implementation must prove separately:
   later curvature and geodesic consumers.
 
 This is the G2 producer for Morgan--Tian, Theorem 1.2, pp. 35--36, cross-checked
-against do Carmo (1992), Chapter 2, pp. 44--51, and Lee (2018), Theorem 5.10.
+against do Carmo (1992), Theorem 3.6 and Remark 3.7/formula (10), printed
+pp. 55--56, and Lee (2018), Theorem 5.10 and Corollary 5.11(b), equation
+(5.10), printed pp. 123--124.
 
 There is no second affine-connection structure.  Christoffel coefficients are
 future coordinate theorems about this `CovariantDerivative`.  Since no
