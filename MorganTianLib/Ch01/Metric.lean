@@ -166,10 +166,16 @@ omit [IsManifold I ∞ M] in
 /-- A constant smooth path has zero length. -/
 @[simp]
 theorem eLength_refl
-    [Bundle.RiemannianBundle (TangentSpace I : M → Type _)] (x : M) :
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)] (x : M) :
     (refl (I := I) x).eLength = 0 := by
   change Manifold.pathELength I (fun _ : ℝ ↦ x) 0 1 = 0
-  simp [Manifold.pathELength_eq_lintegral_mfderiv_Icc]
+  have hzero : ‖(0 : TangentSpace I x)‖ₑ = 0 := by
+    calc
+      ‖(0 : TangentSpace I x)‖ₑ = ‖(0 : ℝ) • (0 : TangentSpace I x)‖ₑ := by simp
+      _ = ‖(0 : ℝ)‖ₑ * ‖(0 : TangentSpace I x)‖ₑ := enorm_smul _ _
+      _ = 0 := by simp
+  simp [Manifold.pathELength_eq_lintegral_mfderiv_Icc, hzero]
 
 /-- Reverse the orientation of a smooth path. -/
 def reverse {x y : M} (p : SmoothPath I x y) : SmoothPath I y x where
@@ -313,7 +319,9 @@ noncomputable def append {x y z : M} (p : SmoothPath I x y) (q : SmoothPath I y 
       smoothOn := (ContMDiff.piecewise_Iic hf hg hfg).contMDiffOn }
 
 omit [IsManifold I ∞ M] in
-private theorem append_apply_of_le {x y z : M} (p : SmoothPath I x y)
+/-- On the left half of the parameter interval, concatenation evaluates to the
+flattened first path. -/
+theorem append_apply_of_le {x y z : M} (p : SmoothPath I x y)
     (q : SmoothPath I y z) {t : ℝ} (ht : t ≤ 1 / 2) :
     p.append q t = p.endpointFlat (2 * t) := by
   change appendFunction p q t = _
@@ -322,7 +330,9 @@ private theorem append_apply_of_le {x y z : M} (p : SmoothPath I x y)
   rfl
 
 omit [IsManifold I ∞ M] in
-private theorem append_apply_of_lt {x y z : M} (p : SmoothPath I x y)
+/-- On the right half of the parameter interval, concatenation evaluates to the
+flattened second path. -/
+theorem append_apply_of_lt {x y z : M} (p : SmoothPath I x y)
     (q : SmoothPath I y z) {t : ℝ} (ht : 1 / 2 < t) :
     p.append q t = q.endpointFlat (2 * t - 1) := by
   change appendFunction p q t = _
@@ -407,11 +417,17 @@ end SmoothPath
 namespace PiecewiseSmoothPath
 
 /-- Change the endpoint indices of a piecewise-smooth path along equalities. -/
-def cast {x x' y y' : M} (hx : x = x') (hy : y = y')
-    (p : PiecewiseSmoothPath I x y) : PiecewiseSmoothPath I x' y' := by
+def cast {x y : M} (p : PiecewiseSmoothPath I x y) {x' y' : M} (hx : x' = x) (hy : y' = y) :
+    PiecewiseSmoothPath I x' y' := by
   subst x'
   subst y'
   exact p
+
+omit [IsManifold I ∞ M] in
+/-- Casting along reflexive endpoint equalities leaves a path unchanged. -/
+@[simp]
+theorem cast_rfl_rfl {x y : M} (p : PiecewiseSmoothPath I x y) :
+    p.cast rfl rfl = p := rfl
 
 /-- Concatenate two finite piecewise-smooth paths. -/
 def append {x y z : M} :
@@ -446,7 +462,7 @@ omit [IsManifold I ∞ M] in
 /-- Changing endpoint indices does not change piecewise-smooth path length. -/
 @[simp]
 theorem eLength_cast [∀ x : M, ENorm (TangentSpace I x)]
-    {x x' y y' : M} (hx : x = x') (hy : y = y') (p : PiecewiseSmoothPath I x y) :
+    {x y x' y' : M} (p : PiecewiseSmoothPath I x y) (hx : x' = x) (hy : y' = y) :
     (p.cast hx hy).eLength = p.eLength := by
   subst x'
   subst y'
@@ -507,7 +523,8 @@ omit [IsManifold I ∞ M] in
 /-- Flattening preserves the piecewise-smooth length. -/
 @[simp]
 theorem eLength_toSmooth
-    [Bundle.RiemannianBundle (TangentSpace I : M → Type _)]
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)]
     {x y : M} (p : PiecewiseSmoothPath I x y) :
     (p.toSmooth).eLength = p.eLength := by
   induction p with
@@ -566,9 +583,10 @@ theorem piecewiseSmoothPathEDist_le_smoothPathEDist
 
 omit [IsManifold I ∞ M] in
 /-- Flattening finite smooth pieces shows that allowing joins does not lower
-the canonical smooth-path length infimum. -/
+the source-facing smooth-path length infimum. -/
 theorem smoothPathEDist_le_piecewiseSmoothPathEDist
-    [Bundle.RiemannianBundle (TangentSpace I : M → Type _)] (x y : M) :
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)] (x y : M) :
     smoothPathEDist I x y ≤ piecewiseSmoothPathEDist I x y := by
   rw [smoothPathEDist, piecewiseSmoothPathEDist]
   refine le_iInf fun p ↦ ?_
@@ -577,7 +595,8 @@ theorem smoothPathEDist_le_piecewiseSmoothPathEDist
 omit [IsManifold I ∞ M] in
 /-- The smooth and finite piecewise-smooth path-length infima agree. -/
 theorem smoothPathEDist_eq_piecewiseSmoothPathEDist
-    [Bundle.RiemannianBundle (TangentSpace I : M → Type _)] (x y : M) :
+    [∀ x : M, ENorm (TangentSpace I x)]
+    [∀ x : M, ENormSMulClass ℝ (TangentSpace I x)] (x y : M) :
     smoothPathEDist I x y = piecewiseSmoothPathEDist I x y :=
   le_antisymm (smoothPathEDist_le_piecewiseSmoothPathEDist x y)
     (piecewiseSmoothPathEDist_le_smoothPathEDist x y)
@@ -706,15 +725,16 @@ segment with arbitrarily small multiplicative loss in length.
 
 More precisely, for every `r > 1` there is a neighborhood `U` of `x` such
 that a `C^1` path whose image lies in `U` admits a smooth endpoint-preserving
-replacement of length at most `r ^ 2` times its own length.  The two factors
-come from transporting tangent vectors to the fibre at `x` and back.  This is
+replacement of length at most `(ENNReal.ofReal r) ^ 2` times its own length.
+The two factors come from transporting tangent vectors to the fibre at `x` and
+back.  This is
 the local quantitative input for the piecewise-smooth approximation of the
 `C^1` competitors in `Manifold.riemannianEDist`.
 
 No finite-dimensionality or completeness hypothesis is needed: the
 fundamental-theorem estimate used below passes through the completion of the
 fixed tangent fibre internally. -/
-theorem eventually_exists_smoothPath_eLength_le_pathELength
+theorem exists_nhds_smoothPath_eLength_le_ofReal_sq_mul_pathELength
     [Bundle.RiemannianBundle (TangentSpace I : M → Type _)]
     [IsContinuousRiemannianBundle E (TangentSpace I : M → Type _)]
     (x : M) {r : ℝ} (hr : 1 < r) :
@@ -961,7 +981,7 @@ loss.
 The proof covers the compact parameter interval by the inverse images of the
 quantitative chart neighborhoods, refines that cover to a monotone finite
 subdivision, and concatenates the local smooth replacements. -/
-theorem exists_piecewiseSmoothPath_eLength_le_pathELength
+theorem exists_piecewiseSmoothPath_eLength_le_ofReal_sq_mul_pathELength
     [Bundle.RiemannianBundle (TangentSpace I : M → Type _)]
     [IsContinuousRiemannianBundle E (TangentSpace I : M → Type _)]
     {γ : ℝ → M} (hγ : CMDiff[Icc 0 1] 1 γ) {r : ℝ} (hr : 1 < r) :
@@ -969,7 +989,7 @@ theorem exists_piecewiseSmoothPath_eLength_le_pathELength
       p.eLength ≤ ENNReal.ofReal r ^ 2 * Manifold.pathELength I γ 0 1 := by
   classical
   choose U hU hreplace using fun z : Icc (0 : ℝ) 1 ↦
-    eventually_exists_smoothPath_eLength_le_pathELength (I := I) (γ z) hr
+    exists_nhds_smoothPath_eLength_le_ofReal_sq_mul_pathELength (I := I) (γ z) hr
   let γ' : Icc (0 : ℝ) 1 → M := fun z ↦ γ z
   have hγ' : Continuous γ' := hγ.continuousOn.restrict
   let c : Icc (0 : ℝ) 1 → Set (Icc (0 : ℝ) 1) :=
@@ -1031,19 +1051,19 @@ theorem exists_piecewiseSmoothPath_eLength_le_pathELength
   have ht_m_real : (t m : ℝ) = 1 := congrArg Subtype.val ht_m
   have hγ_zero : γ (t 0) = γ 0 := congrArg γ ht_zero_real
   have hγ_m : γ (t m) = γ 1 := congrArg γ ht_m_real
-  refine ⟨(p m).cast hγ_zero hγ_m, ?_⟩
+  refine ⟨(p m).cast hγ_zero.symm hγ_m.symm, ?_⟩
   rw [PiecewiseSmoothPath.eLength_cast]
   simpa only [ht_zero_real, ht_m_real] using hp m
 
 /-- A `C^1` path on `[0, 1]` admits an endpoint-preserving smooth replacement
 with arbitrarily small multiplicative length loss. -/
-theorem exists_smoothPath_eLength_le_pathELength
+theorem exists_smoothPath_eLength_le_ofReal_sq_mul_pathELength
     [Bundle.RiemannianBundle (TangentSpace I : M → Type _)]
     [IsContinuousRiemannianBundle E (TangentSpace I : M → Type _)]
     {γ : ℝ → M} (hγ : CMDiff[Icc 0 1] 1 γ) {r : ℝ} (hr : 1 < r) :
     ∃ p : SmoothPath I (γ 0) (γ 1),
       p.eLength ≤ ENNReal.ofReal r ^ 2 * Manifold.pathELength I γ 0 1 := by
-  rcases exists_piecewiseSmoothPath_eLength_le_pathELength (I := I) hγ hr with ⟨p, hp⟩
+  rcases exists_piecewiseSmoothPath_eLength_le_ofReal_sq_mul_pathELength (I := I) hγ hr with ⟨p, hp⟩
   exact ⟨p.toSmooth, (PiecewiseSmoothPath.eLength_toSmooth p).le.trans hp⟩
 
 private theorem le_of_forall_ofReal_sq_mul_le {a b : ℝ≥0∞}
@@ -1077,12 +1097,12 @@ theorem piecewiseSmoothPathEDist_le_pathELength
     piecewiseSmoothPathEDist I x y ≤ Manifold.pathELength I γ 0 1 := by
   apply le_of_forall_ofReal_sq_mul_le
   intro r hr
-  rcases exists_piecewiseSmoothPath_eLength_le_pathELength (I := I) hγ hr with ⟨p, hp⟩
-  let q := p.cast hγ_zero hγ_one
+  rcases exists_piecewiseSmoothPath_eLength_le_ofReal_sq_mul_pathELength (I := I) hγ hr with ⟨p, hp⟩
+  let q := p.cast hγ_zero.symm hγ_one.symm
   calc
     piecewiseSmoothPathEDist I x y ≤ q.eLength := by
       exact iInf_le (fun q : PiecewiseSmoothPath I x y ↦ q.eLength) q
-    _ = p.eLength := PiecewiseSmoothPath.eLength_cast _ _ _
+    _ = p.eLength := PiecewiseSmoothPath.eLength_cast p hγ_zero.symm hγ_one.symm
     _ ≤ ENNReal.ofReal r ^ 2 * Manifold.pathELength I γ 0 1 := hp
 
 /-- The smooth-path length infimum is bounded by every `C^1` competitor on
