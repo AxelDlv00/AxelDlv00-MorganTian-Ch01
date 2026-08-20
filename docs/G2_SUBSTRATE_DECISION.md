@@ -3,16 +3,16 @@
 Status: the Mathlib-native construction route was accepted at repository
 commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  `Ch01.Metric` implements the
 metric, smooth/continuous bundle, Mathlib `C^1` distance/topology substrate,
-and the source-facing smooth and finite piecewise-smooth path foundation;
+and the source-facing smooth and finite piecewise-smooth path correspondence;
 `Ch01.Volume` implements the measure/volume bridge family; and
 `Ch01.Curvature` implements the independent inner-product-space convention
 kernel and all five algebraic sign/order regressions.  The merged
 `Ch01.Connection` module implements the bundled Levi--Civita producer with
-smooth consumer regularity.  G2 is not complete:
-endpoint-preserving, length-controlled approximation and the reverse infimum
-comparison needed to identify the distance with Morgan--Tian's smooth-path
-infimum remain open.  That gate must be implemented and reviewed before F1,
-F2, or A2 starts.
+smooth consumer regularity.  `Ch01.Metric` now proves endpoint-preserving,
+length-controlled replacement of `C^1` paths and identifies both the smooth and
+finite piecewise-smooth length infima with `Manifold.riemannianEDist`.  This
+focused revision closes only the distance/topology bridge family; it does not
+mark other G2 completion checks complete or unlock F1, F2, or A2.
 
 Decision date: 2026-08-19 (Asia/Shanghai).
 
@@ -180,10 +180,11 @@ and no second public vocabulary.
 ## Frozen coherence contracts
 
 The contracts are implemented in reviewable dependency slices.  The metric,
-volume, connection, and algebraic curvature-sign sections now have Lean owners
-named in the bridge ledger; the source-distance correspondence remains
-mandatory before G2 is complete.  Names are ownership descriptions; review may
-improve a declaration name without changing its representation or semantics.
+volume, connection, algebraic curvature-sign, and source-distance sections now
+have Lean owners named in the bridge ledger.  Completion of the source-distance
+section does not by itself settle the status of other G2 checks.  Names are
+ownership descriptions; review may improve a declaration name without changing
+its representation or semantics.
 
 ### Metric, norm, and topology
 
@@ -230,19 +231,18 @@ length the sum of their canonical `Manifold.pathELength`s.  The corresponding
 auxiliary infima install no ambient metric structure.  The module proves
 
 ```text
-riemannianEDist <= piecewiseSmoothPathEDist <= smoothPathEDist
+smoothPathEDist = piecewiseSmoothPathEDist = riemannianEDist
 ```
 
-and constructs finite local chart segments and a finite piecewise-smooth path
-between any two points of a preconnected manifold.  This upgrades the finite
-witness without adding completeness, boundarylessness, finite-dimensionality,
-or separation assumptions.
-
-A `C^1` path need not be smooth.  The remaining direction must approximate an
-arbitrary near-minimizing `C^1` path by accepted smooth or piecewise-smooth
-paths while preserving both endpoints and controlling length.  Until that
-theorem proves the reverse inequality and equality of the infima, the source
-distance correspondence remains partial.
+For each `r > 1`, a compact monotone subdivision replaces an arbitrary `C^1`
+competitor by endpoint-matching smooth chart segments of total length at most
+`r ^ 2` times the original length.  Sending `r` to one gives the reverse
+infimum inequality.  Endpoint-flat reparameterization then concatenates any
+finite chain to one smooth path with exactly the same length.  The module also
+constructs finite local chart segments and a finite piecewise-smooth path
+between any two points of a preconnected manifold.  None of these statements
+adds completeness, boundarylessness, finite-dimensionality, or separation
+assumptions.
 
 ### Riemannian volume
 
@@ -370,7 +370,7 @@ The seven mandatory bridge families have these owners and completion tests:
 | --- | --- | --- | --- |
 | Metric data | `Ch01.Metric` | one installation path plus fibre inner/norm/topology equalities | Implemented by `contMDiffRiemannianBundle`, `inner_eq_metric`, `norm_eq_sqrt_metric`, and `tangent_topology_eq_norm_topology` |
 | Smooth/continuous bundle | `Ch01.Metric` | explicit successful instance synthesis at the selected regularity | Implemented by `contMDiffRiemannianBundle` and `continuousRiemannianBundle` |
-| Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, ball equalities, and the accepted smooth/piecewise-smooth source correspondence | Partially implemented: all Mathlib `edist`/`dist`/topology/ball equalities, the smooth and finite piecewise-smooth path APIs, canonical-to-source infimum inequalities, local chart segments, and a finite preconnected witness are proved. Endpoint-preserving, length-controlled approximation, the reverse inequalities, and equality with the source infima remain pending |
+| Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, ball equalities, and the accepted smooth/piecewise-smooth source correspondence | Implemented: the Mathlib `edist`/`dist`/topology/ball equalities, `exists_nhds_smoothPath_eLength_le_ofReal_sq_mul_pathELength`, `exists_piecewiseSmoothPath_eLength_le_ofReal_sq_mul_pathELength`, `exists_smoothPath_eLength_le_ofReal_sq_mul_pathELength`, exact length-preserving `PiecewiseSmoothPath.toSmooth`, both `piecewiseSmoothPathEDist_eq_riemannianEDist` and `smoothPathEDist_eq_riemannianEDist`, local chart segments, and the finite preconnected witness are proved |
 | Measure/volume | `Ch01.Volume` | Euclidean Hausdorff definition, explicit Borel result type, metric dependence, Euclidean normalization | Implemented by `riemannianVolume`, its explicit Borel indexing, and its open-set, ball, raw-Hausdorff, and Euclidean normalization theorems |
 | Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, uniqueness, and smooth consumer regularity | Implemented by `leviCivitaConnection`, `isMetricCompatible_leviCivitaConnection`, `torsion_leviCivitaConnection_eq_zero`, `leviCivitaConnection_koszul`, `leviCivitaConnection_eq_at_of_isMetricCompatible_of_torsion_eq_zero`, and `contMDiff_leviCivitaConnection` |
 | Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed | Pending F2 after G2; no compatibility adapter exists |
@@ -406,17 +406,16 @@ workflow, or canonical theorem.  Focused implementation revisions now add
 `Ch01.Metric`, `Ch01.Volume`, `Ch01.Connection`, and the algebraic
 `Ch01.Curvature` kernel to the Chapter 1 umbrella.  Together they cover the
 metric, smooth/continuous-bundle, measure/volume, connection, and
-curvature-sign rows plus the Mathlib `C^1` side and source-facing path
-foundation of the distance/topology row without adding a compatibility
-adapter.  The metric module proves the canonical-to-source inequalities and
-finite piecewise-smooth existence, but deliberately does not claim the reverse
-comparison or equality.  The curvature module defines only an
+curvature-sign rows plus the complete source-facing distance/topology
+correspondence without adding a compatibility adapter.  The metric module
+proves both infimum comparisons and equalities and finite piecewise-smooth
+existence.  The curvature module defines only an
 inner-product-space model; it does not define the connection-produced manifold
 curvature API owned by F1.  These revisions add no coordinate geodesic, polar
 integration, exponential Jacobian, or cut-locus claim.
 
 Local diagnostics and axiom/source scans support review of this revision; the
 protected `Lean CI / lake-build (pull_request)` status remains the authoritative
-build check.  G2 remains open until the endpoint-preserving, length-controlled
-approximation and reverse infimum comparison complete the source-distance
-correspondence.  F1, F2, and A2 therefore remain blocked.
+build check.  Completion of this distance family does not itself mark G2
+complete; the status of the other G2 completion checks and the F1, F2, and A2
+unlock remains unchanged in this focused revision.
