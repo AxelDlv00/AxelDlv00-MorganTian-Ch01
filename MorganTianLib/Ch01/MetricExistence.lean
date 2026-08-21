@@ -44,10 +44,6 @@ namespace MorganTianLib
 namespace Ch01
 namespace MetricExistence
 
--- The hom-bundle instances below are deeply nested continuous-linear-map instances; the
--- corresponding performance exception is recorded in the E1 roadmap audit.
-set_option synthInstance.maxHeartbeats 400000
-
 /-! ## A private metric on the model fiber -/
 
 private structure ModelMetric (F : Type*) [NormedAddCommGroup F] [NormedSpace ℝ F] where
@@ -153,6 +149,8 @@ private def globalForm (model : ModelMetric F) (f : SmoothPartitionOfUnity B IB 
     V b →L[ℝ] V b →L[ℝ] ℝ :=
   ∑ᶠ j : B, f j b • (localForm (V := V) model j b).2
 
+set_option synthInstance.maxHeartbeats 400000 in
+-- Synthesizing the iterated hom-bundle topology at the coordinate rewrite exceeds the default.
 private lemma localForm_contMDiffOn (model : ModelMetric F) (i : B) :
     ContMDiffOn IB (IB.prod 𝓘(ℝ, F →L[ℝ] F →L[ℝ] ℝ)) ∞
       (localForm (V := V) model i)
@@ -189,6 +187,8 @@ private lemma localForm_contMDiffOn (model : ModelMetric F) (i : B) :
     · simp
     · exact (mk_mem_target ψ).mp (htarget hy)
 
+set_option synthInstance.maxHeartbeats 400000 in
+-- Synthesizing the hom-bundle section instances for the locally finite sum exceeds the default.
 private lemma globalForm_contMDiff (model : ModelMetric F) (f : SmoothPartitionOfUnity B IB B)
     (hf : f.IsSubordinate
       (fun x ↦ (trivializationAt F V x).baseSet ∩ (chartAt HB x).source)) :
@@ -287,7 +287,10 @@ private lemma globalFormAux_support_finite (model : ModelMetric F)
     change f i b ≠ 0
     exact hfi)
 
+set_option synthInstance.maxHeartbeats 400000 in
+-- Synthesizing the additive structure on the iterated hom-bundle exceeds the default budget.
 set_option maxHeartbeats 800000 in
+-- Rewriting the nested continuous-linear-map finsum exceeds the default elaboration budget.
 private lemma globalFormAux_symm (model : ModelMetric F)
     (f : SmoothPartitionOfUnity B IB B) (b : B) (v w : V b) :
     ((globalFormAux (V := V) model f b).toFun v).toFun w =
@@ -313,6 +316,8 @@ omit [TopologicalSpace B] in
 private lemma smul_apply_self {b : B} (c : ℝ) (φ : V b →L[ℝ] V b →L[ℝ] ℝ) (v : V b) :
     ((c • φ).toFun v).toFun v = c * ((φ.toFun v).toFun v) := by simp
 
+set_option synthInstance.maxHeartbeats 400000 in
+-- Synthesizing the additive structure used by the evaluated finsum exceeds the default budget.
 private lemma globalFormAux_apply_self (model : ModelMetric F)
     (f : SmoothPartitionOfUnity B IB B) (b : B) (v : V b) :
     ((globalFormAux (V := V) model f b).toFun v).toFun v =
@@ -332,6 +337,7 @@ private lemma globalFormAux_term_support_finite (model : ModelMetric F)
   exact fun hz ↦ hj (by rw [hz]; simp)
 
 set_option maxHeartbeats 800000 in
+-- The positivity proof for the nested continuous-linear-map finsum exceeds the default budget.
 private lemma globalFormAux_pos (model : ModelMetric F)
     (f : SmoothPartitionOfUnity B IB B)
     (hf : f.IsSubordinate
@@ -350,6 +356,7 @@ private lemma globalFormAux_pos (model : ModelMetric F)
   exact mul_pos hi (localFormAux_pos model hib v hv)
 
 set_option maxHeartbeats 800000 in
+-- The order proof for the nested continuous-linear-map finsum exceeds the default budget.
 private lemma localTerm_le_globalFormAux (model : ModelMetric F)
     (f : SmoothPartitionOfUnity B IB B) (b i : B) (v : V b) :
     f i b * localFormAux (V := V) model i b v v ≤ globalFormAux (V := V) model f b v v := by
@@ -361,6 +368,7 @@ private lemma localTerm_le_globalFormAux (model : ModelMetric F)
   exact mul_nonneg (f.nonneg j b) (localFormAux_nonneg model v)
 
 set_option maxHeartbeats 800000 in
+-- The boundedness proof through the nested bundle maps exceeds the default elaboration budget.
 private lemma globalFormAux_unitBall_bounded (model : ModelMetric F)
     (f : SmoothPartitionOfUnity B IB B)
     (hf : f.IsSubordinate
@@ -408,7 +416,10 @@ private lemma inCoordinates_apply_bilinear
   rw [inCoordinates_apply_eq₂ hx hx (by simp [Trivial.fiberBundle_trivializationAt'])]
   simp [Trivial.fiberBundle_trivializationAt', Trivial.linearMapAt_trivialization]
 
+set_option synthInstance.maxHeartbeats 400000 in
+-- Synthesizing the iterated hom-bundle topology during normalization exceeds the default budget.
 set_option maxHeartbeats 800000 in
+-- Normalizing the iterated hom-bundle trivialization exceeds the default elaboration budget.
 private lemma homTrivialization_symm_apply
     (x₀ x : B) (hx : x ∈ (trivializationAt F V x₀).baseSet)
     (φ : F →L[ℝ] F →L[ℝ] ℝ) (u v : V x) :
