@@ -20,9 +20,12 @@ preceding G2 revision completes the supplied-metric source-distance
 correspondence: it gives endpoint-preserving,
 length-controlled piecewise-smooth replacements of `C^1` paths, flattens finite
 chains to smooth paths without changing length, and identifies both auxiliary
-infima with `Manifold.riemannianEDist`.  S01 remains partial on the separate E1
-metric-existence obligation.  This focused revision does not mark the other G2
-gates complete or unlock G2 descendants.  This file is the repository-owned
+infima with `Manifold.riemannianEDist`.  This revision separately completes E1:
+`Ch01.MetricExistence` proves the generic smooth-vector-bundle metric theorem
+and derives the arbitrary finite-dimensional tangent-bundle corollary without
+assuming an inner product on the manifold model.  Together these results close
+S01.  This focused revision does not mark the other G2 gates complete or unlock
+G2 descendants.  This file is the repository-owned
 route for the Chapter 1 library.  It is not a
 transcription of the project brief, and each implementation claim is limited
 to the exact audited revision named below.
@@ -232,15 +235,22 @@ them.  In particular:
   minimum internally.  `Ch01.Connection` separately proves the smooth bundled
   connection regularity needed by F1; uniqueness is stated on the differentiable
   vector fields on which Mathlib's connection axioms determine a value;
-- E1 retains the source's finite-dimensional metric-existence contract.  Its
-  partition-of-unity bundle theorem assumes a topology-compatible model-fiber
+- E1 retains the source's finite-dimensional metric-existence contract.
+  `MetricExistence.nonempty_contMDiffRiemannianMetric` proves the
+  partition-of-unity bundle theorem from a topology-compatible model-fiber
   inner product (`InnerProductSpace ℝ F`), a finite-dimensional base model
   (`FiniteDimensional ℝ EB`), and `SigmaCompactSpace B` and `T2Space B`, in
-  addition to the chart, smooth-manifold, and smooth-vector-bundle instances.
-  The tangent-bundle corollary must construct or transport a compatible model
-  inner product for an arbitrary finite-dimensional model; it may not assert
-  that an arbitrary Banach model is Hilbertizable.  These E1 hypotheses do not
-  constrain G2 or later theorems stated for a supplied metric;
+  addition to the topology, chart, `FiberBundle`, `VectorBundle`,
+  smooth-manifold, and `ContMDiffVectorBundle` instances.  It proves the
+  existing-fiber topology compatibility required by
+  `Bundle.ContMDiffRiemannianMetric`; no extra fiber topological-group or scalar
+  continuity hypothesis appears in the exported signature.
+  `MetricExistence.nonempty_contMDiffRiemannianMetric_tangentSpace` transports
+  the Euclidean inner product along a finite-dimensional continuous linear
+  equivalence inside the proof, so its arbitrary finite-dimensional manifold
+  model has no public `InnerProductSpace` assumption and is not claimed to be
+  Hilbertizable.  These E1 hypotheses do not constrain G2 or later theorems
+  stated for a supplied metric;
 - elsewhere, finite-dimensional hypotheses occur at traces, determinants,
   Riemannian volume, curvature contractions, and finite-dimensional
   ODE/linear-algebra consumers.  The special `2 <= n` hypotheses occur only in
@@ -310,7 +320,7 @@ claims the result.
 
 | ID | Source claim and precise evidence | Public owner/API | Node | Hard prerequisites | Proof-risk gate | Status in this revision |
 | --- | --- | --- | --- | --- | --- | --- |
-| S01 | Metric, finite-dimensional existence under the source's standing manifold convention, smooth-path distance, and metric balls: Definition 1.1 and following paragraphs, p. 35; `morganTian2007` | `Metric`: direct Mathlib metric, a finite-dimensional existence theorem, and distance/topology/ball bridges | E1 + G2 | E1: topology-compatible `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, `T2Space B`, and the smooth bundle/manifold instances used by partition of unity; G2: pinned bundle metric and path-length APIs | derive the arbitrary finite-dimensional tangent-bundle corollary without a second metric representation or an arbitrary-Banach existence claim, and prove smooth and accepted piecewise-smooth path infima equal Mathlib's `C^1` infimum | **Partial (E1 only).** `Ch01.Metric` proves supplied-metric coherence; defines smooth and finite piecewise-smooth paths with canonical length; gives endpoint-preserving, length-controlled replacements of `C^1` paths; proves `smoothPathEDist = piecewiseSmoothPathEDist = riemannianEDist`; and constructs finite piecewise-smooth witnesses on preconnected manifolds without extra dimension, completeness, boundary, or separation assumptions. The G2 distance component is complete; the separate E1 finite-dimensional metric-existence obligation remains open |
+| S01 | Metric, finite-dimensional existence under the source's standing manifold convention, smooth-path distance, and metric balls: Definition 1.1 and following paragraphs, p. 35; `morganTian2007` | `MetricExistence`: generic bundle existence and its tangent-bundle corollary; `Metric`: direct Mathlib metric and distance/topology/ball bridges | E1 + G2 | E1: topology-compatible `InnerProductSpace ℝ F`, `FiniteDimensional ℝ EB`, `SigmaCompactSpace B`, `T2Space B`, and the smooth bundle/manifold instances used by partition of unity; G2: pinned bundle metric and path-length APIs | derive the arbitrary finite-dimensional tangent-bundle corollary without a second metric representation or an arbitrary-Banach existence claim, and prove smooth and accepted piecewise-smooth path infima equal Mathlib's `C^1` infimum | **Complete.** `Ch01.MetricExistence.nonempty_contMDiffRiemannianMetric` proves generic smooth-vector-bundle existence from the exact E1 hypotheses, including positive definiteness, symmetry, existing-fiber topology compatibility, and smooth dependence; `nonempty_contMDiffRiemannianMetric_tangentSpace` separately derives the arbitrary finite-dimensional tangent result by transporting a Euclidean model form internally, with no public model `InnerProductSpace`. `Ch01.Metric` proves supplied-metric coherence; defines smooth and finite piecewise-smooth paths with canonical length; gives endpoint-preserving, length-controlled replacements of `C^1` paths; proves `smoothPathEDist = piecewiseSmoothPathEDist = riemannianEDist`; and constructs finite piecewise-smooth witnesses on preconnected manifolds without extra dimension, completeness, boundary, or separation assumptions. No other G2, F1, F2, or A2 status changes as a consequence of E1 |
 | S02 | Levi--Civita existence and uniqueness: Theorem 1.2, pp. 35--36; `morganTian2007`; `doCarmo1992`, Theorem 3.6 and Remark 3.7/formula (10), printed pp. 55--56; `lee2018`, Thm. 5.10 and Cor. 5.11(b), equation (5.10), printed pp. 123--124 | `Connection.leviCivitaConnection` | G2 -> F1 | S01 and bundled `CovariantDerivative` producer | construct the connection from the metric and prove compatibility, torsion zero, Koszul, regularity, and uniqueness on the same field class | **Complete.** `Ch01.Connection` constructs Mathlib's exact bundled type and proves metric compatibility, zero torsion, the source-ordered Koszul formula, uniqueness for a differentiable field at a point and arbitrary tangent direction, and smooth `ContMDiffCovariantDerivative` regularity |
 | S03 | Christoffel equation (1.1) (`Gamma`), p. 36; `morganTian2007` | `Connection.christoffel_formula` | F1 | S02 and chart differentiation | chart formula must be proved equivalent to the bundled connection; chart data stays private | **Complete.** `Ch01.Connection.Christoffel` identifies the chart coefficients of the exact canonical `leviCivitaConnection g` with the inverse-Gram contraction in equation (1.1) at an interior chart point; the local frame and metric components remain proof data |
 | S04 | Hessian equation (1.2) and Lemma 1.3 (`Hessian`, `Hessformula`), pp. 36--37; `morganTian2007` | `Connection.hessian` and symmetry/tensor/coordinate lemmas | F1 | S02--S03 | align covector versus gradient conventions and prove tensoriality at the advertised regularity | Open |
@@ -455,13 +465,15 @@ Node contracts:
 
 - **G0**: this roadmap, bibliography, package, toolchain, manifest, root
   module, and workflow. No mathematical implementation.
-- **E1** (`G0`): first prove the partition-of-unity bundle theorem for a
+- **E1** (`G0`, complete): `Ch01.MetricExistence` proves the
+  partition-of-unity bundle theorem for a
   topology-compatible model-fiber `InnerProductSpace ℝ F`, a
   `FiniteDimensional ℝ EB` base model, and `SigmaCompactSpace B` and
   `T2Space B`, with the required chart, smooth-manifold, and smooth-vector-bundle
-  instances.  Then derive the source-strength tangent-bundle corollary for an
-  arbitrary finite-dimensional manifold by constructing or transporting a
-  compatible model inner product.  This discharges the source's
+  instances.  Its distinct tangent-bundle theorem derives the source-strength
+  corollary for an arbitrary finite-dimensional manifold by transporting a
+  Euclidean inner product through a continuous linear equivalence internal to
+  the proof.  This discharges the source's
   finite-dimensional existence paragraph without changing the explicit metric
   parameter or generality of the supplied-metric geometric theorems.
 - **G1** (`G0`): close the table above with current Mathlib and candidate dependency
@@ -714,6 +726,7 @@ reviewed commit.  The audit history is:
 | `G2-smooth-distance-correspondence` / `MorganTianLib/Ch01/Metric.lean` | Added endpoint-preserving quantitative chart replacement for `C^1` paths, compact monotone subdivision into accepted smooth segments, the limiting reverse infimum inequality, endpoint-flat smooth concatenation with exact length additivity, and equality of both source-facing infima with `Manifold.riemannianEDist` | Accepted main baseline `9f735b3d1ff28252afed506ba74db28d0d74412a`; Morgan--Tian Definition 1.1 and following paragraph, p. 35; pinned Mathlib `Riemannian.Basic`, `Riemannian.PathELength`, smooth-transition, manifold-chart, and compact-cover APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6` | Mark the supplied-metric G2 distance component complete and S01 partial only on E1 metric existence.  Keep the auxiliary infima as correspondence statements, add no ambient metric or stronger global assumption, and leave all other G2 gate and descendant statuses unchanged in this focused revision |
 | `issue-26-christoffel` / `MorganTianLib/Ch01/Connection/Christoffel.lean` | Added the chart-coordinate coefficient theorem for the explicit-metric canonical Levi--Civita connection, including the local coordinate-frame bracket calculation, chart/manifold derivative bridge, Koszul first-kind identity, and inverse-Gram contraction | Accepted roadmap baseline `07d2a0be1a7aa3e38d827756b6585edb5a2ade60`; Morgan--Tian equation (1.1), printed p. 36; do Carmo (1992), Theorem 3.6 and Remark 3.7/formula (10), printed pp. 55--56; Lee (2018), Corollary 5.11(b), equation (5.10), printed pp. 123--124; pinned Mathlib chart, tangent local-frame, manifold derivative, Gram matrix, and nonsingular inverse APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6` | Mark S03 complete without defining another connection or public coordinate facade.  Require an explicit smooth metric and an interior chart point, keep coordinate data private, and leave Hessian S04, function Laplacian S05, and all curvature/tensor-Laplacian rows open |
 | `issue-26-review-response` / `b57eb2ee13bfce92709df681f199ff1888c568eb` | Corrected the do Carmo and Lee source anchors for the connection producer and Christoffel bridge across the Lean module docstrings, G2 decision, bibliography, S02/S03 ledger rows, and audit history; no declaration or representation changed | Retained do Carmo scan: Theorem 3.6 and Remark 3.7/formula (10), printed pp. 55--56; retained Lee second-edition PDF: Theorem 5.10 and Corollary 5.11(b), equation (5.10), printed pp. 123--124; Morgan--Tian equation (1.1), p. 36 | Keep `Connection.leviCivitaConnection`, `Connection.christoffel_formula`, private chart plumbing, and S03 completion unchanged; this is documentation/source-mapping correction only |
+| `E1-metric-existence` / `MorganTianLib/Ch01/MetricExistence.lean` | Added `nonempty_contMDiffRiemannianMetric`, the generic smooth-vector-bundle theorem built from an actual smooth partition of unity, and the distinct `nonempty_contMDiffRiemannianMetric_tangentSpace` corollary, whose auxiliary Euclidean form is transported internally through Mathlib's finite-dimensional continuous linear equivalence; exported the focused module through the Chapter 1 umbrella.  Nested hom-bundle synthesis has a 400000-heartbeat cap, and five private finite-sum or coordinate-transport proofs have scoped 800000-heartbeat caps | Accepted roadmap revision `a6684bb6eef31dbdc75c76e541b4f4475bc1e303`; Morgan--Tian Definition 1.1 and following existence paragraph, printed p. 35; pinned Mathlib `ContMDiffRiemannianMetric`, `ContMDiffVectorBundle`, hom-bundle, bounded-unit-ball, smooth partition-of-unity, and `toEuclidean` APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; Apache-licensed Mathlib PR #33714 exact head `c4cbb8b896a4db75bf49cf1ab0a898232cede01e` as modified prior art absent from the pinned dependency and as provenance for the 800000-heartbeat proof boundaries | Mark E1 and S01 complete.  Keep `Bundle.ContMDiffRiemannianMetric` as the only public metric representation, add no global competing instance, and keep the generic model-fiber `InnerProductSpace` separate from the tangent theorem's weaker arbitrary finite-dimensional normed model.  Treat the private heartbeat caps as a named elaboration-performance exception: re-audit or remove them when the pinned dependency changes.  Do not change the completion state of other G2 gates, F1, F2, A2, or their descendants |
 
 ## Review and completion checklist
 
