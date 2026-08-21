@@ -8,7 +8,7 @@ c4cbb8b896a4db75bf49cf1ab0a898232cede01e.  The adaptation keeps all
 construction data private, works at smooth rather than analytic regularity,
 and adds the finite-dimensional tangent-bundle corollary.
 -/
-import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.InnerProductSpace.EuclideanDist
 import Mathlib.Analysis.LocallyConvex.Bounded
 import Mathlib.Geometry.Manifold.PartitionOfUnity
 import Mathlib.Geometry.Manifold.VectorBundle.Riemannian
