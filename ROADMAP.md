@@ -155,6 +155,11 @@ absent `ACTIONS_CACHE_URL`, restores dependency packages and weekly project
 outputs when the cache service exists, runs `lake exe cache get`, and runs
 `lake build`.  Cache saves are restricted to pushes to `main`; pull requests
 only restore.  Action revisions are immutable commit SHAs.  The separate
+`.github/workflows/lean.yml` implements the same G0 workflow contract for
+GitHub with immutable `actions/checkout` and `leanprover/lean-action` pins;
+it retains only the action's Mathlib artifact restoration and explicitly
+disables its whole-`.lake` GitHub cache, so the build has no project-cache
+dependency on the Actions cache service.  The separate
 `palimpsest/review-panel` status remains a forge governance status and is not
 faked by this workflow.
 
