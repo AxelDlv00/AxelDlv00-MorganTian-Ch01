@@ -35,8 +35,9 @@ are deliberately set to zero: Mathlib's bundled connection axioms do not
 constrain those values, so no unrestricted extensional uniqueness is claimed.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Theorem 1.2,
-printed pp. 35--36.  Cross-checks: do Carmo (1992), Chapter 2, pp. 44--51,
-and Lee (2018), Theorem 5.10.
+printed pp. 35--36.  Cross-checks: do Carmo (1992), Theorem 3.6 and Remark
+3.7/formula (10), printed pp. 55--56, and Lee (2018), Theorem 5.10 and
+Corollary 5.11(b), equation (5.10), printed pp. 123--124.
 
 The producer is modified from the Apache-licensed Mathlib PR
 [#36845](https://github.com/leanprover-community/mathlib4/pull/36845), exact
