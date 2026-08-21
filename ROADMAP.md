@@ -7,29 +7,27 @@ Status: accepted bootstrap route at repository commit
 operator, trace, and determinant/density comparison increments and completed
 G1 evidence audit recorded below.  The Mathlib-native G2 route in
 [`docs/G2_SUBSTRATE_DECISION.md`](docs/G2_SUBSTRATE_DECISION.md) was accepted
-at `aa45255fc76b3de3870f6411dde9b1c733e39074`.  At accepted roadmap baseline
-`80bdb7f7eb6bd1efb3b52b91cbb1293b52dd928d`, `Ch01.Metric` implements the
-metric and Mathlib `C^1` distance/topology substrate, and `Ch01.Volume`
-implements the normalized-volume family.  `Ch01.Curvature` implements the
-independent inner-product-space curvature sign/order kernel and its five
-regressions, and the merged `Ch01.Connection` module implements the bundled
-Levi--Civita producer with smooth consumer regularity.  The focused F1
-`Ch01.Connection.Christoffel` increment proves the canonical connection's
-chart-coordinate formula and completes S03 while leaving S04--S05 open.  The
-preceding G2 revision completes the supplied-metric source-distance
-correspondence: it gives endpoint-preserving,
-length-controlled piecewise-smooth replacements of `C^1` paths, flattens finite
-chains to smooth paths without changing length, and identifies both auxiliary
-infima with `Manifold.riemannianEDist`.  The merged E1 revision separately
-completes E1:
-`Ch01.MetricExistence` proves the generic smooth-vector-bundle metric theorem
-and derives the arbitrary finite-dimensional tangent-bundle corollary without
-assuming an inner product on the manifold model.  Together these results close
-S01.  This focused revision does not mark the other G2 gates complete or unlock
-G2 descendants.  This file is the repository-owned
-route for the Chapter 1 library.  It is not a
-transcription of the project brief, and each implementation claim is limited
-to the exact audited revision named below.
+at `aa45255fc76b3de3870f6411dde9b1c733e39074`.  Every G2-owned coherence family
+was implemented by accepted head
+`07d2a0be1a7aa3e38d827756b6585edb5a2ade60`: `Ch01.Metric` supplies the metric,
+smooth/continuous-bundle, Mathlib `C^1` distance/topology, and source-distance
+bridges; `Ch01.Volume` supplies normalized volume; `Ch01.Connection` supplies
+the bundled Levi--Civita connection with smooth consumer regularity; and
+`Ch01.Curvature` supplies the algebraic sign/order kernel and five regressions.
+The geodesic-equation handoff is owned by F2 after G2 and is not a G2
+prerequisite.  Consequently G2 is complete at `07d2a0b`, and F1, F2, and A2 are
+unlocked there.
+
+The later focused F1 `Ch01.Connection.Christoffel` increment proves the
+canonical connection's chart-coordinate formula and completes S03 while
+leaving S04--S05 open; open issue #13 continues from that frontier.  The merged
+E1 revision separately proves the generic smooth-vector-bundle metric theorem
+and its arbitrary finite-dimensional tangent-bundle corollary, closing E1 and,
+together with G2, S01.  The G2 completion decision was re-audited at protected
+branch head `8f43241e6f754e6958266d15537fdef10e73175c`.  It makes no new S04--S43
+completion claim.  This file is the repository-owned route for the Chapter 1
+library.  It is not a transcription of the project brief, and each
+implementation claim is limited to the exact audited revision named below.
 
 ## Authority and evidence
 
@@ -89,10 +87,11 @@ The completed declaration-level G1 audit is
 exact pinned signatures and imports, the candidate's license and producer
 gaps, a disposition for every source row, and the bounded alternatives and
 questions for G2.  The G2 decision record resolves those questions, records
-the exact re-audit, freezes the implementation contract, and now records which
-metric, volume, connection, and algebraic curvature-sign contracts have Lean
-evidence.  The supplied-metric source-distance correspondence is now proved;
-the status of other G2 completion checks is unchanged.
+the exact re-audit, freezes the implementation contract, and identifies the six
+G2-owned bridge families and their Lean evidence.  The final source-distance
+implementation at `07d2a0be1a7aa3e38d827756b6585edb5a2ade60` completed the last
+of those six families.  The ledger's seventh row is an explicit post-gate F2
+geodesic handoff, not an unnamed G2 check.
 
 ## End state and boundaries
 
@@ -451,8 +450,9 @@ The frontiers are intentional: A1 and E1 start directly after G0 and run in
 parallel with G1 and the human-gated substrate route.  E1 proves only
 finite-dimensional existence of a smooth metric; it does not block work
 carried out with a supplied metric and is not an additional G2 coherence gate.
-After G2, F1, F2, and the normal-geometry-independent A2 measure primitives run
-in parallel while A1 may continue.  F3 waits for both F1 and F2 because S14
+At G2 completion head `07d2a0be1a7aa3e38d827756b6585edb5a2ade60`, F1, F2,
+and the normal-geometry-independent A2 measure primitives became unlocked to
+run in parallel while A1 may continue.  F3 waits for both F1 and F2 because S14
 consumes Hopf--Rinow, then joins Z1 independently of the normal/comparison
 branch.  J1 waits only for F1/F2 and V1 waits for J1.  N1 waits for
 F2/A2/J1/V1 so S28 can prove cut-locus nullity from completed measure primitives.
@@ -479,18 +479,20 @@ Node contracts:
   parameter or generality of the supplied-metric geometric theorems.
 - **G1** (`G0`): close the table above with current Mathlib and candidate dependency
   signatures, import graph, and exact source anchors.
-- **G2** (`G1`, human gate): first merge the repository-owned substrate
-  selection in `docs/G2_SUBSTRATE_DECISION.md`; then implement and prove its
-  metric/distance/measure and connection bridges, audit assumptions, and
-  freeze curvature signs.  The metric, Mathlib `C^1` distance/topology, smooth
-  and finite piecewise-smooth path types, both infimum comparisons and
-  equalities, and finite preconnected witness are present in `Ch01.Metric`;
-  the measure/volume family is present in `Ch01.Volume`; the bundled connection
-  producer and regularity are present in `Ch01.Connection`; and the algebraic
-  sign/order model and all five regressions are present in `Ch01.Curvature`.
-  The supplied-metric source-distance bridge is complete.  This focused
-  revision does not mark the other G2 completion checks complete or unlock a
-  descendant; the algebraic kernel does not claim a manifold curvature API.
+- **G2** (`G1`, human gate; complete at
+  `07d2a0be1a7aa3e38d827756b6585edb5a2ade60`): first merge the repository-owned
+  substrate selection in `docs/G2_SUBSTRATE_DECISION.md`; then implement and
+  prove its metric/distance/measure and connection bridges, audit assumptions,
+  and freeze curvature signs.  The exhaustive G2-owned checklist is metric
+  data, smooth/continuous bundle coherence, distance/topology including the
+  source-facing infimum equalities, normalized measure/volume, the bundled
+  Levi--Civita producer and regularity, and the algebraic curvature sign/order
+  kernel.  `Ch01.Metric`, `Ch01.Volume`, `Ch01.Connection`, and
+  `Ch01.Curvature` implement those six families and are imported by the Chapter
+  1 umbrella.  The ledger's geodesic-equation row is a post-gate F2 handoff:
+  making it a G2 prerequisite would create the cycle `G2 -> F2 -> G2`.
+  Therefore F1, F2, and A2 are unlocked.  The algebraic kernel still makes no
+  manifold-curvature claim.
 - **F1** (`G2`): connection, Hessian/function and tensor connection
   Laplacians, curvature, Bianchi, Ricci/scalar, divergence/Bochner,
   naturality, and rescaling.
@@ -640,9 +642,12 @@ Hard gates are recorded in the decision:
 
 The selected route was accepted through human review and merge at
 `aa45255fc76b3de3870f6411dde9b1c733e39074`.  The curvature sign/order kernel
-and bundled connection producer/regularity are merged, and the supplied-metric
-smooth/piecewise-smooth distance correspondence now has a Lean implementation.
-This focused revision does not change the status of other G2 completion checks.
+and bundled connection producer/regularity were merged before the final
+supplied-metric smooth/piecewise-smooth distance correspondence.  Accepted head
+`07d2a0be1a7aa3e38d827756b6585edb5a2ade60` is the first head containing every
+G2-owned family, so it completes G2 and unlocks F1, F2, and A2.  The intrinsic
+geodesic equation remains pending in F2; it is downstream work, not completion
+debt on its own prerequisite.
 
 ## Provisional debt and replacement triggers
 
@@ -702,7 +707,9 @@ An audit entry is updated in the same PR whenever any of these changes:
 
 Each record names the changed node/declaration, sources and APIs rechecked,
 migration decision, remaining debt and its replacement trigger, and the exact
-reviewed commit.  The audit history is:
+reviewed commit.  Each row is a historical statement scoped to its named
+revision; a later gate decision does not rewrite what an earlier focused
+revision established.  The audit history is:
 
 | Revision | Change | Rechecked evidence | Decision |
 | --- | --- | --- | --- |
@@ -730,6 +737,7 @@ reviewed commit.  The audit history is:
 | `issue-26-christoffel` / `MorganTianLib/Ch01/Connection/Christoffel.lean` | Added the chart-coordinate coefficient theorem for the explicit-metric canonical Levi--Civita connection, including the local coordinate-frame bracket calculation, chart/manifold derivative bridge, Koszul first-kind identity, and inverse-Gram contraction | Accepted roadmap baseline `07d2a0be1a7aa3e38d827756b6585edb5a2ade60`; Morgan--Tian equation (1.1), printed p. 36; do Carmo (1992), Theorem 3.6 and Remark 3.7/formula (10), printed pp. 55--56; Lee (2018), Corollary 5.11(b), equation (5.10), printed pp. 123--124; pinned Mathlib chart, tangent local-frame, manifold derivative, Gram matrix, and nonsingular inverse APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6` | Mark S03 complete without defining another connection or public coordinate facade.  Require an explicit smooth metric and an interior chart point, keep coordinate data private, and leave Hessian S04, function Laplacian S05, and all curvature/tensor-Laplacian rows open |
 | `issue-26-review-response` / `b57eb2ee13bfce92709df681f199ff1888c568eb` | Corrected the do Carmo and Lee source anchors for the connection producer and Christoffel bridge across the Lean module docstrings, G2 decision, bibliography, S02/S03 ledger rows, and audit history; no declaration or representation changed | Retained do Carmo scan: Theorem 3.6 and Remark 3.7/formula (10), printed pp. 55--56; retained Lee second-edition PDF: Theorem 5.10 and Corollary 5.11(b), equation (5.10), printed pp. 123--124; Morgan--Tian equation (1.1), p. 36 | Keep `Connection.leviCivitaConnection`, `Connection.christoffel_formula`, private chart plumbing, and S03 completion unchanged; this is documentation/source-mapping correction only |
 | `E1-metric-existence` / `MorganTianLib/Ch01/MetricExistence.lean` | Added `nonempty_contMDiffRiemannianMetric`, the generic smooth-vector-bundle theorem built from an actual smooth partition of unity, and the distinct `nonempty_contMDiffRiemannianMetric_tangentSpace` corollary, whose auxiliary Euclidean form is transported internally through Mathlib's finite-dimensional continuous linear equivalence; exported the focused module through the Chapter 1 umbrella.  Nested hom-bundle synthesis has a 400000-heartbeat cap, and five private finite-sum or coordinate-transport proofs have scoped 800000-heartbeat caps | Accepted roadmap revision `a6684bb6eef31dbdc75c76e541b4f4475bc1e303`; Morgan--Tian Definition 1.1 and following existence paragraph, printed p. 35; pinned Mathlib `ContMDiffRiemannianMetric`, `ContMDiffVectorBundle`, hom-bundle, bounded-unit-ball, smooth partition-of-unity, and `toEuclidean` APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; Apache-licensed Mathlib PR #33714 exact head `c4cbb8b896a4db75bf49cf1ab0a898232cede01e` as modified prior art absent from the pinned dependency and as provenance for the 800000-heartbeat proof boundaries | Mark E1 and S01 complete.  Keep `Bundle.ContMDiffRiemannianMetric` as the only public metric representation, add no global competing instance, and keep the generic model-fiber `InnerProductSpace` separate from the tangent theorem's weaker arbitrary finite-dimensional normed model.  Treat the private heartbeat caps as a named elaboration-performance exception: re-audit or remove them when the pinned dependency changes.  Do not change the completion state of other G2 gates, F1, F2, A2, or their descendants |
+| `G2-gate-reconciliation` / completion head `07d2a0be1a7aa3e38d827756b6585edb5a2ade60`, audited baseline `8f43241e6f754e6958266d15537fdef10e73175c` | Reconciled the current G2 status with its exhaustive bridge ledger: metric data, smooth/continuous bundle coherence, distance/topology and source correspondence, normalized volume, the bundled Levi--Civita producer/regularity, and curvature sign/order are the six G2-owned families; the geodesic-equation row is an F2 handoff after the gate.  Preserved all earlier focused audit rows as historical statements | Accepted producer heads `599f5241fee042dd50e9e60a3a343a1cbac7aa39` (metric/volume), `c65121f0410f368b75dd8d57fe7df09620f9fe12` (curvature signs), `ae92775c2e3bff2278da8cfb38e12b560d2ba213` (connection), and `07d2a0be1a7aa3e38d827756b6585edb5a2ade60` (final distance correspondence), all imported by `MorganTianLib/Ch01.lean`; exact exported hypotheses and declaration checks in `docs/G2_SUBSTRATE_DECISION.md`; proof-hole, `unsafe`, forbidden-dependency, root-import, DAG, and workflow-shape scans at `8f43241e6f754e6958266d15537fdef10e73175c` | Mark G2 complete at `07d2a0b` and unlock F1, F2, and A2.  Keep the intrinsic geodesic equation pending in F2.  Preserve S03 completion at `a6684bb6eef31dbdc75c76e541b4f4475bc1e303` and open issue #13's S04--S05 frontier; make no new S04--S43 claim and change no canonical representation or Lean API |
 
 ## Review and completion checklist
 

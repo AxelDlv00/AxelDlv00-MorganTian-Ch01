@@ -1,20 +1,26 @@
 # G2 substrate decision
 
 Status: the Mathlib-native construction route was accepted at repository
-commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  `Ch01.Metric` implements the
-metric, smooth/continuous bundle, Mathlib `C^1` distance/topology substrate,
-and the source-facing smooth and finite piecewise-smooth path correspondence;
-`Ch01.Volume` implements the measure/volume bridge family; and
-`Ch01.Curvature` implements the independent inner-product-space convention
-kernel and all five algebraic sign/order regressions.  The merged
-`Ch01.Connection` module implements the bundled Levi--Civita producer with
-smooth consumer regularity.  `Ch01.Metric` now proves endpoint-preserving,
-length-controlled replacement of `C^1` paths and identifies both the smooth and
-finite piecewise-smooth length infima with `Manifold.riemannianEDist`.  This
-focused revision closes only the distance/topology bridge family; it does not
-mark other G2 completion checks complete or unlock F1, F2, or A2.
+commit `aa45255fc76b3de3870f6411dde9b1c733e39074`.  Its six G2-owned coherence
+families are complete at accepted implementation head
+`07d2a0be1a7aa3e38d827756b6585edb5a2ade60`.  `Ch01.Metric` implements metric,
+smooth/continuous-bundle, Mathlib `C^1` distance/topology, and source-distance
+coherence; `Ch01.Volume` implements normalized-volume coherence;
+`Ch01.Connection` implements the bundled Levi--Civita producer with smooth
+consumer regularity; and `Ch01.Curvature` implements the independent
+inner-product-space sign/order kernel and all five regressions.  The ledger's
+geodesic-equation row is an F2-owned handoff after G2, not a G2 prerequisite.
+Therefore G2 is complete and F1, F2, and A2 are unlocked at `07d2a0b`.
 
-Decision date: 2026-08-19 (Asia/Shanghai).
+The status was re-audited at protected branch head
+`8f43241e6f754e6958266d15537fdef10e73175c`.  S03 was subsequently completed by
+the canonical Christoffel theorem at
+`a6684bb6eef31dbdc75c76e541b4f4475bc1e303`; S04--S05 remain open in issue #13.
+This reconciliation makes no new S04--S43 completion claim and changes no Lean
+declaration or canonical representation.
+
+Original route decision date: 2026-08-19 (Asia/Shanghai).
+Completion reconciliation date: 2026-08-21 (Asia/Shanghai).
 
 ## Decision
 
@@ -102,10 +108,12 @@ evidence level 4 by exact repository and revision identity.
 
 ## Route comparison
 
-All four routes are compared against the same ten criteria.  "Bridge count"
-counts the seven mandatory coherence families from G1, not individual helper
-lemmas; splitting one family into more declarations does not make another
-route semantically cheaper.
+All four routes are compared against the same ten criteria.  At route-selection
+time, "bridge count" counted G1's seven listed families, not individual helper
+lemmas; splitting one family into more declarations did not make another route
+semantically cheaper.  The accepted ownership decision below classified six of
+those families as G2 completion work and the geodesic row as the post-gate F2
+handoff.
 
 | Criterion | Reviewed Git dependency | Scoped licensed extraction | Mathlib-native construction | Wait for merged upstream |
 | --- | --- | --- | --- | --- |
@@ -118,7 +126,7 @@ route semantically cheaper.
 | Semantic coverage | Partial distance and pointwise coordinate-geodesic work; no volume or bundled Levi--Civita producer | Same bounded source coverage | No hidden coverage claim: every missing producer is owned explicitly | No inspected proposal covers metric, distance, volume, connection regularity, curvature, and geodesics together |
 | Namespace collisions | `HopfRinow.RiemannianMetric` and generic geodesic names overlap the roadmap vocabulary | Names could be changed, creating migration adapters | Project namespaces can follow the roadmap while public types remain Mathlib types | Future names are plausible migration targets but remain unstable before merge |
 | Maintenance ownership | External repository plus local bridges and version coordination | Full ownership of adapted source plus provenance and deletion work | Full ownership of only the code Chapter 1 actually uses | Work is deferred, not removed; later pin migration and local bridges remain |
-| Bridge count | All 7 families remain; candidate only partially supplies metric/distance and supplies none of measure/connection/sign contracts | All 7 remain, with partial reusable code only after licensing | All 7 are local and reviewable against one pin | All 7 remain at the current heads; a future merge may reduce connection work but not the other families |
+| Bridge count | All 7 families remain; candidate only partially supplies metric/distance and supplies none of measure/connection/sign contracts | All 7 remain, with partial reusable code only after licensing | All 7 have local repository owners against one pin: six G2 completion families and one post-gate F2 handoff; the six G2 families are complete | All 7 remain at the current heads; a future merge may reduce connection work but not the other families |
 
 The Git and extraction routes fail a legal hard gate before their engineering
 benefits can be weighed.  Waiting fails the project-progress objective and has
@@ -179,12 +187,11 @@ and no second public vocabulary.
 
 ## Frozen coherence contracts
 
-The contracts are implemented in reviewable dependency slices.  The metric,
-volume, connection, algebraic curvature-sign, and source-distance sections now
-have Lean owners named in the bridge ledger.  Completion of the source-distance
-section does not by itself settle the status of other G2 checks.  Names are
-ownership descriptions; review may improve a declaration name without changing
-its representation or semantics.
+The contracts were implemented in reviewable dependency slices.  The bridge
+ledger below is exhaustive: its six G2-owned families all have Lean evidence,
+and its seventh row records the downstream F2 geodesic handoff.  There is no
+unnamed G2 completion check.  Names are ownership descriptions; review may
+improve a declaration name without changing its representation or semantics.
 
 ### Metric, norm, and topology
 
@@ -366,21 +373,64 @@ an additional `T2Space M` must not be repeated without a distinct consumer.
 
 ## Bridge ledger and ownership
 
-The seven mandatory bridge families have these owners and completion tests:
+The former seven-row list consists of six G2 completion families and one
+post-gate F2 handoff.  The table is exhaustive; no private chart helper or
+downstream geometric producer is counted as G2 evidence.
 
-| Family | Owner | G2 completion evidence | Status in this revision |
+| Family | Owner and accepted producer | Completion evidence | Gate status |
 | --- | --- | --- | --- |
-| Metric data | `Ch01.Metric` | one installation path plus fibre inner/norm/topology equalities | Implemented by `contMDiffRiemannianBundle`, `inner_eq_metric`, `norm_eq_sqrt_metric`, and `tangent_topology_eq_norm_topology` |
-| Smooth/continuous bundle | `Ch01.Metric` | explicit successful instance synthesis at the selected regularity | Implemented by `contMDiffRiemannianBundle` and `continuousRiemannianBundle` |
-| Distance/topology | `Ch01.Metric` | `edist`, finite `dist`, original topology, ball equalities, and the accepted smooth/piecewise-smooth source correspondence | Implemented: the Mathlib `edist`/`dist`/topology/ball equalities, `exists_nhds_smoothPath_eLength_le_ofReal_sq_mul_pathELength`, `exists_piecewiseSmoothPath_eLength_le_ofReal_sq_mul_pathELength`, `exists_smoothPath_eLength_le_ofReal_sq_mul_pathELength`, exact length-preserving `PiecewiseSmoothPath.toSmooth`, both `piecewiseSmoothPathEDist_eq_riemannianEDist` and `smoothPathEDist_eq_riemannianEDist`, local chart segments, and the finite preconnected witness are proved |
-| Measure/volume | `Ch01.Volume` | Euclidean Hausdorff definition, explicit Borel result type, metric dependence, Euclidean normalization | Implemented by `riemannianVolume`, its explicit Borel indexing, and its open-set, ball, raw-Hausdorff, and Euclidean normalization theorems |
-| Connection | `Ch01.Connection` | construction, compatibility, torsion, Koszul, uniqueness, and smooth consumer regularity | Implemented by `leviCivitaConnection`, `isMetricCompatible_leviCivitaConnection`, `torsion_leviCivitaConnection_eq_zero`, `leviCivitaConnection_koszul`, `leviCivitaConnection_eq_at_of_isMetricCompatible_of_torsion_eq_zero`, and `contMDiff_leviCivitaConnection` |
-| Geodesic equation | `Ch01.Geodesic` in F2 | intrinsic vanishing-acceleration definition; no G2 coordinate adapter is needed | Pending F2 after G2; no compatibility adapter exists |
-| Curvature signs | `Ch01.Curvature` | algebraic model/operator pairing and all five constant-curvature regressions | Implemented by `modelCurvature`, `modelCurvature4`, their pairing and component theorems, the Jacobi/index/sectional regressions, and `sum_modelCurvature4_orthonormalBasis` |
+| Metric data | `Ch01.Metric`; `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | `contMDiffRiemannianBundle`, `inner_eq_metric`, `norm_eq_sqrt_metric`, and `tangent_topology_eq_norm_topology` give one local installation path and the fibre inner/norm/topology equalities | G2 complete |
+| Smooth/continuous bundle | `Ch01.Metric`; `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | `contMDiffRiemannianBundle` and `continuousRiemannianBundle` synthesize the selected smooth and continuous predicates | G2 complete |
+| Distance/topology | `Ch01.Metric`; base coherence at `599f5241fee042dd50e9e60a3a343a1cbac7aa39`, final source correspondence at `07d2a0be1a7aa3e38d827756b6585edb5a2ade60` | `edist_eq_riemannianEDist`, `topology_eq_riemannianEMetric`, `dist_eq_riemannianEDist_toReal`, `metric_ball_eq_riemannianEDist`, the quantitative replacement theorems, exact `PiecewiseSmoothPath.toSmooth` length preservation, `piecewiseSmoothPathEDist_eq_riemannianEDist`, `smoothPathEDist_eq_riemannianEDist`, and the finite preconnected witness | G2 complete; this is the last family to land |
+| Measure/volume | `Ch01.Volume`; `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | `riemannianVolume`, `riemannianVolume_eq_euclideanHausdorffMeasure`, `riemannianVolume_eq_smul_hausdorffMeasure`, `isOpen_measurableSet_riemannianVolume`, `measurableSet_riemannianMetric_ball`, and `euclidean_volume_coherence` | G2 complete |
+| Connection | `Ch01.Connection`; `ae92775c2e3bff2278da8cfb38e12b560d2ba213` | `leviCivitaConnection`, `isMetricCompatible_leviCivitaConnection`, `torsion_leviCivitaConnection_eq_zero`, `leviCivitaConnection_koszul`, `leviCivitaConnection_eq_at_of_isMetricCompatible_of_torsion_eq_zero`, and `contMDiff_leviCivitaConnection` | G2 complete |
+| Curvature signs | `Ch01.Curvature`; `c65121f0410f368b75dd8d57fe7df09620f9fe12` | `modelCurvature`, `modelCurvature4`, their pairing and component theorems, the Jacobi/index/sectional regressions, and `sum_modelCurvature4_orthonormalBasis` | G2 complete |
+| Geodesic equation | `Ch01.Geodesic` in F2; no producer yet | F2 must define intrinsic vanishing acceleration and prove any chart equivalence it uses; the selected route needs no G2 coordinate adapter | Pending after G2; not a G2 prerequisite |
 
-The G2 implementation may split these into focused modules, but the Chapter 1
-umbrella must import every completed public contract.  No module may import a
-Chapter 2/3 file, the reference workspace, or an unmerged PR tree.
+All four G2 producer heads are ancestors of
+`07d2a0be1a7aa3e38d827756b6585edb5a2ade60`, whose `MorganTianLib/Ch01.lean`
+imports `Metric`, `Volume`, `Connection`, and `Curvature`.  Requiring the
+geodesic row before opening G2's descendant F2 would create the cycle
+`G2 -> F2 -> G2`; the accepted DAG instead makes that row F2-owned evidence
+after the gate.  Thus the six G2-owned rows are complete at `07d2a0b` and F1,
+F2, and A2 are unlocked.
+
+### Exported hypothesis audit
+
+The declarations above expose the following actual assumptions; no private
+helper is substituted for a public producer.  Unless a row says otherwise, the
+manifold declarations retain the common section context `[NormedAddCommGroup E]`,
+`[NormedSpace ℝ E]`, `[TopologicalSpace H]`,
+`{I : ModelWithCorners ℝ E H}`, `[TopologicalSpace M]`, `[ChartedSpace H M]`,
+and `[IsManifold I ∞ M]`.
+
+| Public family | Exported hypothesis boundary |
+| --- | --- |
+| Metric and bundle | An explicit `g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I)` under the common context.  The declarations install exactly one local `Bundle.RiemannianBundle`; they assume neither finite dimension, separation, preconnectedness, boundarylessness, nor completeness |
+| Source-distance correspondence | `piecewiseSmoothPathEDist_eq_riemannianEDist` and `smoothPathEDist_eq_riemannianEDist` use the installed `Bundle.RiemannianBundle` and `IsContinuousRiemannianBundle`.  The finite witness and `riemannianEDist_lt_top` add only `[PreconnectedSpace M]`; `edist` and topology coherence add only `[T3Space M]`; finite `dist` and ball coherence use both |
+| Volume | `riemannianVolume` and its Hausdorff identities use the explicit metric, `[FiniteDimensional ℝ E]`, and `[T3Space M]`, returning `@Measure M (borel M)`.  Open-set measurability uses the explicit metric and `[T3Space M]` without finite dimension; ball measurability additionally uses `[PreconnectedSpace M]`.  `euclidean_volume_coherence` is over a finite-dimensional real inner-product space and does not claim raw-Hausdorff normalization |
+| Connection | The public producer takes the explicit smooth metric under `[IsManifold I ∞ M]` and `[FiniteDimensional ℝ E]`, with no boundary or completeness assumption.  The Koszul theorem assumes `MDiffAt` for its three fields; uniqueness assumes metric compatibility, zero torsion, and `MDiffAt` only for the differentiated field, with an arbitrary tangent direction |
+| Curvature signs | The kernel requires only `[NormedAddCommGroup E]` and `[InnerProductSpace ℝ E]`.  The Ricci regression takes a finitely indexed `OrthonormalBasis`; there is no global finite-dimensional or lower-dimension assumption |
+
+For the adjacent source ledger, E1's accepted
+`nonempty_contMDiffRiemannianMetric` requires a topology-compatible model-fibre
+`InnerProductSpace`, finite-dimensional base model, smooth vector-bundle data,
+`SigmaCompactSpace`, and `T2Space`.  Its tangent corollary requires a
+finite-dimensional normed model, smooth manifold, `SigmaCompactSpace`, and
+`T2Space`, but no public model `InnerProductSpace`.  Those declarations were
+accepted at `6450ae7f0b75bb446a5d178071500698e754bffb` and close E1/S01, not G2.
+
+The later public `Connection.christoffel_formula` was accepted at
+`a6684bb6eef31dbdc75c76e541b4f4475bc1e303`.  It uses the same explicit metric
+and canonical connection under `[FiniteDimensional ℝ E]` and
+`[IsManifold I ∞ M]`, plus chart-source membership and
+`I.IsInteriorPoint p`.  Its coordinate frame, metric components, and derivative
+bridges are private.  This keeps S03 complete while S04--S05 and issue #13
+remain open.
+
+The Chapter 1 umbrella must continue to import every completed public contract.
+No module may import a Chapter 2/3 file, the reference workspace, or an unmerged
+PR tree.
 
 ## Migration and deletion triggers
 
@@ -403,21 +453,37 @@ Chapter 2/3 file, the reference workspace, or an unmerged PR tree.
 
 ## Implementation status
 
-The accepted decision slice changed no Lean declaration, package pin,
-workflow, or canonical theorem.  Focused implementation revisions now add
-`Ch01.Metric`, `Ch01.Volume`, `Ch01.Connection`, and the algebraic
-`Ch01.Curvature` kernel to the Chapter 1 umbrella.  Together they cover the
-metric, smooth/continuous-bundle, measure/volume, connection, and
-curvature-sign rows plus the complete source-facing distance/topology
-correspondence without adding a compatibility adapter.  The metric module
-proves both infimum comparisons and equalities and finite piecewise-smooth
-existence.  The curvature module defines only an
-inner-product-space model; it does not define the connection-produced manifold
-curvature API owned by F1.  These revisions add no coordinate geodesic, polar
-integration, exponential Jacobian, or cut-locus claim.
+The accepted route-decision slice changed no Lean declaration, package pin,
+workflow, or canonical theorem.  The subsequent accepted implementation heads
+listed in the ledger added `Ch01.Metric`, `Ch01.Volume`, `Ch01.Connection`, and
+the algebraic `Ch01.Curvature` kernel to the Chapter 1 umbrella.  The final
+source-distance revision at
+`07d2a0be1a7aa3e38d827756b6585edb5a2ade60` made that commit the first accepted
+head containing all six G2-owned families.  G2 is therefore complete there;
+F1, F2, and A2 are unlocked by the accepted DAG.
 
-Local diagnostics and axiom/source scans support review of this revision; the
-protected `Lean CI / lake-build (pull_request)` status remains the authoritative
-build check.  Completion of this distance family does not itself mark G2
-complete; the status of the other G2 completion checks and the F1, F2, and A2
-unlock remains unchanged in this focused revision.
+The curvature module remains an inner-product-space convention kernel, not the
+connection-produced manifold curvature API owned by F1.  The geodesic equation
+remains pending in F2.  No coordinate geodesic, polar integration, exponential
+Jacobian, or cut-locus claim is inferred from G2 completion.
+
+At audit baseline `8f43241e6f754e6958266d15537fdef10e73175c`, the Chapter 1
+root imports every credited family, source scans find no project `sorry`,
+`admit`, mathematical `axiom`, or `unsafe` command, and dependency/import scans
+find no Chapter 2/3, reference-workspace, sibling-path, candidate, or unmerged-PR
+dependency.  Focused elaboration and `#print axioms` checks cover the exported
+metric/distance, volume, connection, Christoffel, curvature-kernel, and E1
+declarations named by this audit; every probe reports exactly `propext`,
+`Classical.choice`, and `Quot.sound`, with no project axiom.  The all-family
+source scan likewise finds no project `sorry`, `admit`, `proof_wanted`,
+mathematical `axiom`, `opaque`, or `unsafe` command.  The current DAG is acyclic
+with the geodesic equation in F2.
+`.github/workflows/lean.yml` retains workflow name `Lean CI`, the pull-request
+trigger on `main`, and job id `lake-build`, which publishes the required
+`Lean CI / lake-build (pull_request)` status.  That status is elaboration
+evidence only; the controller-owned result at the exact reviewed PR head remains
+authoritative and is not evidence for the governance conclusion.
+
+The historical route, focused implementation, S03, and E1 audit entries in
+`ROADMAP.md` retain their narrower then-current statements.  This completion
+reconciliation adds no Lean API and makes no new S04--S43 completion claim.
