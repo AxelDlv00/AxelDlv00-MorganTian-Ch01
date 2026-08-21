@@ -350,6 +350,73 @@ theorem christoffel_formula [IsManifold I ∞ M]
   intro l _
   ring
 
+/-! The next two declarations are the narrow chart-data bridges consumed by
+the geometric curvature layer.  Their statements mention only the canonical
+trivialization frame and the interior/differentiability hypotheses needed by
+the derivative calculation; the chart-frame implementation remains private.
+-/
+
+/-- The canonical chart frame has zero Lie bracket on the chart source. -/
+theorem mlieBracket_localFrame_eq_zero [IsManifold I ∞ M]
+    {alpha p : M} (hp : p ∈ (chartAt H alpha).source)
+    (a b : Fin (Module.finrank ℝ E)) :
+    VectorField.mlieBracket I
+      ((trivializationAt E (TangentSpace I) alpha).localFrame
+        (Module.finBasis ℝ E) a)
+      ((trivializationAt E (TangentSpace I) alpha).localFrame
+        (Module.finBasis ℝ E) b) p = 0 := by
+  change VectorField.mlieBracket I (chartFrame (I := I) alpha a)
+      (chartFrame (I := I) alpha b) p = 0
+  exact mlieBracket_chartFrame_eq_zero (I := I) alpha a b hp
+
+/-- Coordinate derivative of a scalar function along a canonical chart-frame
+vector, expressed as the ordinary derivative of its chart pullback. -/
+theorem fderiv_chartScalar_eq_mvfderiv [IsManifold I ∞ M]
+    (phi : M → ℝ) {alpha p : M} (hp : p ∈ (chartAt H alpha).source)
+    (hinterior : I.IsInteriorPoint p)
+    (hphi : MDifferentiableAt I 𝓘(ℝ, ℝ) phi p)
+    (r : Fin (Module.finrank ℝ E)) :
+    fderiv ℝ (fun y : E => phi ((extChartAt I alpha).symm y))
+        (extChartAt I alpha p) (Module.finBasis ℝ E r) =
+      d% phi p ((trivializationAt E (TangentSpace I) alpha).localFrame
+        (Module.finBasis ℝ E) r p) := by
+  let phiChart := extChartAt I alpha
+  have hsource : p ∈ phiChart.source := by
+    simpa only [phiChart, extChartAt_source] using hp
+  have hy : phiChart p ∈ phiChart.target := phiChart.map_source hsource
+  have hyInterior : phiChart p ∈ interior phiChart.target := by
+    exact (I.isInteriorPoint_iff_of_mem_atlas (n := ∞) (by simp)
+      (chart_mem_atlas H alpha) hp).mp hinterior
+  have htarget : phiChart.target ∈ nhds (phiChart p) :=
+    mem_interior_iff_mem_nhds.mp hyInterior
+  have hinv : MDifferentiableAt 𝓘(ℝ, E) I phiChart.symm (phiChart p) :=
+    ((contMDiffWithinAt_extChartAt_symm_target (I := I) (n := ∞) alpha hy).contMDiffAt
+      htarget).mdifferentiableAt (by simp)
+  have hleft : phiChart.symm (phiChart p) = p := phiChart.left_inv hsource
+  have hphiAtInv : MDifferentiableAt I 𝓘(ℝ, ℝ) phi
+      (phiChart.symm (phiChart p)) := by
+    simpa only [hleft] using hphi
+  have hcoord : MDifferentiableAt 𝓘(ℝ, E) 𝓘(ℝ, ℝ)
+      (phi ∘ phiChart.symm) (phiChart p) :=
+    hphiAtInv.comp (phiChart p) hinv
+  have heq : phi =ᶠ[nhds p] (phi ∘ phiChart.symm) ∘ phiChart := by
+    filter_upwards [(chartAt H alpha).open_source.mem_nhds hp] with q hq
+    have hqsource : q ∈ phiChart.source := by
+      simpa only [phiChart, extChartAt_source] using hq
+    simp only [Function.comp_apply, phiChart]
+    rw [(extChartAt I alpha).left_inv hqsource]
+  change fderiv ℝ (phi ∘ phiChart.symm) (phiChart p)
+      (Module.finBasis ℝ E r) = _
+  symm
+  simp only [mvfderiv]
+  rw [heq.mfderiv_eq, mfderiv_comp p hcoord (mdifferentiableAt_extChartAt hp)]
+  change mfderiv 𝓘(ℝ, E) 𝓘(ℝ, ℝ) (phi ∘ phiChart.symm) (phiChart p)
+      (mfderiv I 𝓘(ℝ, E) phiChart p
+        ((trivializationAt E (TangentSpace I) alpha).localFrame
+          (Module.finBasis ℝ E) r p)) = _
+  rw [← mfderiv_extChartAt_chartFrame (I := I) alpha r hp, mfderiv_eq_fderiv]
+  rfl
+
 end Connection
 end Ch01
 end MorganTianLib
