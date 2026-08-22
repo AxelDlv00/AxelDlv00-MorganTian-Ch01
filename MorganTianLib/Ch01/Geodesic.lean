@@ -294,14 +294,16 @@ the intrinsic maximal-domain construction belongs to the next geodesic slice.
 
 The velocity is represented in the chart trivialisation by `chartVelocityAt`.
 The only analytic completeness input is `[CompleteSpace E]`; boundarylessness
-is supplied separately by `exists_localChartGeodesicAt_boundaryless`. -/
+is supplied separately by `exists_localChartGeodesicAt_boundaryless`.  The
+returned curve is continuous at every time in the displayed interval. -/
 theorem exists_localChartGeodesicAt [CompleteSpace E]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) (hp : I.IsInteriorPoint p) :
     ∃ ε > (0 : ℝ), ∃ γ : ℝ → M,
       γ 0 = p ∧
       HasDerivAt (chartReading (I := I) p γ) (chartVelocityAt (I := I) p v) 0 ∧
-      HasChartGeodesicEquationOn (I := I) g p γ (Ioo (-ε) ε) := by
+      HasChartGeodesicEquationOn (I := I) g p γ (Ioo (-ε) ε) ∧
+      (∀ t ∈ Ioo (-ε) ε, ContinuousAt γ t) := by
   let y₀ : E := extChartAt I p p
   let w₀ : E := chartVelocityAt (I := I) p v
   have hy₀ : y₀ ∈ interior (extChartAt I p).target := by
@@ -351,7 +353,7 @@ theorem exists_localChartGeodesicAt [CompleteSpace E]
       filter_upwards [Ioo_mem_nhds (neg_lt_zero.mpr hε') hε'] with s hs
       exact hread s hs
     exact hζpos₀.congr_of_eventuallyEq heq
-  refine ⟨ε', hε', γ, hγ₀, hread_deriv₀, ?_⟩
+  refine ⟨ε', hε', γ, hγ₀, hread_deriv₀, ?_, ?_⟩
   intro t ht
   have ht0 := hsub t ht
   have hstate := hζ t (by simpa [sub_eq_add_neg] using ht0)
@@ -401,6 +403,17 @@ theorem exists_localChartGeodesicAt [CompleteSpace E]
       rw [hread t ht, hread_deriv.deriv]
       rw [chartChristoffelContraction_eq_connection]
       abel
+  · intro t ht
+    have ht0 := hsub t ht
+    have hstate := hζ t (by simpa [sub_eq_add_neg] using ht0)
+    have hpos : HasDerivAt (fun s => (ζ s).1) ((ζ t).2) t := by
+      simpa [chartSpray] using (hstate.hasFDerivAt.fst).hasDerivAt
+    have hsymm : ContinuousAt (extChartAt I p).symm ((ζ t).1) :=
+      continuousAt_extChartAt_symm'' (interior_subset (htarget t ht))
+    have hζcont : ContinuousAt ζ t := hstate.continuousAt
+    have hcomp := hsymm.comp (continuousAt_fst : ContinuousAt Prod.fst (ζ t))
+    have hfinal := hcomp.comp hζcont
+    simpa [γ, Function.comp_def] using hfinal
 
 /-- The first-order state `(u,u')` associated with a chart reading. -/
 def chartState (alpha : M) (gamma : ℝ → M) : ℝ → E × E :=
@@ -535,7 +548,8 @@ theorem exists_localChartGeodesicAt_boundaryless [CompleteSpace E]
     ∃ ε > (0 : ℝ), ∃ γ : ℝ → M,
       γ 0 = p ∧
       HasDerivAt (chartReading (I := I) p γ) (chartVelocityAt (I := I) p v) 0 ∧
-      HasChartGeodesicEquationOn (I := I) g p γ (Ioo (-ε) ε) :=
+      HasChartGeodesicEquationOn (I := I) g p γ (Ioo (-ε) ε) ∧
+      (∀ t ∈ Ioo (-ε) ε, ContinuousAt γ t) :=
   exists_localChartGeodesicAt g p v BoundarylessManifold.isInteriorPoint
 
 /-- Covariant acceleration `D_t (gamma')`, read in the canonical chart at the
