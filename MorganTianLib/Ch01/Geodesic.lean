@@ -466,6 +466,48 @@ theorem chartGeodesic_eventuallyEq_of_equation
   have hfirst := congrArg Prod.fst hs
   simpa only [z, z', chartState, Function.comp_apply] using hfirst
 
+/-- Two local chart geodesics with the same prescribed position and velocity
+agree near the initial time.
+
+The conclusion is equality of the manifold-valued curves, not merely equality
+of their chart readings.  No completeness or separation assumption is needed
+for this local uniqueness statement. -/
+theorem localChartGeodesic_eventuallyEq_of_initial_data
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p) (hp : I.IsInteriorPoint p)
+    {gamma gamma' : ℝ → M}
+    (hgamma0 : gamma 0 = p) (hgamma'0 : gamma' 0 = p)
+    (hvel : HasDerivAt (chartReading (I := I) p gamma)
+      (chartVelocityAt (I := I) p v) 0)
+    (hvel' : HasDerivAt (chartReading (I := I) p gamma')
+      (chartVelocityAt (I := I) p v) 0)
+    (hgamma : ∀ᶠ s in 𝓝 (0 : ℝ),
+      HasChartGeodesicEquationAt (I := I) g p gamma s)
+    (hgamma' : ∀ᶠ s in 𝓝 (0 : ℝ),
+      HasChartGeodesicEquationAt (I := I) g p gamma' s) :
+    gamma =ᶠ[𝓝 (0 : ℝ)] gamma' := by
+  have hgammaAt := hgamma.self_of_nhds
+  have hgamma'At := hgamma'.self_of_nhds
+  have hstate : chartState (I := I) p gamma 0 = chartState (I := I) p gamma' 0 := by
+    apply Prod.ext
+    · simp only [chartState, chartReading, hgamma0, hgamma'0]
+    · simp only [chartState]
+      rw [hvel.deriv, hvel'.deriv]
+  have hy : chartReading (I := I) p gamma 0 ∈
+      interior (extChartAt I p).target := by
+    simpa only [chartReading, hgamma0] using (I.isInteriorPoint_iff).mp hp
+  have hread := chartGeodesic_eventuallyEq_of_equation (I := I) g p
+    hgammaAt hgamma'At hgamma hgamma' hy hstate
+  have hsource : ∀ᶠ s in 𝓝 (0 : ℝ), gamma s ∈ (extChartAt I p).source := by
+    filter_upwards [hgamma] with s hs
+    simpa only [extChartAt_source (I := I)] using hs.1.1.self_of_nhds
+  have hsource' : ∀ᶠ s in 𝓝 (0 : ℝ), gamma' s ∈ (extChartAt I p).source := by
+    filter_upwards [hgamma'] with s hs
+    simpa only [extChartAt_source (I := I)] using hs.1.1.self_of_nhds
+  filter_upwards [hread, hsource, hsource'] with s hs hsgamma hsgamma'
+  apply (extChartAt I p).injOn hsgamma hsgamma'
+  simpa only [chartReading] using hs
+
 @[simp] theorem chartChristoffelContraction_zero
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) :
