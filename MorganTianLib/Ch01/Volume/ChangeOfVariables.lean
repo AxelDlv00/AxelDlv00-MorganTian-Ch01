@@ -16,7 +16,8 @@ law, and proves that coordinate nullity is independent of the chosen chart.
 The inner-product Gram-density section uses Mathlib's basis-independent
 `LinearMap.normDet` directly. The generic chart-transition and normalized
 change-of-variables sections use Mathlib's determinant and absolute-determinant
-APIs. Their critical-value and area statements are direct specializations of
+APIs, with C1 manifold charts where tangent derivatives are used. Their
+critical-value and area statements are direct specializations of
 Mathlib's
 `MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul`,
 `MeasureTheory.addHaar_image_eq_zero_of_differentiableOn_of_addHaar_eq_zero`,

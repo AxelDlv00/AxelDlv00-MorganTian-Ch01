@@ -21,7 +21,7 @@ milestones add manifold curvature, geodesic, Jacobi, normal-coordinate, and
 manifold-comparison modules.  The provisional A2 chart-density and
 change-of-variables substrate is available through the direct
 `MorganTianLib.Ch01.Volume.ChangeOfVariables` import; it is not exported by
-this stable umbrella until a named downstream consumer fixes its public
+this stable umbrella until a named downstream consumer establishes its public
 boundary.
 -/
 
