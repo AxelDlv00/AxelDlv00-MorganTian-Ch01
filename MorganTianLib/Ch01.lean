@@ -6,6 +6,7 @@ import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Geodesic
 import MorganTianLib.Ch01.Geodesic.HopfRinow
 import MorganTianLib.Ch01.Curvature
+import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Comparison.DeterminantDensity
 import MorganTianLib.Ch01.Comparison.PositiveRiccati
 import MorganTianLib.Ch01.Comparison.OperatorRiccati
@@ -29,6 +30,12 @@ chart-density and normalized change-of-variables substrate remains a direct
 provisional leaf until the named N1 cut-locus consumer fixes its stable
 boundary; it uses Mathlib's `LinearMap.normDet` and `μHE[finrank ℝ E]`
 directly and does not install a competing global measure.
+coherence layers, the chart Christoffel bridge, the algebraic and canonical
+manifold curvature layers (including the proved tensorial and first-Bianchi
+subset), and the standalone scalar, vector/operator, traced Riccati, and
+normalized determinant/density comparison layers.  Later milestones add
+geodesic, Jacobi, normal-coordinate, and manifold-comparison modules without
+exposing chart plumbing as public API.
 -/
 
 namespace MorganTianLib
