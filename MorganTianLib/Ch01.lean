@@ -16,11 +16,11 @@ import MorganTianLib.Ch01.Comparison.VectorSturm
 The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
 existence, the canonical metric, distance, volume, and Levi--Civita connection
 coherence layers, the chart Christoffel and geodesic-equation bridges, the
-algebraic
-curvature-convention kernel, and the standalone scalar, vector/operator,
+algebraic curvature-convention kernel, and the standalone scalar,
+vector/operator,
 traced Riccati, and normalized determinant/density comparison layers.  Later
-milestones add manifold curvature, geodesic, Jacobi, normal-coordinate, and
-manifold-comparison modules without exposing chart plumbing as public API.
+milestones add maximal geodesic/exponential, Jacobi, normal-coordinate, and
+manifold-comparison modules without exposing proof-only chart plumbing.
 -/
 
 namespace MorganTianLib

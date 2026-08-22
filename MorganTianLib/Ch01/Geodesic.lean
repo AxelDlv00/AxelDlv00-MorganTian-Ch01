@@ -95,6 +95,7 @@ def chartChristoffel
     (alpha : M) (y : E) (i j k : Fin (Module.finrank ℝ E)) : ℝ :=
   chartConnectionCoeff (I := I) g alpha ((extChartAt I alpha).symm y) i j k
 
+/-- Unfolding rule for the chart coefficient. -/
 @[simp] theorem chartChristoffel_apply
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) (i j k : Fin (Module.finrank ℝ E)) :
@@ -160,6 +161,8 @@ def chartChristoffelContraction
     (alpha : M) (y v w : E) : E :=
   chartConnectionContraction (I := I) g alpha y v w
 
+/-- The public Christoffel contraction is the canonical connection contraction.
+-/
 theorem chartChristoffelContraction_eq_connection
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y v w : E) :
@@ -508,6 +511,7 @@ theorem localChartGeodesic_eventuallyEq_of_initial_data
   apply (extChartAt I p).injOn hsgamma hsgamma'
   simpa only [chartReading] using hs
 
+/-- The Christoffel contraction vanishes on two zero velocities. -/
 @[simp] theorem chartChristoffelContraction_zero
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) :
@@ -515,6 +519,7 @@ theorem localChartGeodesic_eventuallyEq_of_initial_data
   classical
   simp [chartChristoffelContraction, chartConnectionContraction]
 
+/-- The canonical connection contraction vanishes on two zero velocities. -/
 @[simp] theorem chartConnectionContraction_zero
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) :
@@ -551,7 +556,9 @@ regularity and its Levi--Civita covariant acceleration vanishes. -/
 def IsGeodesicAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) : Prop :=
-  HasChartGeodesicRegularityAt (I := I) (gamma t) gamma t ∧
+  gamma t ∈ (chartAt H (gamma t)).source ∧
+    ContinuousAt gamma t ∧
+    HasChartGeodesicRegularityAt (I := I) (gamma t) gamma t ∧
     covariantAcceleration (I := I) g gamma t = 0
 
 /-- The intrinsic geodesic predicate for the explicit metric `g`.
@@ -587,7 +594,9 @@ theorem isGeodesic_const
   have hsecond : deriv (deriv (chartReading (I := I) p (fun _ : ℝ => p))) t = 0 := by
     rw [hderiv]
     simp
-  refine ⟨?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · simpa only using (mem_chart_source H p)
+  · exact continuousAt_const
   · refine ⟨?_, ?_, ?_, ?_⟩
     · exact Filter.Eventually.of_forall (fun _ => by
         simpa only using (mem_chart_source H p))
@@ -608,17 +617,19 @@ theorem isGeodesicAt_iff_chartEquation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) :
     IsGeodesicAt (I := I) g gamma t ↔
-      HasChartGeodesicEquationAt (I := I) g (gamma t) gamma t := by
+      gamma t ∈ (chartAt H (gamma t)).source ∧
+        ContinuousAt gamma t ∧
+        HasChartGeodesicEquationAt (I := I) g (gamma t) gamma t := by
   let e := trivializationAt E (TangentSpace I) (gamma t)
   have hbase : gamma t ∈ e.baseSet := FiberBundle.mem_baseSet_trivializationAt' (gamma t)
   constructor
-  · rintro ⟨hreg, hzero⟩
-    refine ⟨hreg, ?_⟩
+  · rintro ⟨hsource, hcont, hreg, hzero⟩
+    refine ⟨hsource, hcont, hreg, ?_⟩
     have h := congrArg (e.continuousLinearMapAt ℝ (gamma t)) hzero
     simpa only [covariantAcceleration, e, e.continuousLinearMapAt_symmL hbase,
       map_zero] using h
-  · rintro ⟨hreg, hzero⟩
-    refine ⟨hreg, ?_⟩
+  · rintro ⟨hsource, hcont, hreg, hzero⟩
+    refine ⟨hsource, hcont, hreg, ?_⟩
     simp only [covariantAcceleration, hzero, map_zero]
 
 /-- Coordinate form of Morgan--Tian's geodesic equation,
@@ -627,6 +638,8 @@ theorem isGeodesicAt_iff_coordinate_formula
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) :
     IsGeodesicAt (I := I) g gamma t ↔
+      gamma t ∈ (chartAt H (gamma t)).source ∧
+      ContinuousAt gamma t ∧
       HasChartGeodesicRegularityAt (I := I) (gamma t) gamma t ∧
       deriv (deriv (chartReading (I := I) (gamma t) gamma)) t +
         chartChristoffelContraction (I := I) g (gamma t)
@@ -635,31 +648,6 @@ theorem isGeodesicAt_iff_coordinate_formula
           (deriv (chartReading (I := I) (gamma t) gamma) t) = 0 := by
   rw [isGeodesicAt_iff_chartEquation]
   rfl
-
-/-- The same equivalence with the Christoffel contraction expanded to the
-canonical `Connection.leviCivitaConnection`.  Keeping this bridge public makes
-the connection dependency inspectable without exposing the first-order spray.
--/
-theorem isGeodesicAt_iff_leviCivita_coordinate_formula
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) (t : ℝ) :
-    IsGeodesicAt (I := I) g gamma t ↔
-      HasChartGeodesicRegularityAt (I := I) (gamma t) gamma t ∧
-      deriv (deriv (chartReading (I := I) (gamma t) gamma)) t +
-        (let b := Module.finBasis ℝ E
-         let q := (extChartAt I (gamma t)).symm
-           (chartReading (I := I) (gamma t) gamma t)
-         let e := trivializationAt E (TangentSpace I) (gamma t)
-         ∑ k : Fin (Module.finrank ℝ E),
-           (∑ i : Fin (Module.finrank ℝ E),
-             ∑ j : Fin (Module.finrank ℝ E),
-               e.localFrame_coeff I b k q
-                 (Connection.leviCivitaConnection g (e.localFrame b j) q
-                   (e.localFrame b i q)) *
-                 b.repr (deriv (chartReading (I := I) (gamma t) gamma) t) i *
-                 b.repr (deriv (chartReading (I := I) (gamma t) gamma) t) j) • b k) = 0 := by
-  rw [isGeodesicAt_iff_coordinate_formula]
-  rw [chartChristoffelContraction_eq_leviCivita]
 
 end Coordinates
 
