@@ -20,7 +20,7 @@ algebraic curvature-convention kernel, and the standalone scalar,
 vector/operator,
 traced Riccati, and normalized determinant/density comparison layers.  Later
 milestones add maximal geodesic/exponential, Jacobi, normal-coordinate, and
-manifold-comparison modules without exposing proof-only chart plumbing.
+manifold-comparison modules without exposing the private spray/frame plumbing.
 -/
 
 namespace MorganTianLib
