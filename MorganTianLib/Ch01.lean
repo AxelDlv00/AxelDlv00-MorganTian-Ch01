@@ -4,6 +4,7 @@ import MorganTianLib.Ch01.Volume
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Curvature
+import MorganTianLib.Ch01.Curvature.Manifold
 import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Comparison.DeterminantDensity
 import MorganTianLib.Ch01.Comparison.PositiveRiccati
@@ -15,10 +16,11 @@ import MorganTianLib.Ch01.Comparison.VectorSturm
 
 The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
 existence, the canonical metric, distance, volume, and Levi--Civita connection
-coherence layers, the chart Christoffel bridge, the algebraic and canonical
-manifold curvature layers (including the proved tensorial and first-Bianchi
-subset), and the standalone scalar, vector/operator, traced Riccati, and
-normalized determinant/density comparison layers.  Later milestones add
+coherence layers, the public Christoffel equation bridge, the connection-free
+curvature model, and the provisional selected-extension manifold curvature
+layer (including its proved tensorial and first-Bianchi subset).  The intrinsic
+arbitrary-extension producer remains a named S06 replacement target; the
+private chart calculation is kept out of this umbrella.  Later milestones add
 geodesic, Jacobi, normal-coordinate, and manifold-comparison modules without
 exposing chart plumbing as public API.
 -/
