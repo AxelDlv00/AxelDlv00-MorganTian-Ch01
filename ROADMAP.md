@@ -531,17 +531,18 @@ Node contracts:
   Sard/change-of-variables and measurability primitives, sphere/radial
   integration, and ratio-of-integrals lemmas independent of cut, exponential,
   or polar geometry.  The focused `Ch01.Volume.ChangeOfVariables` slice proves
-  smooth positive chart Gram densities, their exact square-root determinant
-  and overlap laws (including dimension zero), a basis-independent `normDet`
-  Jacobian with coordinate, identity, equivalence, scaling, and dimension-one
-  regressions, injective normalized-Euclidean change of variables, distinct
-  image-measurability and null-image theorems, the equidimensional critical-value
-  wrapper, and chart-independent coordinate nullity.  It does not yet identify
-  `riemannianVolume` with the chart-density integral: the pinned Mathlib API has
-  no Hausdorff-volume/chart-density bridge, and no assumption-backed replacement
-  or second global measure is introduced.  That bridge and the sphere/radial and
-  ratio-of-integrals toolkit remain open A2 work.  A2 supplies S28 nullity but
-  owns no post-N1 polar-density equality; that work is N2.
+  smooth positive chart Gram densities in an inner-product model, while its
+  chart-set, transition, null-transport, and normalized-Euclidean Jacobian
+  layer is stated over the accepted arbitrary finite-dimensional real normed
+  model, with only a C¹ manifold assumption where tangent derivatives are
+  used.  It uses Mathlib's `LinearMap.normDet` and determinant APIs directly;
+  no project Jacobian facade or duplicate Mathlib alias is part of the route.
+  The slice does not yet identify `riemannianVolume` with the chart-density
+  integral: the pinned Mathlib API has no Hausdorff-volume/chart-density bridge,
+  and no assumption-backed replacement or second global measure is introduced.
+  That bridge and the sphere/radial and ratio-of-integrals toolkit remain open
+  A2 work.  A2 supplies S28 nullity but owns no post-N1 polar-density equality;
+  that work is N2.
 - **J1** (`F1`, `F2`): intrinsic Jacobi equation, existence/uniqueness/linearity, chart and
   frame reductions, geodesic variations, and `d exp`.
 - **V1** (`J1`): exact regularity for arbitrary-family first/second variation,
