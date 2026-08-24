@@ -763,16 +763,20 @@ private lemma curvatureField_bianchi_local
     exact hZ.of_le (ENat.LEInfty.out : (2 : ℕ∞ω) ≤ ∞)
   have hbrXY : MDiffAt (T% (VectorField.mlieBracket I X Y)) p := by
     exact (ContMDiffAt.mlieBracket_vectorField (m := (1 : ℕ∞)) (n := (2 : ℕ∞))
-      hX2 hY2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt (by norm_num)
+      hX2 hY2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt
+      (by norm_num)
   have hbrYZ : MDiffAt (T% (VectorField.mlieBracket I Y Z)) p := by
     exact (ContMDiffAt.mlieBracket_vectorField (m := (1 : ℕ∞)) (n := (2 : ℕ∞))
-      hY2 hZ2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt (by norm_num)
+      hY2 hZ2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt
+      (by norm_num)
   have hbrZX : MDiffAt (T% (VectorField.mlieBracket I Z X)) p := by
     exact (ContMDiffAt.mlieBracket_vectorField (m := (1 : ℕ∞)) (n := (2 : ℕ∞))
-      hZ2 hX2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt (by norm_num)
+      hZ2 hX2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt
+      (by norm_num)
   have hbrXZ : MDiffAt (T% (VectorField.mlieBracket I X Z)) p := by
     exact (ContMDiffAt.mlieBracket_vectorField (m := (1 : ℕ∞)) (n := (2 : ℕ∞))
-      hX2 hZ2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt (by norm_num)
+      hX2 hZ2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt
+      (by norm_num)
   have hYZ_ev : ∀ᶠ q in 𝓝 p,
       covariantField cov Y Z q - covariantField cov Z Y q =
         VectorField.mlieBracket I Y Z q := by

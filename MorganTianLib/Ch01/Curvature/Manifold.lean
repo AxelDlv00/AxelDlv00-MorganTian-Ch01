@@ -3,8 +3,8 @@ import MorganTianLib.Ch01.Connection
 /-!
 # The manifold curvature commutator
 
-This module connects the sign/order kernel in `Curvature.Model` to the
-bundled Levi--Civita connection from `Ch01.Connection`.  For vector fields the
+This module uses the sign/order convention recorded in `Curvature.Model` and
+the bundled Levi--Civita connection from `Ch01.Connection`.  For vector fields the
 operator is exactly Morgan--Tian Definition 1.4,
 
 `R X Y W = ∇_X (∇_Y W) - ∇_Y (∇_X W) - ∇_[X,Y] W`,
@@ -70,31 +70,27 @@ def curvatureField
     - covariantField cov Y (covariantField cov X W) x
     - covariantField cov (VectorField.mlieBracket I X Y) W x
 
-/-- Smoothness predicate for a tangent-bundle section. -/
-abbrev SmoothSection (X : (x : M) → TangentSpace I x) : Prop :=
-  ContMDiff I (I.prod 𝓘(ℝ, EM)) ∞ (fun x =>
-    Bundle.TotalSpace.mk' EM (E := fun x : M => TangentSpace I x) x (X x))
-
 /-- A smooth covariant derivative sends two smooth fields to a smooth field. -/
 lemma covariantField_smooth
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
     {X Y : (x : M) → TangentSpace I x}
-    (hX : SmoothSection X) (hY : SmoothSection Y) :
-    SmoothSection (covariantField cov X Y) := by
+    (hX : CMDiff ∞ (T% X)) (hY : CMDiff ∞ (T% Y)) :
+    CMDiff ∞ (T% (covariantField cov X Y)) := by
   have hout := (CovariantDerivative.ContMDiffCovariantDerivative.contMDiff
       (cov := cov) (k := ∞)).contMDiff (by simpa using hY.contMDiffOn)
   rw [contMDiffOn_univ] at hout
   have happly := hout.clm_bundle_apply hX
-  simpa [SmoothSection, covariantField] using happly
+  simpa [covariantField] using happly
 
 /-- Smoothness of the curvature commutator. -/
 lemma curvatureField_smooth
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
     {X Y W : (x : M) → TangentSpace I x}
-    (hX : SmoothSection X) (hY : SmoothSection Y) (hW : SmoothSection W) :
-    SmoothSection (curvatureField cov X Y W) := by
+    (hX : CMDiff ∞ (T% X)) (hY : CMDiff ∞ (T% Y))
+    (hW : CMDiff ∞ (T% W)) :
+    CMDiff ∞ (T% (curvatureField cov X Y W)) := by
   letI : IsManifold I (minSmoothness ℝ 2) M := IsManifold.of_le (n := ∞) (by
     rw [minSmoothness_of_isRCLikeNormedField]
     exact ENat.LEInfty.out)
@@ -102,7 +98,7 @@ lemma curvatureField_smooth
     simpa using (inferInstance : IsManifold I ∞ M)
   have hYW := covariantField_smooth cov hY hW
   have hXW := covariantField_smooth cov hX hW
-  have hXY : SmoothSection (VectorField.mlieBracket I X Y) := by
+  have hXY : CMDiff ∞ (T% (VectorField.mlieBracket I X Y)) := by
     exact ContDiff.mlieBracket_vectorField (m := (⊤ : ℕ∞)) (n := (⊤ : ℕ∞))
       hX hY (by simp)
   have h1 := covariantField_smooth cov hX hYW
@@ -114,7 +110,7 @@ lemma curvatureField_smooth
 
 /-- A smooth tangent-bundle section is differentiable at every point. -/
 lemma smoothSection_mdifferentiableAt {X : (x : M) → TangentSpace I x}
-    (hX : SmoothSection X) (p : M) : MDiffAt (T% X) p :=
+    (hX : CMDiff ∞ (T% X)) (p : M) : MDiffAt (T% X) p :=
   (hX p).mdifferentiableAt (by simp)
 
 /-- Covariant differentiation is linear in the direction field at a point. -/
@@ -307,8 +303,8 @@ private lemma curvatureField_add_right
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
     {X Y Z W : (x : M) → TangentSpace I x}
-    (hX : SmoothSection X) (hY : SmoothSection Y)
-    (hZ : SmoothSection Z) (hW : SmoothSection W) (p : M) :
+    (hX : CMDiff ∞ (T% X)) (hY : CMDiff ∞ (T% Y))
+    (hZ : CMDiff ∞ (T% Z)) (hW : CMDiff ∞ (T% W)) (p : M) :
     curvatureField cov X Y (Z + W) p =
       curvatureField cov X Y Z p + curvatureField cov X Y W p := by
   have hW' := smoothSection_mdifferentiableAt hW p
@@ -348,8 +344,8 @@ private lemma curvatureField_add_left
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
     {X Y Z W : (x : M) → TangentSpace I x}
-    (hX : SmoothSection X) (hY : SmoothSection Y)
-    (hW : SmoothSection W) (p : M) :
+    (hX : CMDiff ∞ (T% X)) (hY : CMDiff ∞ (T% Y))
+    (hW : CMDiff ∞ (T% W)) (p : M) :
     curvatureField cov (X + Y) Z W p =
       curvatureField cov X Z W p + curvatureField cov Y Z W p := by
   have hbr_eq : VectorField.mlieBracket I (X + Y) Z =
@@ -375,8 +371,8 @@ private lemma curvatureField_add_middle
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
     {X Y Z W : (x : M) → TangentSpace I x}
-    (hY : SmoothSection Y)
-    (hZ : SmoothSection Z) (hW : SmoothSection W) (p : M) :
+    (hY : CMDiff ∞ (T% Y))
+    (hZ : CMDiff ∞ (T% Z)) (hW : CMDiff ∞ (T% W)) (p : M) :
     curvatureField cov X (Y + Z) W p =
       curvatureField cov X Y W p + curvatureField cov X Z W p := by
   calc
