@@ -13,21 +13,28 @@ For a smooth Riemannian metric it constructs the Gram density of a chart,
 proves its smoothness, positivity, square-root determinant formula, and overlap
 law, and proves that coordinate nullity is independent of the chosen chart.
 
-The inner-product Gram-density section uses Mathlib's basis-independent
-`LinearMap.normDet` directly. The generic chart-transition and normalized
-change-of-variables sections use Mathlib's determinant and absolute-determinant
-APIs, with C1 manifold charts where tangent derivatives are used. Their
-critical-value and area statements are direct specializations of
+The inner-product Gram-density and Jacobian sections use Mathlib's
+basis-independent `LinearMap.normDet` directly. The generic chart-transition
+and normalized change-of-variables sections use Mathlib's determinant and
+absolute-determinant APIs, with C1 manifold charts where tangent derivatives
+are used. Their critical-value and area statements are direct specializations of
 Mathlib's
 `MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul`,
+`MeasureTheory.measurable_image_of_fderivWithin`,
 `MeasureTheory.addHaar_image_eq_zero_of_differentiableOn_of_addHaar_eq_zero`,
 and `MeasureTheory.addHaar_image_eq_zero_of_det_fderivWithin_eq_zero` to
 `μHE[finrank ℝ E]`, with the same Hausdorff normalization convention used by
 `riemannianVolume`.
 
+The exported norm-determinant formulas are the canonical same-dimensional
+Riemannian Jacobian API: coordinate determinants occur only as theorems about
+`LinearMap.normDet`, never as a second Jacobian definition.
+
 The pinned Mathlib API does not yet identify the Hausdorff measure of the
 Riemannian path metric with this chart density. Accordingly, this module does
-not define another global measure and does not assert that missing local formula.
+not define another global measure and does not assert the unavailable local
+chart-density formula. The normalization used by the exported formulas is
+the canonical `riemannianVolume` choice recorded in `Volume.lean`.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
 the volume discussion on pp. 45--50 (bibliography key `morganTian2007`).
@@ -563,6 +570,89 @@ theorem aemeasurable_chartVolumeDensity
 
 end GramDensityRegularity
 
+/-! ## The canonical norm-determinant Jacobian -/
+
+section NormDetJacobian
+
+variable
+  {U V W : Type*}
+  [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U]
+  [NormedAddCommGroup V] [InnerProductSpace ℝ V] [FiniteDimensional ℝ V]
+  [NormedAddCommGroup W] [InnerProductSpace ℝ W]
+
+omit [FiniteDimensional ℝ V] in
+/-- `LinearMap.normDet` agrees with the absolute coordinate determinant for any
+orthonormal bases of equal finite cardinality. -/
+theorem normDet_continuousLinearMap_eq_abs_det_toMatrix
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (A : U →L[ℝ] V) (bU : OrthonormalBasis ι ℝ U)
+    (bV : OrthonormalBasis ι ℝ V) :
+    A.toLinearMap.normDet =
+      |(A.toLinearMap.toMatrix bU.toBasis bV.toBasis).det| := by
+  simpa only [Real.norm_eq_abs] using
+    LinearMap.normDet_eq_norm_det_toMatrix A.toLinearMap bU bV
+
+/-- The same-dimensional composition law in the continuous-linear-map spelling
+used by chart derivatives. -/
+theorem normDet_continuousLinearMap_comp
+    (A : V →L[ℝ] W) (B : U →L[ℝ] V)
+    (h : Module.finrank ℝ U = Module.finrank ℝ V) :
+    (A.comp B).toLinearMap.normDet =
+      A.toLinearMap.normDet * B.toLinearMap.normDet := by
+  change (A.toLinearMap.comp B.toLinearMap).normDet = _
+  exact LinearMap.normDet_comp_of_finrank_eq B.toLinearMap A.toLinearMap h
+
+omit [FiniteDimensional ℝ V] in
+/-- A continuous linear equivalence has a strictly positive canonical Jacobian. -/
+theorem normDet_continuousLinearEquiv_pos (A : U ≃L[ℝ] V) :
+    0 < A.toLinearMap.normDet := by
+  have hne : A.toLinearMap.normDet ≠ 0 :=
+    ((LinearMap.normDet_ne_zero_tfae A.toLinearMap).out 0 4).mpr A.injective
+  exact lt_of_le_of_ne (LinearMap.normDet_nonneg _) hne.symm
+
+/-- The canonical Jacobians of a continuous linear equivalence and its inverse
+are reciprocal, with no choice of bases in the statement. -/
+theorem normDet_continuousLinearEquiv_mul_symm
+    (A : U ≃L[ℝ] V) :
+    A.toLinearMap.normDet * A.symm.toLinearMap.normDet = 1 := by
+  calc
+    A.toLinearMap.normDet * A.symm.toLinearMap.normDet =
+        A.symm.toLinearMap.normDet * A.toLinearMap.normDet := mul_comm _ _
+    _ = (A.symm.toLinearMap.comp A.toLinearMap).normDet := by
+      rw [LinearMap.normDet_comp_of_finrank_eq A.toLinearMap A.symm.toLinearMap
+        A.toLinearEquiv.finrank_eq]
+    _ = 1 := by simp
+
+/-- The identity continuous linear map has canonical Jacobian one. -/
+@[simp] theorem normDet_continuousLinearMap_id :
+    (ContinuousLinearMap.id ℝ U).toLinearMap.normDet = 1 := by
+  simp
+
+omit [FiniteDimensional ℝ V] in
+/-- Scaling a continuous linear map scales its canonical Jacobian by the
+absolute scalar to the source dimension. -/
+theorem normDet_continuousLinearMap_smul (c : ℝ) (A : U →L[ℝ] V) :
+    (c • A).toLinearMap.normDet =
+      |c| ^ Module.finrank ℝ U * A.toLinearMap.normDet := by
+  change (c • A.toLinearMap).normDet = _
+  simpa only [Real.norm_eq_abs] using LinearMap.normDet_smul A.toLinearMap c
+
+omit [FiniteDimensional ℝ V] in
+/-- A map out of a zero-dimensional source has canonical Jacobian one. -/
+@[simp] theorem normDet_continuousLinearMap_of_subsingleton [Subsingleton U]
+    (A : U →L[ℝ] V) :
+    A.toLinearMap.normDet = 1 := by
+  exact LinearMap.normDet_of_subsingleton A.toLinearMap
+
+/-- The real scalar case is the one-dimensional regression for the preceding
+scaling law. -/
+@[simp]
+theorem normDet_real_smul_id (c : ℝ) :
+    (c • (ContinuousLinearMap.id ℝ ℝ)).toLinearMap.normDet = |c| := by
+  simp
+
+end NormDetJacobian
+
 section ChangeOfVariables
 
 open MeasureTheory Set
@@ -573,6 +663,17 @@ variable
   [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M]
+
+/-- An image of a measurable source set is measurable under Mathlib's
+within-derivative and injectivity hypotheses. This result is kept separate
+from all measure-zero conclusions. -/
+theorem measurableSet_image_of_hasFDerivWithinAt
+    {s : Set E} {f : E → E} {f' : E → E →L[ℝ] E}
+    (hs : MeasurableSet s)
+    (hf' : ∀ x ∈ s, HasFDerivWithinAt f (f' x) s x)
+    (hf : Set.InjOn f s) :
+    MeasurableSet (f '' s) :=
+  MeasureTheory.measurable_image_of_fderivWithin hs hf' hf
 
 /-- A differentiable map sends a `μHE[finrank ℝ E]`-null set to a null set. Neither
 source measurability nor injectivity is required by Mathlib's theorem. -/
@@ -642,6 +743,90 @@ theorem chartPreimage_euclideanHausdorffMeasure_zero_iff
       (differentiableOn_chartTransition (I := I) beta alpha hsbeta hsalpha) hbeta
 
 end ChangeOfVariables
+
+/-! ## Norm-determinant change of variables -/
+
+section NormDetChangeOfVariables
+
+open MeasureTheory Set
+open scoped ENNReal MeasureTheory
+
+variable
+  {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+
+/-- Equidimensional Sard in the canonical Jacobian language. The conclusion is
+measure-zero, while image measurability remains the separate theorem
+`measurableSet_image_of_hasFDerivWithinAt`. -/
+theorem criticalValues_euclideanHausdorffMeasure_zero_of_normDet
+    {s : Set E} {f : E → E} {f' : E → E →L[ℝ] E}
+    (hf' : ∀ x ∈ s, HasFDerivWithinAt f (f' x) s x)
+    (hcrit : ∀ x ∈ s, (f' x).toLinearMap.normDet = 0) :
+    μHE[Module.finrank ℝ E] (f '' s) = 0 := by
+  apply MeasureTheory.addHaar_image_eq_zero_of_det_fderivWithin_eq_zero
+    μHE[Module.finrank ℝ E] hf'
+  intro x hx
+  have hdet : |(f' x).det| = 0 := by
+    simpa only [LinearMap.normDet_eq_abs_det] using hcrit x hx
+  exact abs_eq_zero.mp hdet
+
+/-- Injective change of variables for nonnegative integrals, with the
+basis-independent `LinearMap.normDet` as Jacobian. The hypotheses are exactly
+those consumed by Mathlib's pinned API. -/
+theorem lintegral_image_eq_lintegral_normDet_mul
+    {s : Set E} {f : E → E} {f' : E → E →L[ℝ] E}
+    (hs : MeasurableSet s)
+    (hf' : ∀ x ∈ s, HasFDerivWithinAt f (f' x) s x)
+    (hf : Set.InjOn f s) (q : E → ℝ≥0∞) :
+    ∫⁻ y in f '' s, q y ∂μHE[Module.finrank ℝ E] =
+      ∫⁻ x in s, ENNReal.ofReal ((f' x).toLinearMap.normDet) * q (f x)
+        ∂μHE[Module.finrank ℝ E] := by
+  simpa only [LinearMap.normDet_eq_abs_det] using
+    MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul
+      μHE[Module.finrank ℝ E] hs hf' hf q
+
+/-- The corresponding injective area formula for the pinned
+Euclidean-normalized Hausdorff measure. -/
+theorem euclideanHausdorffMeasure_image_eq_lintegral_normDet
+    {s : Set E} {f : E → E} {f' : E → E →L[ℝ] E}
+    (hs : MeasurableSet s)
+    (hf' : ∀ x ∈ s, HasFDerivWithinAt f (f' x) s x)
+    (hf : Set.InjOn f s) :
+    μHE[Module.finrank ℝ E] (f '' s) =
+      ∫⁻ x in s, ENNReal.ofReal ((f' x).toLinearMap.normDet)
+        ∂μHE[Module.finrank ℝ E] := by
+  symm
+  simpa only [LinearMap.normDet_eq_abs_det] using
+    MeasureTheory.lintegral_abs_det_fderiv_eq_addHaar_image
+      μHE[Module.finrank ℝ E] hs hf' hf
+
+end NormDetChangeOfVariables
+
+/-! ## Chart transition in the canonical Jacobian language -/
+
+section ChartNormDetTransition
+
+variable
+  {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [FiniteDimensional ℝ E]
+  {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
+  {M : Type*} [TopologicalSpace M] [ChartedSpace H M] [IsManifold I ∞ M]
+
+/-- The chart-density overlap law with Mathlib's canonical norm determinant.
+The absolute-determinant version is a corollary via
+`LinearMap.normDet_eq_abs_det`. -/
+theorem chartVolumeDensity_transition_normDet
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha beta : M) {y : E} (hy : y ∈ (extChartAt I alpha).target)
+    (hbeta : (extChartAt I alpha).symm y ∈ (chartAt H beta).source) :
+    chartVolumeDensity (I := I) g alpha y =
+      chartVolumeDensity (I := I) g beta
+          ((extChartAt I beta) ((extChartAt I alpha).symm y)) *
+        (tangentCoordChange I alpha beta ((extChartAt I alpha).symm y)).normDet := by
+  simpa only [LinearMap.normDet_eq_abs_det] using
+    chartVolumeDensity_transition (I := I) g alpha beta hy hbeta
+
+end ChartNormDetTransition
 
 end Ch01
 end MorganTianLib
