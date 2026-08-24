@@ -664,17 +664,6 @@ variable
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M]
 
-/-- An image of a measurable source set is measurable under Mathlib's
-within-derivative and injectivity hypotheses. This result is kept separate
-from all measure-zero conclusions. -/
-theorem measurableSet_image_of_hasFDerivWithinAt
-    {s : Set E} {f : E → E} {f' : E → E →L[ℝ] E}
-    (hs : MeasurableSet s)
-    (hf' : ∀ x ∈ s, HasFDerivWithinAt f (f' x) s x)
-    (hf : Set.InjOn f s) :
-    MeasurableSet (f '' s) :=
-  MeasureTheory.measurable_image_of_fderivWithin hs hf' hf
-
 /-- A differentiable map sends a `μHE[finrank ℝ E]`-null set to a null set. Neither
 source measurability nor injectivity is required by Mathlib's theorem. -/
 theorem euclideanHausdorffMeasure_image_eq_zero
@@ -756,8 +745,8 @@ variable
   [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
 
 /-- Equidimensional Sard in the canonical Jacobian language. The conclusion is
-measure-zero, while image measurability remains the separate theorem
-`measurableSet_image_of_hasFDerivWithinAt`. -/
+measure-zero, while image measurability remains the separate Mathlib theorem
+`MeasureTheory.measurable_image_of_fderivWithin`. -/
 theorem criticalValues_euclideanHausdorffMeasure_zero_of_normDet
     {s : Set E} {f : E → E} {f' : E → E →L[ℝ] E}
     (hf' : ∀ x ∈ s, HasFDerivWithinAt f (f' x) s x)
