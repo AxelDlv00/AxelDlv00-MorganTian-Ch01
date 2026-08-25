@@ -675,6 +675,160 @@ variable
   {K : Type*} [TopologicalSpace K] {J : ModelWithCorners ℝ F K}
   {N : Type*} [TopologicalSpace N] [ChartedSpace K N] [IsManifold J ∞ N]
 
+/-- Internal metric-parameterized norm-determinant implementation.  The tangent fibres are
+finite-dimensional by `VectorBundle.finiteDimensional`; the explicit structure snapshots keep
+the source and target metrics distinct when their fibre types coincide. -/
+private noncomputable def tangentNormDet
+    [FiniteDimensional ℝ F]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (h : Bundle.ContMDiffRiemannianMetric J ∞ F (TangentSpace J : N → Type _))
+    {x : M} {y : N}
+    (A : TangentSpace I x →ₗ[ℝ] TangentSpace J y) : ℝ := by
+  -- Snapshot the source structures before installing the target structure.  The snapshots
+  -- remain distinct when the source and target fibres are definitionally the same type.
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  letI sourceFD : FiniteDimensional ℝ (TangentSpace I x) :=
+    VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
+  let sourceNorm : NormedAddCommGroup (TangentSpace I x) := inferInstance
+  let sourceInner : InnerProductSpace ℝ (TangentSpace I x) := inferInstance
+  letI : Bundle.RiemannianBundle (TangentSpace J : N → Type _) :=
+    ⟨h.toRiemannianMetric⟩
+  letI targetFD : FiniteDimensional ℝ (TangentSpace J y) :=
+    VectorBundle.finiteDimensional ℝ F (TangentSpace J) y
+  let targetNorm : NormedAddCommGroup (TangentSpace J y) := inferInstance
+  let targetInner : InnerProductSpace ℝ (TangentSpace J y) := inferInstance
+  exact @LinearMap.normDet ℝ _ _ inferInstance sourceNorm sourceInner sourceFD
+    targetNorm targetInner A
+
+private theorem tangentNormDet_comp
+    [FiniteDimensional ℝ F]
+    {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
+    [FiniteDimensional ℝ G]
+    {L : Type*} [TopologicalSpace L] {JTarget : ModelWithCorners ℝ G L}
+    {P : Type*} [TopologicalSpace P] [ChartedSpace L P] [IsManifold JTarget ∞ P]
+    (gSource : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (gMiddle : Bundle.ContMDiffRiemannianMetric J ∞ F
+      (TangentSpace J : N → Type _))
+    (gTarget : Bundle.ContMDiffRiemannianMetric JTarget ∞ G
+      (TangentSpace JTarget : P → Type _))
+    {x : M} {y : N} {z : P}
+    (A : TangentSpace I x →ₗ[ℝ] TangentSpace J y)
+    (B : TangentSpace J y →ₗ[ℝ] TangentSpace JTarget z)
+    (hdim : Module.finrank ℝ (TangentSpace I x) =
+      Module.finrank ℝ (TangentSpace J y)) :
+    tangentNormDet gSource gTarget (B.comp A) =
+      tangentNormDet gMiddle gTarget B * tangentNormDet gSource gMiddle A := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨gSource.toRiemannianMetric⟩
+  letI sourceFD : FiniteDimensional ℝ (TangentSpace I x) :=
+    VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
+  let sourceNorm : NormedAddCommGroup (TangentSpace I x) := inferInstance
+  let sourceInner : InnerProductSpace ℝ (TangentSpace I x) := inferInstance
+  letI : Bundle.RiemannianBundle (TangentSpace J : N → Type _) :=
+    ⟨gMiddle.toRiemannianMetric⟩
+  letI middleFD : FiniteDimensional ℝ (TangentSpace J y) :=
+    VectorBundle.finiteDimensional ℝ F (TangentSpace J) y
+  let middleNorm : NormedAddCommGroup (TangentSpace J y) := inferInstance
+  let middleInner : InnerProductSpace ℝ (TangentSpace J y) := inferInstance
+  letI : Bundle.RiemannianBundle (TangentSpace JTarget : P → Type _) :=
+    ⟨gTarget.toRiemannianMetric⟩
+  letI targetFD : FiniteDimensional ℝ (TangentSpace JTarget z) :=
+    VectorBundle.finiteDimensional ℝ G (TangentSpace JTarget) z
+  let targetNorm : NormedAddCommGroup (TangentSpace JTarget z) := inferInstance
+  let targetInner : InnerProductSpace ℝ (TangentSpace JTarget z) := inferInstance
+  change
+    @LinearMap.normDet ℝ _ _ inferInstance sourceNorm sourceInner sourceFD
+        targetNorm targetInner (B.comp A) =
+      (@LinearMap.normDet ℝ _ _ inferInstance middleNorm middleInner middleFD
+          targetNorm targetInner B) *
+        @LinearMap.normDet ℝ _ _ inferInstance sourceNorm sourceInner sourceFD
+          middleNorm middleInner A
+  exact @LinearMap.normDet_comp_of_finrank_eq ℝ _ _ _ inferInstance sourceNorm sourceInner
+    sourceFD middleNorm middleInner targetNorm targetInner middleFD A B hdim
+
+/- The regression below supplies two genuinely different inner products on one tangent bundle.
+It verifies both that the source snapshot survives installing the target metric even when the
+fibre types are definitionally identical and that `tangentNormDet` uses those snapshots. -/
+private theorem tangentNormDet_two_metrics_regression
+    (g h : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _)) {x : M}
+    (A : TangentSpace I x →ₗ[ℝ] TangentSpace I x)
+    (hinner : ∃ v w : TangentSpace I x,
+      g.toRiemannianMetric.inner x v w ≠ h.toRiemannianMetric.inner x v w) :
+    (let sourceMetric := g.toRiemannianMetric
+     let sourceCore := sourceMetric.toCore x
+     let sourceNorm : NormedAddCommGroup (TangentSpace I x) := by
+       letI : InnerProductSpace.Core ℝ (TangentSpace I x) := sourceCore
+       exact InnerProductSpace.Core.toNormedAddCommGroupOfTopology
+         (sourceMetric.continuousAt x) (sourceMetric.isVonNBounded x)
+     letI : NormedAddCommGroup (TangentSpace I x) := sourceNorm
+     let sourceInner : @InnerProductSpace ℝ (TangentSpace I x) _
+         sourceNorm.toSeminormedAddCommGroup := by
+       letI : InnerProductSpace.Core ℝ (TangentSpace I x) := sourceCore
+       exact InnerProductSpace.ofCoreOfTopology sourceCore
+         (sourceMetric.continuousAt x) (sourceMetric.isVonNBounded x)
+     let sourceFD : FiniteDimensional ℝ (TangentSpace I x) :=
+       VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
+     let targetMetric := h.toRiemannianMetric
+     let targetCore := targetMetric.toCore x
+     let targetNorm : NormedAddCommGroup (TangentSpace I x) := by
+       letI : InnerProductSpace.Core ℝ (TangentSpace I x) := targetCore
+       exact InnerProductSpace.Core.toNormedAddCommGroupOfTopology
+         (targetMetric.continuousAt x) (targetMetric.isVonNBounded x)
+     letI : NormedAddCommGroup (TangentSpace I x) := targetNorm
+     let targetInner : @InnerProductSpace ℝ (TangentSpace I x) _
+         targetNorm.toSeminormedAddCommGroup := by
+       letI : InnerProductSpace.Core ℝ (TangentSpace I x) := targetCore
+       exact InnerProductSpace.ofCoreOfTopology targetCore
+         (targetMetric.continuousAt x) (targetMetric.isVonNBounded x)
+     ((tangentNormDet (I := I) (J := I) (x := x) (y := x) g h A =
+         @LinearMap.normDet ℝ _ _ inferInstance sourceNorm sourceInner sourceFD
+           targetNorm targetInner A) ∧
+       ∃ v w : TangentSpace I x,
+         sourceInner.toInner.inner v w ≠ targetInner.toInner.inner v w)) := by
+  let sourceMetric := g.toRiemannianMetric
+  let sourceCore := sourceMetric.toCore x
+  let sourceFD : FiniteDimensional ℝ (TangentSpace I x) :=
+    VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
+  let sourceNorm : NormedAddCommGroup (TangentSpace I x) := by
+    letI : InnerProductSpace.Core ℝ (TangentSpace I x) := sourceCore
+    exact InnerProductSpace.Core.toNormedAddCommGroupOfTopology
+      (sourceMetric.continuousAt x) (sourceMetric.isVonNBounded x)
+  letI : NormedAddCommGroup (TangentSpace I x) := sourceNorm
+  let sourceInner : @InnerProductSpace ℝ (TangentSpace I x) _
+      sourceNorm.toSeminormedAddCommGroup := by
+    letI : InnerProductSpace.Core ℝ (TangentSpace I x) := sourceCore
+    exact InnerProductSpace.ofCoreOfTopology sourceCore
+      (sourceMetric.continuousAt x) (sourceMetric.isVonNBounded x)
+  let targetMetric := h.toRiemannianMetric
+  let targetCore := targetMetric.toCore x
+  let targetNorm : NormedAddCommGroup (TangentSpace I x) := by
+    letI : InnerProductSpace.Core ℝ (TangentSpace I x) := targetCore
+    exact InnerProductSpace.Core.toNormedAddCommGroupOfTopology
+      (targetMetric.continuousAt x) (targetMetric.isVonNBounded x)
+  letI : NormedAddCommGroup (TangentSpace I x) := targetNorm
+  let targetInner : @InnerProductSpace ℝ (TangentSpace I x) _
+      targetNorm.toSeminormedAddCommGroup := by
+    letI : InnerProductSpace.Core ℝ (TangentSpace I x) := targetCore
+    exact InnerProductSpace.ofCoreOfTopology targetCore
+      (targetMetric.continuousAt x) (targetMetric.isVonNBounded x)
+  rcases hinner with ⟨v, w, hvw⟩
+  change
+    (tangentNormDet (I := I) (J := I) (x := x) (y := x) g h
+        A =
+      @LinearMap.normDet ℝ _ _ inferInstance sourceNorm sourceInner sourceFD
+        targetNorm targetInner A) ∧
+      ∃ v w : TangentSpace I x,
+        sourceInner.toInner.inner v w ≠ targetInner.toInner.inner v w
+  constructor
+  · simp [tangentNormDet, sourceMetric, sourceCore, sourceNorm, sourceInner,
+      targetMetric, targetCore, targetNorm, targetInner]
+  · refine ⟨v, w, ?_⟩
+    change g.toRiemannianMetric.inner x v w ≠ h.toRiemannianMetric.inner x v w
+    exact hvw
+
 /-- The basis-independent Riemannian Jacobian of the manifold derivative.
 
 The tangent fibres are finite-dimensional by `VectorBundle.finiteDimensional`, while their
@@ -686,15 +840,7 @@ noncomputable def riemannianJacobian
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (h : Bundle.ContMDiffRiemannianMetric J ∞ F (TangentSpace J : N → Type _))
     (f : M → N) (x : M) : ℝ := by
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  letI : Bundle.RiemannianBundle (TangentSpace J : N → Type _) :=
-    ⟨h.toRiemannianMetric⟩
-  letI : FiniteDimensional ℝ (TangentSpace I x) :=
-    VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
-  letI : FiniteDimensional ℝ (TangentSpace J (f x)) :=
-    VectorBundle.finiteDimensional ℝ F (TangentSpace J) (f x)
-  exact (mfderiv I J f x).toLinearMap.normDet
+  exact tangentNormDet g h (mfderiv I J f x).toLinearMap
 
 section RiemannianJacobianCoordinates
 
@@ -734,10 +880,12 @@ theorem riemannianJacobian_mul_chartDensity_eq_chartCoordinateJacobian
         chartDensityAt (I := I) g alpha x =
       chartDensityAt (I := J) h beta (f x) *
         chartCoordinateJacobian (I := I) (J := J) f alpha beta x := by
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  letI : Bundle.RiemannianBundle (TangentSpace J : N → Type _) :=
-    ⟨h.toRiemannianMetric⟩
+  let modelENorm : NormedAddCommGroup E := inferInstance
+  let modelEInner : InnerProductSpace ℝ E := inferInstance
+  let modelEFD : FiniteDimensional ℝ E := inferInstance
+  let modelFNorm : NormedAddCommGroup F := inferInstance
+  let modelFInner : InnerProductSpace ℝ F := inferInstance
+  let modelFFD : FiniteDimensional ℝ F := inferInstance
   letI : FiniteDimensional ℝ (TangentSpace I x) :=
     VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
   letI : FiniteDimensional ℝ (TangentSpace J (f x)) :=
@@ -764,36 +912,118 @@ theorem riemannianJacobian_mul_chartDensity_eq_chartCoordinateJacobian
     constructor
     · rw [chartFrameMap, ← ts.symm_continuousLinearEquivAt_eq' hts]
     · rw [chartFrameMap, ← tt.symm_continuousLinearEquivAt_eq' htt]
-  simp only [riemannianJacobian, chartCoordinateJacobian, chartDensityAt]
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  letI sourceFD : FiniteDimensional ℝ (TangentSpace I x) :=
+    VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
+  let sourceNorm : NormedAddCommGroup (TangentSpace I x) := inferInstance
+  let sourceInner : InnerProductSpace ℝ (TangentSpace I x) := inferInstance
+  letI : Bundle.RiemannianBundle (TangentSpace J : N → Type _) :=
+    ⟨h.toRiemannianMetric⟩
+  letI targetFD : FiniteDimensional ℝ (TangentSpace J (f x)) :=
+    VectorBundle.finiteDimensional ℝ F (TangentSpace J) (f x)
+  let targetNorm : NormedAddCommGroup (TangentSpace J (f x)) := inferInstance
+  let targetInner : InnerProductSpace ℝ (TangentSpace J (f x)) := inferInstance
+  simp only [riemannianJacobian, tangentNormDet, chartCoordinateJacobian, chartDensityAt]
   rw [hcoord, hframes.1, hframes.2]
   change
-    ((mfderiv I J f x).toLinearMap.normDet *
-        (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap.normDet) =
-      (et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap.normDet *
-        ((et : TangentSpace J (f x) →L[ℝ] F).comp
-          ((mfderiv I J f x).comp (es.symm : E →L[ℝ] TangentSpace I x))).toLinearMap.normDet
-  rw [normDet_continuousLinearMap_comp]
-  · rw [normDet_continuousLinearMap_comp]
-    · have het :
-          (et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap.normDet *
-              (et : TangentSpace J (f x) →L[ℝ] F).toLinearMap.normDet = 1 := by
-          rw [mul_comm]
-          exact normDet_continuousLinearEquiv_mul_symm et
-      calc
-        (mfderiv I J f x).toLinearMap.normDet *
-            (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap.normDet =
-          1 * ((mfderiv I J f x).toLinearMap.normDet *
-            (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap.normDet) := by simp
-        _ = ((et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap.normDet *
-            (et : TangentSpace J (f x) →L[ℝ] F).toLinearMap.normDet) *
-            ((mfderiv I J f x).toLinearMap.normDet *
-              (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap.normDet) := by rw [het]
-        _ = (et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap.normDet *
-            ((et : TangentSpace J (f x) →L[ℝ] F).toLinearMap.normDet *
-              ((mfderiv I J f x).toLinearMap.normDet *
-                (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap.normDet)) := by ring
-    · exact (VectorBundle.finrank_eq ℝ E (TangentSpace I) x).symm
-  · exact hdim.trans (VectorBundle.finrank_eq ℝ F (TangentSpace J) (f x)).symm
+    (@LinearMap.normDet ℝ _ _ inferInstance sourceNorm sourceInner sourceFD
+        targetNorm targetInner (mfderiv I J f x).toLinearMap) *
+        (@LinearMap.normDet ℝ E (TangentSpace I x) (inferInstance : RCLike ℝ)
+          modelENorm modelEInner modelEFD sourceNorm sourceInner
+          (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap) =
+      (@LinearMap.normDet ℝ F (TangentSpace J (f x)) (inferInstance : RCLike ℝ)
+          modelFNorm modelFInner modelFFD targetNorm targetInner
+          (et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap) *
+      (@LinearMap.normDet ℝ E F (inferInstance : RCLike ℝ)
+          modelENorm modelEInner modelEFD modelFNorm modelFInner
+          ((et : TangentSpace J (f x) →L[ℝ] F).comp
+            ((mfderiv I J f x).comp
+              (es.symm : E →L[ℝ] TangentSpace I x))).toLinearMap)
+  have hfirst :
+      @LinearMap.normDet ℝ E (TangentSpace J (f x)) (inferInstance : RCLike ℝ)
+          modelENorm modelEInner modelEFD targetNorm targetInner
+          ((mfderiv I J f x).toLinearMap.comp
+            (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap) =
+        @LinearMap.normDet ℝ (TangentSpace I x) (TangentSpace J (f x))
+          (inferInstance : RCLike ℝ) sourceNorm sourceInner sourceFD targetNorm targetInner
+          (mfderiv I J f x).toLinearMap *
+        @LinearMap.normDet ℝ E (TangentSpace I x) (inferInstance : RCLike ℝ)
+          modelENorm modelEInner modelEFD sourceNorm sourceInner
+          (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap := by
+    exact @LinearMap.normDet_comp_of_finrank_eq ℝ E (TangentSpace I x)
+      (TangentSpace J (f x)) (inferInstance : RCLike ℝ)
+      modelENorm modelEInner modelEFD sourceNorm sourceInner targetNorm targetInner
+      sourceFD (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap
+      (mfderiv I J f x).toLinearMap
+      (VectorBundle.finrank_eq ℝ E (TangentSpace I) x).symm
+  have hsecond :
+      @LinearMap.normDet ℝ E F (inferInstance : RCLike ℝ)
+          modelENorm modelEInner modelEFD modelFNorm modelFInner
+          ((et : TangentSpace J (f x) →L[ℝ] F).comp
+            ((mfderiv I J f x).comp
+              (es.symm : E →L[ℝ] TangentSpace I x))).toLinearMap =
+        @LinearMap.normDet ℝ (TangentSpace J (f x)) F (inferInstance : RCLike ℝ)
+          targetNorm targetInner targetFD modelFNorm modelFInner
+          (et : TangentSpace J (f x) →L[ℝ] F).toLinearMap *
+        @LinearMap.normDet ℝ E (TangentSpace J (f x)) (inferInstance : RCLike ℝ)
+          modelENorm modelEInner modelEFD targetNorm targetInner
+          ((mfderiv I J f x).toLinearMap.comp
+            (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap) := by
+    simpa only [ContinuousLinearMap.toLinearMap_comp] using
+      (@LinearMap.normDet_comp_of_finrank_eq ℝ E (TangentSpace J (f x)) F
+        (inferInstance : RCLike ℝ)
+        modelENorm modelEInner modelEFD targetNorm targetInner
+        modelFNorm modelFInner
+        targetFD ((mfderiv I J f x).toLinearMap.comp
+          (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap)
+        (et : TangentSpace J (f x) →L[ℝ] F).toLinearMap
+        (hdim.trans (VectorBundle.finrank_eq ℝ F (TangentSpace J) (f x)).symm))
+  simp only [ContinuousLinearMap.toLinearMap_comp]
+  simp only [ContinuousLinearMap.toLinearMap_comp] at hsecond
+  rw [hsecond, hfirst]
+  let dDet : ℝ :=
+    @LinearMap.normDet ℝ (TangentSpace I x) (TangentSpace J (f x))
+      (inferInstance : RCLike ℝ) sourceNorm sourceInner sourceFD targetNorm targetInner
+      (mfderiv I J f x).toLinearMap
+  let sDet : ℝ :=
+    @LinearMap.normDet ℝ E (TangentSpace I x) (inferInstance : RCLike ℝ)
+      modelENorm modelEInner modelEFD sourceNorm sourceInner
+      (es.symm : E →L[ℝ] TangentSpace I x).toLinearMap
+  let esymDet : ℝ :=
+    @LinearMap.normDet ℝ F (TangentSpace J (f x)) (inferInstance : RCLike ℝ)
+      modelFNorm modelFInner modelFFD targetNorm targetInner
+      (et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap
+  let eDet : ℝ :=
+    @LinearMap.normDet ℝ (TangentSpace J (f x)) F (inferInstance : RCLike ℝ)
+      targetNorm targetInner targetFD modelFNorm modelFInner
+      (et : TangentSpace J (f x) →L[ℝ] F).toLinearMap
+  change dDet * sDet = esymDet * (eDet * (dDet * sDet))
+  have het :
+      esymDet * eDet = 1 := by
+    have hcomp :
+        @LinearMap.normDet ℝ (TangentSpace J (f x)) (TangentSpace J (f x))
+            (inferInstance : RCLike ℝ) targetNorm targetInner targetFD targetNorm targetInner
+            ((et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap.comp
+              (et : TangentSpace J (f x) →L[ℝ] F).toLinearMap) =
+          @LinearMap.normDet ℝ F (TangentSpace J (f x)) (inferInstance : RCLike ℝ)
+            modelFNorm modelFInner modelFFD targetNorm targetInner
+            (et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap *
+          @LinearMap.normDet ℝ (TangentSpace J (f x)) F (inferInstance : RCLike ℝ)
+            targetNorm targetInner targetFD modelFNorm modelFInner
+            (et : TangentSpace J (f x) →L[ℝ] F).toLinearMap := by
+      exact @LinearMap.normDet_comp_of_finrank_eq ℝ (TangentSpace J (f x)) F
+        (TangentSpace J (f x)) (inferInstance : RCLike ℝ)
+        targetNorm targetInner targetFD
+        modelFNorm modelFInner targetNorm targetInner modelFFD
+        (et : TangentSpace J (f x) →L[ℝ] F).toLinearMap
+        (et.symm : F →L[ℝ] TangentSpace J (f x)).toLinearMap
+        (VectorBundle.finrank_eq ℝ F (TangentSpace J) (f x)).symm
+    simpa [esymDet, eDet] using hcomp.symm
+  calc
+    dDet * sDet = 1 * (dDet * sDet) := by simp
+    _ = (esymDet * eDet) * (dDet * sDet) := by rw [het]
+    _ = esymDet * (eDet * (dDet * sDet)) := by ring
 
 end RiemannianJacobianCoordinates
 
@@ -804,12 +1034,8 @@ theorem riemannianJacobian_id
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (x : M) :
     riemannianJacobian (I := I) (J := I) g g id x = 1 := by
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  letI : FiniteDimensional ℝ (TangentSpace I x) :=
-    VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
   rw [riemannianJacobian, mfderiv_id]
-  simp
+  simp [tangentNormDet]
 
 /-- The tangent-space Jacobian is multiplicative under composition of differentiable
 maps.  The source/middle model-space equality is transported to the tangent fibres by
@@ -831,18 +1057,6 @@ theorem riemannianJacobian_comp
     riemannianJacobian (I := I) (J := JTarget) gSource gTarget (k ∘ f) x =
       riemannianJacobian (I := J) (J := JTarget) gMiddle gTarget k (f x) *
         riemannianJacobian (I := I) (J := J) gSource gMiddle f x := by
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨gSource.toRiemannianMetric⟩
-  letI : Bundle.RiemannianBundle (TangentSpace J : N → Type _) :=
-    ⟨gMiddle.toRiemannianMetric⟩
-  letI : Bundle.RiemannianBundle (TangentSpace JTarget : P → Type _) :=
-    ⟨gTarget.toRiemannianMetric⟩
-  letI : FiniteDimensional ℝ (TangentSpace I x) :=
-    VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
-  letI : FiniteDimensional ℝ (TangentSpace J (f x)) :=
-    VectorBundle.finiteDimensional ℝ F (TangentSpace J) (f x)
-  letI : FiniteDimensional ℝ (TangentSpace JTarget (k (f x))) :=
-    VectorBundle.finiteDimensional ℝ G (TangentSpace JTarget) (k (f x))
   have hdim₁ :
       Module.finrank ℝ (TangentSpace I x) =
         Module.finrank ℝ (TangentSpace J (f x)) := by
@@ -852,14 +1066,11 @@ theorem riemannianJacobian_comp
       _ = Module.finrank ℝ F := hdimSource
       _ = Module.finrank ℝ (TangentSpace J (f x)) :=
         VectorBundle.finrank_eq ℝ F (TangentSpace J) (f x)
-  simp only [riemannianJacobian]
+  rw [riemannianJacobian, riemannianJacobian, riemannianJacobian]
   rw [mfderiv_comp x hk hf]
-  change
-    ((mfderiv (I := J) (I' := JTarget) k (f x)).comp
-      (mfderiv (I := I) (I' := J) f x)).toLinearMap.normDet =
-      (mfderiv (I := J) (I' := JTarget) k (f x)).toLinearMap.normDet *
-        (mfderiv (I := I) (I' := J) f x).toLinearMap.normDet
-  exact normDet_continuousLinearMap_comp _ _ hdim₁
+  exact tangentNormDet_comp gSource gMiddle gTarget
+    (mfderiv (I := I) (I' := J) f x).toLinearMap
+    (mfderiv (I := J) (I' := JTarget) k (f x)).toLinearMap hdim₁
 
 end RiemannianJacobian
 
