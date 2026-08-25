@@ -634,6 +634,10 @@ def chartState (alpha : M) (gamma : ℝ → M) : ℝ → E × E :=
   fun t => (chartReading (I := I) alpha gamma t,
     deriv (chartReading (I := I) alpha gamma) t)
 
+/- The implication below is deliberately one-way.  Its converse, and the
+   fixed-chart to moving-foot transfer needed to turn the local spray witness
+   into a chart-independent geodesic, belong to the pending transition-law
+   slice. -/
 private theorem hasDerivAt_chartState_of_equation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) {gamma : ℝ → M} {t : ℝ}
@@ -889,20 +893,21 @@ theorem exists_localChartGeodesicAt_smooth_boundaryless [CompleteSpace E]
       (∀ t ∈ Ioo (-ε) ε, ContinuousAt γ t) :=
   exists_localChartGeodesicAt_smooth g p v BoundarylessManifold.isInteriorPoint
 
-/-! ## Intrinsic connection contract
+/-! ## Local connection contract
 
-The following definition is the moving-foot realization of the covariant
-acceleration.  The chart is only a local representative: its coefficient term
-is `chartChristoffelContraction`, whose definition is an expansion of the
-single bundled connection `Connection.leviCivitaConnection g`.  Keeping this
-bridge explicit makes the coordinate ODE a theorem about that connection,
-rather than a second connection or a chart-level replacement for it.
+The following declarations package the moving-foot coordinate representative
+of the covariant acceleration.  The coefficient term is
+`chartChristoffelContraction`, whose definition expands the single bundled
+connection `Connection.leviCivitaConnection g`.  They are a local source-facing
+contract: chart independence and the fixed-chart to moving-foot transition are
+not claimed until the pending Christoffel transformation law is supplied.
 -/
 
 /-- The acceleration of a curve, represented in the tangent fibre at its
-current foot.  The Christoffel term is obtained from the canonical bundled
-Levi--Civita connection through `chartChristoffelContraction`; no connection
-or metric structure is introduced by this definition. -/
+current foot by the chart representative used in this module.  The Christoffel
+term is obtained from the canonical bundled Levi--Civita connection through
+`chartChristoffelContraction`; no connection or metric structure is introduced
+by this definition.  Independence from the chosen chart is a later theorem. -/
 def connectionAcceleration
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) : TangentSpace I (gamma t) :=
@@ -935,9 +940,11 @@ theorem connectionAcceleration_eq_leviCivita
             (deriv (chartReading (I := I) (gamma t) gamma) t)) := by
   rfl
 
-/-- Intrinsic vanishing of `D_t (gamma')` at a time.  The source and
-regularity clauses are part of the local curve contract; the final equality
-is the canonical Levi--Civita acceleration in the moving-foot chart. -/
+/-- Local vanishing-acceleration contract at a time.  The source and
+regularity clauses are part of the curve contract; the final equality is the
+canonical Levi--Civita coordinate representative in the moving-foot chart.
+The intrinsic chart-independence theorem is deferred to the transition-law
+slice. -/
 def HasCovariantAccelerationAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) (A : TangentSpace I (gamma t)) : Prop :=
@@ -946,8 +953,10 @@ def HasCovariantAccelerationAt
     HasChartGeodesicRegularityAt (I := I) (gamma t) gamma t ∧
     connectionAcceleration (I := I) g gamma t = A
 
-/-- A curve is geodesic at `t` when it has the required second-order
-regularity and its Levi--Civita covariant acceleration vanishes. -/
+/-- A curve satisfies the local geodesic contract at `t` when it has the
+required second-order regularity and the selected Levi--Civita coordinate
+representative vanishes.  The chart-independent `D_t (gamma')` equivalence is
+not asserted by this slice. -/
 def IsGeodesicAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) : Prop :=
@@ -1356,8 +1365,9 @@ theorem isGeodesic_const
     rw [connectionAcceleration, hsecond, hderiv]
     simp only [chartChristoffelContraction_zero, add_zero, map_zero]
 
-/-- The intrinsic equation at a time is equivalent to the Morgan--Tian
-coordinate equation in the chart centred at the foot. -/
+/-- The local geodesic contract is equivalent to the Morgan--Tian coordinate
+equation in the chart centred at the foot.  This is an unfolding in the same
+chart, not the fixed-chart to moving-foot invariance theorem. -/
 theorem isGeodesicAt_iff_chartEquation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) :
