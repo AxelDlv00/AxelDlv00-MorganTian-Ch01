@@ -1,5 +1,6 @@
 import MorganTianLib.Ch01.Connection.Christoffel
 import Mathlib.Geometry.Manifold.IntegralCurve.ExistUnique
+import Mathlib.Geometry.Manifold.Riemannian.Basic
 import Mathlib.Geometry.Manifold.VectorBundle.Tangent
 import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Mul
@@ -47,10 +48,6 @@ variable
 section Coordinates
 
 variable [IsManifold I ∞ M] [FiniteDimensional ℝ E]
-
-private def chartFrame (alpha : M) (i : Fin (Module.finrank ℝ E)) (q : M) :
-    TangentSpace I q :=
-  (trivializationAt E (TangentSpace I) alpha).localFrame (Module.finBasis ℝ E) i q
 
 /-- The coordinate coefficient extracted from Mathlib's bundled
 Levi--Civita connection.  The first lower slot is the direction field and
@@ -472,7 +469,10 @@ theorem chartAcceleration_affine_of_zero_contraction
   rw [hsecond, hfirst]
   simp [hcontraction]
 
-/-- The chart ODE at one time, in solved second-order form. -/
+/-- The chart ODE at one time, in solved second-order form.
+
+Source anchor: Morgan--Tian, Definition 1.17 and the coordinate paragraph on
+printed p. 41 (`morganTian2007`). -/
 def HasChartGeodesicEquationAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (gamma : ℝ → M) (t : ℝ) : Prop :=
@@ -505,7 +505,10 @@ the intrinsic maximal-domain construction belongs to the next geodesic slice.
 The velocity is represented in the chart trivialisation by `chartVelocityAt`.
 The only analytic completeness input is `[CompleteSpace E]`; boundarylessness
 is supplied separately by `exists_localChartGeodesicAt_boundaryless`.  The
-returned curve is continuous at every time in the displayed interval. -/
+returned curve is continuous at every time in the displayed interval.
+
+Source anchor: Morgan--Tian, Definition 1.17 and the coordinate/initial-value
+paragraph on printed p. 41 (`morganTian2007`). -/
 theorem exists_localChartGeodesicAt [CompleteSpace E]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) (hp : I.IsInteriorPoint p) :
@@ -634,10 +637,9 @@ def chartState (alpha : M) (gamma : ℝ → M) : ℝ → E × E :=
   fun t => (chartReading (I := I) alpha gamma t,
     deriv (chartReading (I := I) alpha gamma) t)
 
-/- The implication below is deliberately one-way.  Its converse, and the
-   fixed-chart to moving-foot transfer needed to turn the local spray witness
-   into a chart-independent geodesic, belong to the pending transition-law
-   slice. -/
+/- The two private lemmas below identify the fixed-chart second-order equation
+   with the first-order spray equation.  This is a fixed-chart equivalence only:
+   moving-foot transport still requires the pending Christoffel transition law. -/
 private theorem hasDerivAt_chartState_of_equation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) {gamma : ℝ → M} {t : ℝ}
@@ -661,6 +663,39 @@ private theorem hasDerivAt_chartState_of_equation
         (chartReading (I := I) alpha gamma t)
         (deriv (chartReading (I := I) alpha gamma) t)) t
   exact hfirst.prodMk hsecond'
+
+private theorem chartEquation_of_hasDerivAt_chartState
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) {gamma : ℝ → M} {t : ℝ}
+    (hreg : HasChartGeodesicRegularityAt (I := I) alpha gamma t)
+    (hstate : HasDerivAt (chartState (I := I) alpha gamma)
+      (chartSpray (I := I) g alpha
+        (chartState (I := I) alpha gamma t)) t) :
+    HasChartGeodesicEquationAt (I := I) g alpha gamma t := by
+  refine ⟨hreg, ?_⟩
+  have hsecond : HasDerivAt (deriv (chartReading (I := I) alpha gamma))
+      (chartSpraySecond (I := I) g alpha
+        (chartReading (I := I) alpha gamma t)
+        (deriv (chartReading (I := I) alpha gamma) t)) t := by
+    have h := (hstate.hasFDerivAt.snd).hasDerivAt
+    simpa [chartState, chartSpray, ContinuousLinearMap.comp_apply,
+      ContinuousLinearMap.toSpanSingleton_apply] using h
+  rw [chartAcceleration, hsecond.deriv]
+  rw [chartSpraySecond_eq_neg_contraction]
+  simp
+
+private theorem hasDerivAt_chartState_iff_chartEquation
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) {gamma : ℝ → M} {t : ℝ}
+    (hreg : HasChartGeodesicRegularityAt (I := I) alpha gamma t) :
+    HasDerivAt (chartState (I := I) alpha gamma)
+        (chartSpray (I := I) g alpha
+          (chartState (I := I) alpha gamma t)) t ↔
+      HasChartGeodesicEquationAt (I := I) g alpha gamma t := by
+  constructor
+  · exact chartEquation_of_hasDerivAt_chartState (I := I) g alpha hreg
+  · intro h
+    exact hasDerivAt_chartState_of_equation (I := I) g alpha h
 
 omit [FiniteDimensional ℝ E] in
 private theorem contDiffOn_of_hasDerivAt_ode
@@ -956,7 +991,10 @@ def HasCovariantAccelerationAt
 /-- A curve satisfies the local geodesic contract at `t` when it has the
 required second-order regularity and the selected Levi--Civita coordinate
 representative vanishes.  The chart-independent `D_t (gamma')` equivalence is
-not asserted by this slice. -/
+not asserted by this slice.
+
+Source anchor: Morgan--Tian, Definition 1.17, printed p. 41
+(`morganTian2007`). -/
 def IsGeodesicAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) : Prop :=
@@ -1031,7 +1069,10 @@ theorem isGeodesic_iff_isGeodesicOn_univ
 
 The curve is totalized outside `domain`, but all geometric assertions are
 restricted to `domain`; this prevents an incomplete solution from being
-silently represented by a globally smooth junk extension. -/
+silently represented by a globally smooth junk extension.
+
+Source anchor: Morgan--Tian, Definition 1.17 and the local IVP paragraph,
+printed p. 41 (`morganTian2007`). -/
 structure GeodesicSolution
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) where
@@ -1364,6 +1405,29 @@ theorem isGeodesic_const
   · change connectionAcceleration (I := I) g (fun _ : ℝ => p) t = 0
     rw [connectionAcceleration, hsecond, hderiv]
     simp only [chartChristoffelContraction_zero, add_zero, map_zero]
+
+/-- Concrete model regression for the zero-velocity case.
+
+On an inner-product vector space, Mathlib's canonical
+`riemannianMetricVectorSpace` supplies the Euclidean metric.  Its bundled
+smoothness is analytic (`ω`), so the record update below exposes the same
+metric at the `∞` regularity used by this module.  The resulting constant
+curve is geodesic by the intrinsic coordinate contract; this is deliberately
+the bounded zero-velocity probe, not a claim about the nonzero straight-line
+Christoffel calculation.
+-/
+theorem isGeodesic_const_riemannianMetricVectorSpace
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (p : F) :
+    isGeodesic (I := 𝓘(ℝ, F)) (M := F)
+      ({ riemannianMetricVectorSpace F with
+          contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top })
+      (fun _ : ℝ => p) := by
+  let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, F) ∞ F
+      (TangentSpace 𝓘(ℝ, F)) :=
+    { riemannianMetricVectorSpace F with
+        contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }
+  exact isGeodesic_const (I := 𝓘(ℝ, F)) g p
 
 /-- The local geodesic contract is equivalent to the Morgan--Tian coordinate
 equation in the chart centred at the foot.  This is an unfolding in the same
