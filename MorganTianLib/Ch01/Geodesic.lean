@@ -9,10 +9,13 @@ import Mathlib.Analysis.Calculus.Deriv.Prod
 # Geodesics
 
 This module is the Chapter 1 geodesic handoff.  It uses the canonical bundled
-Levi--Civita connection from `Ch01.Connection` and gives a fixed-chart
-second-order reduction together with its current-foot transport.  The local
-IVP and uniqueness results are deliberately chart-local; moving-chart gluing,
-the maximal interval, and smooth dependence on initial data are later F2 work.
+Levi--Civita connection from `Ch01.Connection` and gives the fixed-chart
+second-order reduction together with the local initial-value contract.  The
+maximal-domain definitions below are deliberately a domain substrate: their
+canonical curve and the chart-transition/gluing argument are separate pieces
+of the S18 construction.  Smooth dependence on initial data is likewise left
+to the parameter-flow slice: the pinned Mathlib ODE API supplies time
+smoothness and local uniqueness, but no joint smooth-flow theorem.
 
 In a chart `alpha`, the equation is
 
@@ -254,6 +257,140 @@ private theorem chartSpray_contDiffOn
       (interior (extChartAt I alpha).target ×ˢ (Set.univ : Set E)) := by
   intro z hz
   exact (chartSpray_contDiffAt (I := I) g alpha hz.1).contDiffWithinAt
+
+/-! The next declarations are deliberately private.  They lift the fixed-chart
+spray to the tangent bundle on one chart, which is the first-order ODE used by
+the integral-curve API.  A global spray still requires the missing
+fixed-to-moving-chart transition theorem, so no chart-dependent field is part
+of the source-facing geodesic contract. -/
+
+private def chartSprayDomain (alpha : M) : Set (TangentBundle I M) :=
+  (Bundle.TotalSpace.proj : TangentBundle I M → M) ⁻¹' (chartAt H alpha).source
+
+private def chartSprayState (alpha : M) (p : TangentBundle I M) : E × E :=
+  (extChartAt I alpha p.proj,
+    (trivializationAt E (TangentSpace I) alpha p).2)
+
+private def chartSpraySection
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) (p : TangentBundle I M) : TangentSpace I.tangent p :=
+  (trivializationAt (E × E) (TangentSpace I.tangent)
+      (⟨alpha, (0 : E)⟩ : TangentBundle I M)).symmL ℝ p
+    (chartSpray (I := I) g alpha (chartSprayState (I := I) alpha p))
+
+omit [FiniteDimensional ℝ E] in
+private theorem chartSprayState_eq_extChartAt (alpha : M) (p : TangentBundle I M) :
+    chartSprayState (I := I) alpha p =
+      extChartAt I.tangent (⟨alpha, (0 : E)⟩ : TangentBundle I M) p := by
+  rw [FiberBundle.extChartAt]
+  simp only [chartSprayState, PartialEquiv.trans_apply, PartialEquiv.prod_coe,
+    PartialEquiv.refl_coe]
+  rfl
+
+omit [FiniteDimensional ℝ E] in
+private theorem chartSprayState_contMDiffOn (alpha : M) :
+    ContMDiffOn I.tangent 𝓘(ℝ, E × E) ∞
+      (chartSprayState (I := I) alpha) (chartSprayDomain (I := I) alpha) := by
+  rw [show chartSprayState (I := I) alpha =
+      extChartAt I.tangent (⟨alpha, (0 : E)⟩ : TangentBundle I M) from
+      funext (chartSprayState_eq_extChartAt (I := I) alpha)]
+  have hs :
+      (chartAt (ModelProd H E) (⟨alpha, (0 : E)⟩ : TangentBundle I M)).source =
+        chartSprayDomain (I := I) alpha := by
+    ext p
+    rw [TangentBundle.mem_chart_source_iff]
+    rfl
+  rw [← hs]
+  exact contMDiffOn_extChartAt
+
+omit [FiniteDimensional ℝ E] in
+private theorem chartSprayState_mapsTo_interior [BoundarylessManifold I M]
+    (alpha : M) :
+    MapsTo (chartSprayState (I := I) alpha)
+      (chartSprayDomain (I := I) alpha)
+      (interior (extChartAt I alpha).target ×ˢ (Set.univ : Set E)) := by
+  intro p hp
+  have hproj : p.proj ∈ (chartAt H alpha).source := hp
+  have hy : extChartAt I alpha p.proj ∈ (extChartAt I alpha).target := by
+    exact (extChartAt I alpha).map_source
+      (by simpa only [extChartAt_source (I := I)] using hproj)
+  have htarget : extChartAt I alpha p.proj ∈ interior (extChartAt I alpha).target := by
+    let q : M := (extChartAt I alpha).symm (extChartAt I alpha p.proj)
+    have hqsrc : q ∈ (chartAt H alpha).source := by
+      change (extChartAt I alpha).symm (extChartAt I alpha p.proj) ∈
+        (chartAt H alpha).source
+      simpa only [extChartAt_source (I := I)] using
+        (extChartAt I alpha).map_target hy
+    have hqint : I.IsInteriorPoint q := BoundarylessManifold.isInteriorPoint
+    have hcoord : (extChartAt I alpha) q ∈ interior (extChartAt I alpha).target :=
+      (I.isInteriorPoint_iff_of_mem_atlas (n := ∞) (by simp)
+        (e := chartAt H alpha) (chart_mem_atlas H alpha) hqsrc).mp hqint
+    change (extChartAt I alpha) ((extChartAt I alpha).symm
+      (extChartAt I alpha p.proj)) ∈ interior (extChartAt I alpha).target at hcoord
+    rw [(extChartAt I alpha).right_inv hy] at hcoord
+    exact hcoord
+  exact ⟨htarget, Set.mem_univ _⟩
+
+private theorem chartSpraySection_contMDiffOn
+    [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) :
+    ContMDiffOn I.tangent I.tangent.tangent ∞
+      (fun p : TangentBundle I M =>
+        (⟨p, chartSpraySection (I := I) g alpha p⟩ :
+          TangentBundle I.tangent (TangentBundle I M)))
+      (chartSprayDomain (I := I) alpha) := by
+  classical
+  let e := trivializationAt (E × E) (TangentSpace I.tangent)
+    (⟨alpha, (0 : E)⟩ : TangentBundle I M)
+  letI : MemTrivializationAtlas e :=
+    ⟨FiberBundle.trivialization_mem_atlas (E × E) (TangentSpace I.tangent) _⟩
+  have hdomain : chartSprayDomain (I := I) alpha = e.baseSet := by
+    unfold chartSprayDomain e
+    ext p
+    rw [Set.mem_preimage,
+      TangentBundle.trivializationAt_baseSet (I := I.tangent)
+        (M := TangentBundle I M) (⟨alpha, (0 : E)⟩ : TangentBundle I M)]
+    exact (TangentBundle.mem_chart_source_iff (I := I) (M := M) p
+      (⟨alpha, (0 : E)⟩ : TangentBundle I M)).symm
+  have hMapsTo :
+      MapsTo
+        (fun p : TangentBundle I M =>
+          (⟨p, chartSpraySection (I := I) g alpha p⟩ :
+            TangentBundle I.tangent (TangentBundle I M)))
+        (chartSprayDomain (I := I) alpha) e.source := by
+    intro p hp
+    rw [Trivialization.source_eq]
+    rw [← hdomain]
+    exact hp
+  rw [e.contMDiffOn_iff (IM := I.tangent) (IB := I.tangent)
+    (n := (∞ : WithTop ℕ∞)) hMapsTo]
+  refine ⟨?_, ?_⟩
+  · change ContMDiffOn I.tangent I.tangent ∞
+      (fun x : TangentBundle I M => x) (chartSprayDomain (I := I) alpha)
+    exact contMDiffOn_id
+  · have heq : ∀ p ∈ chartSprayDomain (I := I) alpha,
+        (e (⟨p, chartSpraySection (I := I) g alpha p⟩ :
+          TangentBundle I.tangent (TangentBundle I M))).2 =
+          chartSpray (I := I) g alpha
+            (chartSprayState (I := I) alpha p) := by
+      intro p hp
+      have hp' : p ∈ e.baseSet := by rw [← hdomain]; exact hp
+      unfold chartSpraySection
+      rw [Trivialization.symmL_apply _ hp']
+      change (e (⟨p, e.symm p
+        (chartSpray (I := I) g alpha (chartSprayState (I := I) alpha p))⟩)).2 = _
+      exact congrArg Prod.snd (e.apply_mk_symm hp'
+        (chartSpray (I := I) g alpha (chartSprayState (I := I) alpha p)))
+    have hcomp :
+        ContMDiffOn I.tangent 𝓘(ℝ, E × E) ∞
+          (fun p => chartSpray (I := I) g alpha
+            (chartSprayState (I := I) alpha p))
+          (chartSprayDomain (I := I) alpha) :=
+      (chartSpray_contDiffOn (I := I) g alpha).contMDiffOn.comp
+        (chartSprayState_contMDiffOn (I := I) alpha)
+        (chartSprayState_mapsTo_interior (I := I) alpha)
+    exact hcomp.congr heq
 
 /-- The `E`-coordinate of a tangent vector in the chart trivialisation at `p`.
 
@@ -521,6 +658,7 @@ private theorem hasDerivAt_chartState_of_equation
         (deriv (chartReading (I := I) alpha gamma) t)) t
   exact hfirst.prodMk hsecond'
 
+omit [FiniteDimensional ℝ E] in
 private theorem contDiffOn_of_hasDerivAt_ode
     {F : E × E → E × E} {z : ℝ → E × E} {s : Set ℝ} {U : Set (E × E)}
     (hs : IsOpen s) (hF : ContDiffOn ℝ ∞ F U)
@@ -967,8 +1105,8 @@ def GeodesicSolution.restrict
 /-- The maximality contract for a future canonical solution constructor.
 
 It quantifies over every open-interval solution with the same initial data and
-requires its domain to be contained in the selected domain.  This is a
-predicate, rather than an existence claim: constructing the canonical witness
+requires its domain to be contained in the selected domain.  This predicate is
+kept separate from the domain union because constructing a canonical witness
 requires the moving-chart gluing and continuation argument recorded in S18. -/
 def IsMaximalGeodesicSolution
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
@@ -978,6 +1116,204 @@ def IsMaximalGeodesicSolution
     HasDerivAt (chartReading (I := I) p gamma) (chartVelocityAt (I := I) p v) 0 →
     IsGeodesicCurveOn (I := I) g gamma s →
     s ⊆ S.domain
+
+/-!
+### Domain witnesses and compatibility
+
+The following declarations make the set-theoretic part of the maximal
+interval construction explicit.  A member of the union is selected only after
+its time has been supplied as a proof, so the totalized representative is
+deterministic.  The agreement theorem is intentionally conditional on the
+overlap-compatibility hypothesis; it is the exact interface needed by the
+future chart-transition/gluing proof and does not assert that compatibility is
+already available here.
+-/
+
+/-- A solution witness whose open domain contains `t`.
+
+This is the witness form of the union used in `maximalGeodesicDomain`.  The
+source is Morgan--Tian, Definition 1.17 and the coordinate initial-value
+paragraph (printed p. 41); no maximality or completeness claim is hidden in
+the predicate. -/
+def MaximalGeodesicWitness
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} (t : ℝ) : Prop :=
+  ∃ S : GeodesicSolution (I := I) g p v, t ∈ S.domain
+
+theorem mem_maximalGeodesicDomain_iff
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} {t : ℝ} :
+    t ∈ maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) ↔
+      MaximalGeodesicWitness (I := I) (g := g) (p := p) (v := v) t := by
+  simp only [maximalGeodesicDomain, MaximalGeodesicWitness, mem_iUnion]
+
+/-- Select the solution witnessing membership of `t` in the maximal domain. -/
+noncomputable def maximalGeodesicSolutionAt
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} {t : ℝ}
+    (ht : t ∈ maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) :
+    GeodesicSolution (I := I) g p v :=
+  Classical.choose ((mem_maximalGeodesicDomain_iff (I := I) (g := g)
+    (p := p) (v := v) (t := t)).mp ht)
+
+theorem maximalGeodesicSolutionAt_mem
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} {t : ℝ}
+    (ht : t ∈ maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) :
+    t ∈ (maximalGeodesicSolutionAt (I := I) (g := g) (p := p) (v := v) ht).domain := by
+  exact Classical.choose_spec ((mem_maximalGeodesicDomain_iff (I := I) (g := g)
+    (p := p) (v := v) (t := t)).mp ht)
+
+/-- A totalized value obtained by choosing a solution at each time in the
+maximal domain.  Values outside the domain are the initial position. -/
+noncomputable def maximalGeodesicCurve
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} (t : ℝ) : M :=
+  by
+    classical
+    exact if ht : t ∈ maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) then
+      (maximalGeodesicSolutionAt (I := I) (g := g) (p := p) (v := v) ht).curve t
+    else p
+
+theorem maximalGeodesicCurve_of_mem
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} {t : ℝ}
+    (ht : t ∈ maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) :
+    maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) t =
+      (maximalGeodesicSolutionAt (I := I) (g := g) (p := p) (v := v) ht).curve t := by
+  simp only [maximalGeodesicCurve, dif_pos ht]
+
+theorem maximalGeodesicCurve_of_not_mem
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} {t : ℝ}
+    (ht : t ∉ maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) :
+    maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) t = p := by
+  simp only [maximalGeodesicCurve, dif_neg ht]
+
+/-- Pairwise overlap compatibility for the supplied solution family.
+
+For two solutions `S` and `T`, the curves must agree on the intersection of
+their domains.  The condition is the gluing premise, not a theorem: it is to
+be discharged by the moving-chart uniqueness argument in the continuation
+slice. -/
+def GeodesicSolutionsCompatible
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} : Prop :=
+  ∀ S T : GeodesicSolution (I := I) g p v,
+    EqOn S.curve T.curve (S.domain ∩ T.domain)
+
+theorem maximalGeodesicCurve_agrees
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (hcompat : GeodesicSolutionsCompatible (I := I) (g := g) (p := p) (v := v))
+    (S : GeodesicSolution (I := I) g p v) {t : ℝ} (ht : t ∈ S.domain) :
+    maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) t = S.curve t := by
+  have htm : t ∈ maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) :=
+    subset_maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) S ht
+  rw [maximalGeodesicCurve_of_mem htm]
+  exact hcompat (maximalGeodesicSolutionAt (I := I) (g := g) (p := p) (v := v) htm) S
+    ⟨maximalGeodesicSolutionAt_mem (I := I) (g := g) (p := p) (v := v) htm, ht⟩
+
+theorem maximalGeodesicCurve_zero
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (hS : Nonempty (GeodesicSolution (I := I) g p v))
+    (hcompat : GeodesicSolutionsCompatible (I := I) (g := g) (p := p) (v := v)) :
+    maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) 0 = p := by
+  obtain ⟨S⟩ := hS
+  rw [maximalGeodesicCurve_agrees hcompat S S.zero_mem_domain]
+  exact S.initial_position
+
+theorem maximalGeodesicDomain_eq_univ_of_global_solution
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (S : GeodesicSolution (I := I) g p v) (hdom : S.domain = (Set.univ : Set ℝ)) :
+    maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) = Set.univ := by
+  apply Set.Subset.antisymm
+  · exact Set.subset_univ _
+  · intro t ht
+    apply subset_maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) S
+    rw [hdom]
+    exact Set.mem_univ t
+
+/-- A time set has an unbounded lifetime when it is unbounded in both time
+directions.  This keeps the two endpoint directions explicit instead of
+encoding an unbounded maximal interval as an opaque predicate. -/
+def HasUnboundedLifetime (s : Set ℝ) : Prop :=
+  ¬BddAbove s ∧ ¬BddBelow s
+
+theorem hasUnboundedLifetime_univ :
+    HasUnboundedLifetime (Set.univ : Set ℝ) := by
+  constructor
+  · rintro ⟨a, ha⟩
+    have h := ha (Set.mem_univ (a + 1))
+    linarith
+  · rintro ⟨a, ha⟩
+    have h := ha (Set.mem_univ (a - 1))
+    linarith
+
+theorem maximalGeodesicDomain_hasUnboundedLifetime_of_global_solution
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (S : GeodesicSolution (I := I) g p v) (hdom : S.domain = (Set.univ : Set ℝ)) :
+    HasUnboundedLifetime
+      (maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) := by
+  rw [maximalGeodesicDomain_eq_univ_of_global_solution S hdom]
+  exact hasUnboundedLifetime_univ
+
+theorem restrict_domain_subset_maximalGeodesicDomain
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} (S : GeodesicSolution (I := I) g p v)
+    {s : Set ℝ} (hs : IsOpen s) (hpre : IsPreconnected s) (h0 : (0 : ℝ) ∈ s)
+    (hsub : s ⊆ S.domain) :
+    (S.restrict hs hpre h0 hsub).domain ⊆
+      maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) := by
+  exact subset_maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)
+    (S.restrict hs hpre h0 hsub)
+
+/-- A nonzero Christoffel contraction cannot be cancelled by the wrong sign.
+
+This reusable obstruction is the algebraic core of the nonconstant-metric sign
+probe: an eventual concrete metric instantiation supplies the displayed
+nonzero contraction and second derivative, while this theorem rules out the
+reversed `u'' - Γ(u',u')` equation.  The instantiation itself remains a later
+coordinate-regression obligation. -/
+theorem chartAcceleration_sign_regression
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (t : ℝ)
+    (hsecond : deriv (deriv (chartReading (I := I) (gamma t) gamma)) t =
+      chartChristoffelContraction (I := I) g (gamma t)
+        (chartReading (I := I) (gamma t) gamma t)
+        (deriv (chartReading (I := I) (gamma t) gamma) t)
+        (deriv (chartReading (I := I) (gamma t) gamma) t))
+    (hnonzero : chartChristoffelContraction (I := I) g (gamma t)
+        (chartReading (I := I) (gamma t) gamma t)
+        (deriv (chartReading (I := I) (gamma t) gamma) t)
+        (deriv (chartReading (I := I) (gamma t) gamma) t) ≠ 0) :
+    chartAcceleration (I := I) g (gamma t) gamma t ≠ 0 := by
+  intro hzero
+  have hcancel := (chartAcceleration_eq_zero_iff (I := I) g (gamma t) gamma t).mp hzero
+  have heq :
+      chartChristoffelContraction (I := I) g (gamma t)
+          (chartReading (I := I) (gamma t) gamma t)
+          (deriv (chartReading (I := I) (gamma t) gamma) t)
+          (deriv (chartReading (I := I) (gamma t) gamma) t) =
+        -chartChristoffelContraction (I := I) g (gamma t)
+          (chartReading (I := I) (gamma t) gamma t)
+          (deriv (chartReading (I := I) (gamma t) gamma) t)
+          (deriv (chartReading (I := I) (gamma t) gamma) t) := by
+    calc
+      _ = deriv (deriv (chartReading (I := I) (gamma t) gamma)) t := hsecond.symm
+      _ = -_ := hcancel
+  apply hnonzero
+  have htwo : (2 : ℝ) •
+      chartChristoffelContraction (I := I) g (gamma t)
+        (chartReading (I := I) (gamma t) gamma t)
+        (deriv (chartReading (I := I) (gamma t) gamma) t)
+        (deriv (chartReading (I := I) (gamma t) gamma) t) = 0 := by
+    rw [two_smul]
+    exact add_eq_zero_iff_eq_neg.mpr heq
+  exact (smul_eq_zero.mp htwo).resolve_left (by norm_num)
 
 /-- Constant curves are geodesics; this is the zero-velocity regression for
 the canonical coordinate equation. -/
@@ -1047,6 +1383,69 @@ theorem isGeodesicAt_iff_chartEquation
       simpa [chartAcceleration, chartChristoffelContraction] using hzero
     rw [connectionAcceleration, hacc, map_zero]
 
+/-! ### Initial-time intrinsic regression
+
+At the prescribed initial time, the chart used by the local IVP is already the
+chart centred at the curve's foot.  This small bridge is therefore available
+without a chart-transition theorem; transferring the equation to later moving
+charts remains a separate S18 obligation. -/
+
+/-- A fixed-chart equation at the initial foot is the intrinsic equation at
+time zero.  The equality `gamma 0 = p` identifies the prescribed IVP chart
+with the current-foot chart in `isGeodesicAt_iff_chartEquation`. -/
+theorem isGeodesicAt_zero_of_chartEquationAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    {p : M} {gamma : ℝ → M}
+    (hposition : gamma 0 = p)
+    (hcontinuous : ContinuousAt gamma 0)
+    (hequation : HasChartGeodesicEquationAt (I := I) g p gamma 0) :
+    IsGeodesicAt (I := I) g gamma 0 := by
+  subst p
+  rw [isGeodesicAt_iff_chartEquation]
+  exact ⟨mem_chart_source H (gamma 0), hcontinuous, hequation⟩
+
+/-- The point-local IVP witness also satisfies the intrinsic geodesic equation
+at its prescribed initial time.  The theorem deliberately retains the fixed
+chart equation and all local target/continuity witnesses for downstream
+consumers. -/
+theorem exists_localChartGeodesicAt_with_intrinsic_zero [CompleteSpace E]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p) (hp : I.IsInteriorPoint p) :
+    ∃ ε > (0 : ℝ), ∃ gamma : ℝ → M,
+      gamma 0 = p ∧
+      HasDerivAt (chartReading (I := I) p gamma) (chartVelocityAt (I := I) p v) 0 ∧
+      IsGeodesicAt (I := I) g gamma 0 ∧
+      HasChartGeodesicEquationOn (I := I) g p gamma (Ioo (-ε) ε) ∧
+      (∀ t ∈ Ioo (-ε) ε,
+        chartReading (I := I) p gamma t ∈ interior (extChartAt I p).target) ∧
+      (∀ t ∈ Ioo (-ε) ε, ContinuousAt gamma t) := by
+  obtain ⟨ε, hε, gamma, hposition, hvelocity, hequation, hinterior, hcontinuous⟩ :=
+    exists_localChartGeodesicAt (I := I) g p v hp
+  have hzero : (0 : ℝ) ∈ Ioo (-ε) ε := by
+    constructor <;> linarith
+  have hinitial : IsGeodesicAt (I := I) g gamma 0 :=
+    isGeodesicAt_zero_of_chartEquationAt (I := I) g hposition
+      (hcontinuous 0 hzero) (hequation 0 hzero).2
+  exact ⟨ε, hε, gamma, hposition, hvelocity, hinitial, hequation, hinterior,
+    hcontinuous⟩
+
+/-- Boundaryless wrapper for
+`exists_localChartGeodesicAt_with_intrinsic_zero`. -/
+theorem exists_localChartGeodesicAt_with_intrinsic_zero_boundaryless
+    [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p) :
+    ∃ ε > (0 : ℝ), ∃ gamma : ℝ → M,
+      gamma 0 = p ∧
+      HasDerivAt (chartReading (I := I) p gamma) (chartVelocityAt (I := I) p v) 0 ∧
+      IsGeodesicAt (I := I) g gamma 0 ∧
+      HasChartGeodesicEquationOn (I := I) g p gamma (Ioo (-ε) ε) ∧
+      (∀ t ∈ Ioo (-ε) ε,
+        chartReading (I := I) p gamma t ∈ interior (extChartAt I p).target) ∧
+      (∀ t ∈ Ioo (-ε) ε, ContinuousAt gamma t) :=
+  exists_localChartGeodesicAt_with_intrinsic_zero (I := I) g p v
+    BoundarylessManifold.isInteriorPoint
+
 /-- Coordinate form of Morgan--Tian's geodesic equation,
 `u''^k + Gamma^k_ij u'^i u'^j = 0`. -/
 theorem isGeodesicAt_iff_coordinate_formula
@@ -1063,6 +1462,39 @@ theorem isGeodesicAt_iff_coordinate_formula
           (deriv (chartReading (I := I) (gamma t) gamma) t) = 0 := by
   rw [isGeodesicAt_iff_chartEquation]
   rfl
+
+/-- The chart velocity of the zero tangent vector is zero.  This is the
+initial-data normalization used by the constant-curve regression below. -/
+@[simp] theorem chartVelocityAt_zero
+    (p : M) :
+    chartVelocityAt (I := I) p (0 : TangentSpace I p) = 0 := by
+  unfold chartVelocityAt
+  rw [TangentBundle.trivializationAt_apply]
+  exact map_zero _
+
+/-- Zero initial velocity selects the constant solution locally.  This is the
+ODE model regression: it combines the prescribed chart velocity, the constant
+curve equation, and local uniqueness rather than merely checking that a
+constant curve satisfies the equation. -/
+theorem localChartGeodesic_eventuallyEq_const_of_zero_velocity
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (hp : I.IsInteriorPoint p) {gamma : ℝ → M}
+    (hgamma0 : gamma 0 = p)
+    (hvel : HasDerivAt (chartReading (I := I) p gamma)
+      (chartVelocityAt (I := I) p (0 : TangentSpace I p)) 0)
+    (hgamma : ∀ᶠ s in 𝓝 (0 : ℝ),
+      HasChartGeodesicEquationAt (I := I) g p gamma s) :
+    gamma =ᶠ[𝓝 (0 : ℝ)] (fun _ : ℝ => p) := by
+  apply localChartGeodesic_eventuallyEq_of_initial_data (I := I) g p 0 hp
+    hgamma0 rfl hvel
+  · rw [chartVelocityAt_zero]
+    change HasDerivAt (fun _ : ℝ => extChartAt I p p) 0 0
+    exact hasDerivAt_const (x := (0 : ℝ)) (c := extChartAt I p p)
+  · exact hgamma
+  · filter_upwards [] with s
+    have hconst : IsGeodesicAt (I := I) g (fun _ : ℝ => p) s :=
+      (isGeodesic_const (I := I) g p).2 s
+    exact (isGeodesicAt_iff_chartEquation (I := I) g (fun _ : ℝ => p) s).mp hconst |>.2.2
 
 end Coordinates
 
