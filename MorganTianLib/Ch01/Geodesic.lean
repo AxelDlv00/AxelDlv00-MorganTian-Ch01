@@ -547,9 +547,263 @@ This is the velocity variable used by the local first-order spray. -/
 def chartVelocityAt (p : M) (v : TangentSpace I p) : E :=
   (trivializationAt E (TangentSpace I) p (⟨p, v⟩ : TangentBundle I M)).2
 
+/-- The model-space velocity coordinates of a tangent vector at `p`, read in
+the chart centred at `alpha`.  `chartVelocityAt` is the special case
+`alpha = p`; this two-point form is needed when comparing overlapping local
+geodesic equations. -/
+def chartVelocityInChart (alpha p : M) (v : TangentSpace I p) : E :=
+  (trivializationAt E (TangentSpace I) alpha (⟨p, v⟩ : TangentBundle I M)).2
+
+omit [FiniteDimensional ℝ E] in
+@[simp] theorem chartVelocityInChart_self (p : M) (v : TangentSpace I p) :
+    chartVelocityInChart (I := I) p p v = chartVelocityAt (I := I) p v := rfl
+
 /-- The chart reading of a curve. -/
 def chartReading (alpha : M) (gamma : ℝ → M) : ℝ → E :=
   fun t => extChartAt I alpha (gamma t)
+
+/-! ## Chart-transition kinematics
+
+The fixed-chart spray is anchored at one point, while the intrinsic predicate
+uses the chart centred at the moving foot.  The following declarations expose
+the kinematic part of that change of coordinates.  They deliberately stop
+before the metric-dependent Christoffel transformation law: that law is the
+remaining gluing theorem for this S18 slice.
+-/
+
+/-- The extended-coordinate transition from the `alpha` chart to the `beta`
+chart.  Outside the overlap the extended charts are totalized by Mathlib; all
+derivative statements below carry an explicit source/interior hypothesis. -/
+def geodesicChartTransition (alpha beta : M) : E → E :=
+  (extChartAt I beta) ∘ (extChartAt I alpha).symm
+
+/-- The overlap source of `geodesicChartTransition`, written in `alpha`
+coordinates. -/
+def geodesicChartTransitionSource (alpha beta : M) : Set E :=
+  ((extChartAt I alpha).symm ≫ extChartAt I beta).source
+
+private def geodesicChartFrameMap (alpha p : M) : E →L[ℝ] TangentSpace I p :=
+  (trivializationAt E (TangentSpace I) alpha).symmL ℝ p
+
+omit [FiniteDimensional ℝ E] in
+private theorem geodesicChartFrameMap_eq_comp {alpha beta p : M}
+    (hα : p ∈ (chartAt H alpha).source)
+    (hβ : p ∈ (chartAt H beta).source) :
+    geodesicChartFrameMap (I := I) alpha p =
+      (geodesicChartFrameMap (I := I) beta p).comp
+        (tangentCoordChange I alpha beta p) := by
+  have hα' : p ∈ (extChartAt I alpha).source := by
+    simpa only [extChartAt_source] using hα
+  have hβ' : p ∈ (extChartAt I beta).source := by
+    simpa only [extChartAt_source] using hβ
+  rw [geodesicChartFrameMap, geodesicChartFrameMap,
+    TangentBundle.symmL_trivializationAt_eq_core hα,
+    TangentBundle.symmL_trivializationAt_eq_core hβ]
+  ext u
+  exact (tangentCoordChange_comp (I := I) (w := alpha) (x := beta) (y := p)
+    (z := p) (v := u) ⟨⟨hα', hβ'⟩, mem_extChartAt_source p⟩).symm
+
+omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
+@[simp] theorem geodesicChartTransition_apply (alpha beta : M) (y : E) :
+    geodesicChartTransition (I := I) alpha beta y =
+      extChartAt I beta ((extChartAt I alpha).symm y) := rfl
+
+omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
+theorem geodesicChartTransitionSource_eq (alpha beta : M) :
+    geodesicChartTransitionSource (I := I) alpha beta =
+      (extChartAt I alpha).target ∩
+        (extChartAt I alpha).symm ⁻¹' (chartAt H beta).source := by
+  unfold geodesicChartTransitionSource
+  rw [PartialEquiv.trans_source, PartialEquiv.symm_source, extChartAt_source]
+
+omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
+/-- A common chart point gives a coordinate point in the transition source. -/
+theorem geodesicChartTransition_mem {alpha beta x : M}
+    (hα : x ∈ (chartAt H alpha).source)
+    (hβ : x ∈ (chartAt H beta).source) :
+    extChartAt I alpha x ∈ geodesicChartTransitionSource (I := I) alpha beta := by
+  rw [geodesicChartTransitionSource_eq (I := I)]
+  refine ⟨?_, ?_⟩
+  · exact (extChartAt I alpha).map_source (by
+      simpa only [extChartAt_source] using hα)
+  · rw [mem_preimage,
+      (extChartAt I alpha).left_inv (by simpa only [extChartAt_source] using hα)]
+    simpa only [extChartAt_source] using hβ
+
+omit [FiniteDimensional ℝ E] in
+private theorem geodesicChartTransition_range_mem_nhds {alpha x : M}
+    (hα : x ∈ (chartAt H alpha).source) (hx : I.IsInteriorPoint x) :
+    Set.range I ∈ 𝓝 (extChartAt I alpha x) := by
+  have hcoordInterior : extChartAt I alpha x ∈ interior (Set.range I) := by
+    exact OpenPartialHomeomorph.interior_extend_target_subset_interior_range
+        (chartAt H alpha)
+      ((ModelWithCorners.isInteriorPoint_iff_of_mem_atlas (I := I)
+        (n := (∞ : ℕ∞ω)) (x := x) (e := chartAt H alpha) (by simp)
+        (chart_mem_atlas H alpha) hα).mp hx)
+  exact mem_nhds_iff.mpr
+    ⟨interior (Set.range I), interior_subset, isOpen_interior, hcoordInterior⟩
+
+omit [FiniteDimensional ℝ E] in
+/-- On an interior common chart point, the transition is smooth as a full
+map `E → E`.  The interior hypothesis is point-local and does not install a
+stronger model-wide boundaryless instance. -/
+theorem geodesicChartTransition_contDiffAt {alpha beta x : M}
+    (hα : x ∈ (chartAt H alpha).source)
+    (hβ : x ∈ (chartAt H beta).source)
+    (hx : I.IsInteriorPoint x) :
+    ContDiffAt ℝ ∞ (geodesicChartTransition (I := I) alpha beta)
+      (extChartAt I alpha x) := by
+  have hwithin := contDiffWithinAt_ext_coord_change (I := I)
+    (n := (∞ : ℕ∞ω)) beta alpha
+      (geodesicChartTransition_mem (I := I) hα hβ)
+  exact (by
+    simpa only [geodesicChartTransition] using
+      hwithin.contDiffAt
+        (geodesicChartTransition_range_mem_nhds (I := I) hα hx))
+
+omit [FiniteDimensional ℝ E] in
+/-- The first derivative of the transition is Mathlib's tangent-coordinate
+change at the common foot. -/
+theorem geodesicChartTransition_hasFDerivAt {alpha beta x : M}
+    (hα : x ∈ (chartAt H alpha).source)
+    (hβ : x ∈ (chartAt H beta).source)
+    (hx : I.IsInteriorPoint x) :
+    HasFDerivAt (geodesicChartTransition (I := I) alpha beta)
+      (tangentCoordChange I alpha beta x) (extChartAt I alpha x) := by
+  have hsource : x ∈ (extChartAt I alpha).source := by
+    simpa only [extChartAt_source] using hα
+  have hwithin := hasFDerivWithinAt_tangentCoordChange (I := I)
+    (x := alpha) (y := beta) (z := x)
+      ⟨hsource, by simpa only [extChartAt_source] using hβ⟩
+  have hfull := hwithin.hasFDerivAt
+    (geodesicChartTransition_range_mem_nhds (I := I) hα hx)
+  simpa only [geodesicChartTransition] using hfull
+
+omit [FiniteDimensional ℝ E] in
+/-- The full Frechet derivative of the transition, in a form convenient for
+the second-order chain rule. -/
+theorem geodesicChartTransition_fderiv {alpha beta x : M}
+    (hα : x ∈ (chartAt H alpha).source)
+    (hβ : x ∈ (chartAt H beta).source)
+    (hx : I.IsInteriorPoint x) :
+    fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+        (extChartAt I alpha x) = tangentCoordChange I alpha beta x :=
+  (geodesicChartTransition_hasFDerivAt (I := I) hα hβ hx).fderiv
+
+omit [FiniteDimensional ℝ E] in
+/-- The moving transition derivative is itself differentiable on an interior
+common point.  Its derivative is the second Frechet derivative of the
+transition, with no Christoffel or metric identity hidden in the statement. -/
+theorem geodesicChartTransition_hasFDerivAt_fderiv {alpha beta x : M}
+    (hα : x ∈ (chartAt H alpha).source)
+    (hβ : x ∈ (chartAt H beta).source)
+    (hx : I.IsInteriorPoint x) :
+    HasFDerivAt
+      (fderiv ℝ (geodesicChartTransition (I := I) alpha beta))
+      (fderiv ℝ (fderiv ℝ (geodesicChartTransition (I := I) alpha beta))
+        (extChartAt I alpha x))
+      (extChartAt I alpha x) := by
+  have hcont := geodesicChartTransition_contDiffAt (I := I) hα hβ hx
+  have hcont₁ : ContDiffAt ℝ 1
+      (fderiv ℝ (geodesicChartTransition (I := I) alpha beta))
+      (extChartAt I alpha x) :=
+    hcont.fderiv_right (WithTop.coe_le_coe.2 le_top)
+  exact (hcont₁.differentiableAt one_ne_zero).hasFDerivAt
+
+omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
+/-- On a neighbourhood where a curve remains in two chart sources, its two
+chart readings are related by the transition map. -/
+theorem chartReading_transition_eventuallyEq {alpha beta : M}
+    {gamma : ℝ → M} {t : ℝ}
+    (hcont : ContinuousAt gamma t)
+    (hα : gamma t ∈ (chartAt H alpha).source)
+    (hβ : gamma t ∈ (chartAt H beta).source) :
+    chartReading (I := I) beta gamma =ᶠ[𝓝 t]
+      geodesicChartTransition (I := I) alpha beta ∘
+        chartReading (I := I) alpha gamma := by
+  have hmem : ∀ᶠ s in 𝓝 t,
+      gamma s ∈ (chartAt H alpha).source ∧ gamma s ∈ (chartAt H beta).source := by
+    have hn : (chartAt H alpha).source ∩ (chartAt H beta).source ∈ 𝓝 (gamma t) :=
+      ((chartAt H alpha).open_source.inter (chartAt H beta).open_source).mem_nhds
+        ⟨hα, hβ⟩
+    exact hcont.preimage_mem_nhds hn
+  filter_upwards [hmem] with s hs
+  change extChartAt I beta (gamma s) = _
+  unfold geodesicChartTransition chartReading
+  change extChartAt I beta (gamma s) =
+    extChartAt I beta ((extChartAt I alpha).symm
+      (extChartAt I alpha (gamma s)))
+  rw [(extChartAt I alpha).left_inv
+    (by simpa only [extChartAt_source] using hs.1)]
+
+omit [FiniteDimensional ℝ E] in
+/-- First-order chain rule for chart readings on an interior common point. -/
+theorem chartReading_transition_hasDerivAt {alpha beta : M}
+    {gamma : ℝ → M} {t : ℝ} {v : E}
+    (hcont : ContinuousAt gamma t)
+    (hα : gamma t ∈ (chartAt H alpha).source)
+    (hβ : gamma t ∈ (chartAt H beta).source)
+    (hx : I.IsInteriorPoint (gamma t))
+    (hfirst : HasDerivAt (chartReading (I := I) alpha gamma) v t) :
+    HasDerivAt (chartReading (I := I) beta gamma)
+      (tangentCoordChange I alpha beta (gamma t) v) t := by
+  have hT := geodesicChartTransition_hasFDerivAt (I := I) hα hβ hx
+  have hcomp := hT.comp_hasDerivAt t hfirst
+  exact hcomp.congr_of_eventuallyEq
+    (chartReading_transition_eventuallyEq (I := I) hcont hα hβ)
+
+omit [FiniteDimensional ℝ E] in
+/-- Velocity coordinates read in two overlapping charts are related by the
+tangent-coordinate change at the common foot.  This is the zeroth/first-order
+kinematic input to the still-open Christoffel transformation law. -/
+theorem chartVelocityInChart_transition {alpha beta p : M}
+    (hα : p ∈ (chartAt H alpha).source)
+    (hβ : p ∈ (chartAt H beta).source)
+    (v : TangentSpace I p) :
+    chartVelocityInChart (I := I) beta p v =
+      tangentCoordChange I alpha beta p
+        (chartVelocityInChart (I := I) alpha p v) := by
+  let a : E := chartVelocityInChart (I := I) alpha p v
+  let b : E := chartVelocityInChart (I := I) beta p v
+  have ha : geodesicChartFrameMap (I := I) alpha p a = v := by
+    dsimp [geodesicChartFrameMap, a, chartVelocityInChart]
+    rw [Trivialization.symmL_apply _ hα]
+    exact (trivializationAt E (TangentSpace I) alpha).symm_apply_apply_mk hα v
+  have hb : geodesicChartFrameMap (I := I) beta p b = v := by
+    dsimp [geodesicChartFrameMap, b, chartVelocityInChart]
+    rw [Trivialization.symmL_apply _ hβ]
+    exact (trivializationAt E (TangentSpace I) beta).symm_apply_apply_mk hβ v
+  have hframe := geodesicChartFrameMap_eq_comp (I := I) hα hβ
+  have heq := congrArg (fun f : E →L[ℝ] TangentSpace I p => f a) hframe
+  rw [ha, ContinuousLinearMap.comp_apply] at heq
+  have htan : v = geodesicChartFrameMap (I := I) beta p
+      (tangentCoordChange I alpha beta p a) := by
+    exact heq
+  have hsymm := congrArg
+    (fun z : TangentSpace I p =>
+      (trivializationAt E (TangentSpace I) beta).continuousLinearMapAt ℝ p z) htan
+  change (trivializationAt E (TangentSpace I) beta
+      (⟨p, v⟩ : TangentBundle I M)).2 =
+    tangentCoordChange I alpha beta p
+      ((trivializationAt E (TangentSpace I) alpha
+        (⟨p, v⟩ : TangentBundle I M)).2)
+  rw [← Trivialization.continuousLinearMapAt_apply_of_mem ℝ
+      (trivializationAt E (TangentSpace I) beta) hβ,
+    ← Trivialization.continuousLinearMapAt_apply_of_mem ℝ
+      (trivializationAt E (TangentSpace I) alpha) hα]
+  calc
+    _ = (trivializationAt E (TangentSpace I) beta).continuousLinearMapAt ℝ p
+        ((trivializationAt E (TangentSpace I) beta).symmL ℝ p
+          (tangentCoordChange I alpha beta p a)) := hsymm
+    _ = tangentCoordChange I alpha beta p a :=
+      Trivialization.continuousLinearMapAt_symmL
+        (trivializationAt E (TangentSpace I) beta) hβ _
+    _ = tangentCoordChange I alpha beta p
+        ((trivializationAt E (TangentSpace I) alpha).continuousLinearMapAt ℝ p v) := by
+      congr 1
+      simp [a, chartVelocityInChart,
+        Trivialization.continuousLinearMapAt_apply_of_mem ℝ
+        (trivializationAt E (TangentSpace I) alpha) hα]
 
 /-- The second-order regularity needed by the coordinate geodesic equation.
 
