@@ -696,6 +696,24 @@ theorem contMDiff_leviCivitaConnection
     ⟨g.toRiemannianMetric⟩
   exact contMDiffCovariantDerivative_bundled (I := I)
 
+/-- Point-local smoothness of the Levi--Civita derivative of two smooth vector
+fields.
+
+This is the local regularity form used by coordinate consumers.  Unlike the
+bundled `ContMDiffCovariantDerivative` predicate, it only asks that the two
+input fields be smooth at the point under consideration. -/
+theorem contMDiffAt_leviCivitaConnection_apply
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    {X Y : ∀ x : M, TangentSpace I x} {x : M}
+    (hX : CMDiffAt ∞ (T% X) x) (hY : CMDiffAt ∞ (T% Y) x) :
+    CMDiffAt ∞
+      (T% (fun y ↦ leviCivitaConnection g Y y (X y))) x := by
+  letI : RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  change CMDiffAt ∞
+    (T% (fun y ↦ bundledCovariantDerivative (I := I) Y y (X y))) x
+  exact contMDiffAt_bundledCovariantDerivative_apply hX hY
+
 /-- The source-ordered Koszul formula for the Levi--Civita connection.
 
 The order is Morgan--Tian's: the final bracket terms are
