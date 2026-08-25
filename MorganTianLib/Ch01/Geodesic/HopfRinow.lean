@@ -19,8 +19,7 @@ The continuation and compactness producers below are the exact interfaces
 still to be supplied by the maximal-domain and variation slices.  The proved
 theorems are the set-theoretic maximal-interval argument and the reusable
 distance/length adapters.  Thus no theorem here treats metric completeness as
-an ODE premise, and no existence claim is hidden behind an axiom or a proof
-hole.
+an ODE premise, and every existence claim names its required producer.
 
 The source-facing target is the paragraph preceding Morgan--Tian, Theorem
 1.18, pp. 41--42 (`morganTian2007`); see also do Carmo, Chapter 7, Section 2,
@@ -662,7 +661,7 @@ and the compactness/minimizer producer are supplied, metric completeness gives
 the global geodesic and minimizing-segment consequences together.
 
 This is intentionally an implication from those named producers, rather than
-an opaque axiom asserting either existence result. -/
+an opaque postulate asserting either existence result. -/
 theorem hopfRinow
     [T3Space M] [PreconnectedSpace M] [CompleteSpace E]
     [BoundarylessManifold I M]
