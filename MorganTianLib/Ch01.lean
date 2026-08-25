@@ -21,11 +21,10 @@ traced Riccati, and normalized determinant/density comparison layers.  Later
 milestones add manifold curvature, geodesic IVP, Jacobi, normal-coordinate, and
 manifold-comparison modules.  The S20 geodesic energy/first-variation contract
 is exported here and depends only on the canonical metric/connection layers.
-The provisional A2 chart-density and
-change-of-variables substrate is available through the direct
-`MorganTianLib.Ch01.Volume.ChangeOfVariables` import; it is not exported by
-this stable umbrella until a named downstream consumer establishes its public
-boundary.
+The A2 chart-density and normalized change-of-variables substrate remains a
+direct provisional leaf until the named N1 cut-locus consumer fixes its stable
+boundary; it uses Mathlib's `LinearMap.normDet` and `μHE[finrank ℝ E]` directly
+and does not install a competing global measure.
 -/
 
 namespace MorganTianLib
