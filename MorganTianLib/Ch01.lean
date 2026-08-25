@@ -2,7 +2,6 @@ import MorganTianLib.Ch01.MetricExistence
 import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
 import MorganTianLib.Ch01.Volume.ChangeOfVariables
-import MorganTianLib.Ch01.Volume.PolarIntegral
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Curvature
@@ -24,8 +23,6 @@ manifold-comparison modules.  The A2 chart-density and normalized
 change-of-variables substrate is exported here as the canonical pre-N1
 measure-theoretic boundary; it uses Mathlib's `LinearMap.normDet` and
 `μHE[finrank ℝ E]` directly and does not install a competing global measure.
-The model-space Haar polar integration leaf is exported alongside it; its
-sphere/radius formulas remain independent of manifold polar geometry.
 -/
 
 namespace MorganTianLib
