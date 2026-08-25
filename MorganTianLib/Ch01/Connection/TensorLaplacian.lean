@@ -38,7 +38,8 @@ multilinearity, and tensoriality predicates are therefore explicit in this
 module. The raw evaluator definitions accept arbitrary evaluations; the
 producer-level regularity and extension-independence theorems below carry the
 corresponding hypotheses rather than asserting them by definition. The
-`TensorialAt`/`mkHom` lemmas from Mathlib are the fibre-level interface.
+`TensorialAt`/`mkHom`/`mkHom₂` lemmas from Mathlib are the fibre-level
+interface.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
 discussion preceding `lapformula`, pp. 39--40, bibliography key
@@ -435,7 +436,10 @@ for the derivative directions. It is a raw section; the regularity and
 tensoriality obligations are explicit hypotheses in the theorems below. -/
 
 /-- The full second covariant derivative, with the two direction slots kept
-distinct from the original tensor slots. -/
+distinct from the original tensor slots. The appended slots are ordered
+`(X, Z)`: `Fin.castSucc (Fin.last q)` is the outer direction `X`, and
+`Fin.last (q + 1)` is the inner direction `Z`, matching
+`secondCovariantDerivativeEval g A ... X Z`. -/
 noncomputable def secondCovariantDerivative {p q : ℕ}
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (A : MixedTensorSection (I := I) (M := M) p q) :
