@@ -15,7 +15,8 @@ import MorganTianLib.Ch01.Comparison.VectorSturm
 
 The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
 existence, the canonical metric, distance, volume, and Levi--Civita connection
-coherence layers, the chart Christoffel bridge, the algebraic
+coherence layers, the chart Christoffel bridge, the conditional rank-generic
+tensor covariant-derivative/Laplacian evaluator, the algebraic
 curvature-convention kernel, and the standalone scalar, vector/operator,
 traced Riccati, and normalized determinant/density comparison layers.  Later
 milestones add manifold curvature, geodesic, Jacobi, normal-coordinate, and

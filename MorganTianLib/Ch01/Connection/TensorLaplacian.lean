@@ -1148,7 +1148,7 @@ covariant derivative vanishes because the metric-dual correction and the
 vector-slot correction are the two terms in
 `dualCovariantVector_apply_formula`. -/
 
-/-- The evaluation of the identity endomorphism as a `(1,1)` tensor. -/
+/-- The raw evaluation of the identity endomorphism as a `(1,1)` tensor. -/
 def identityTensorSection : MixedTensorSection (I := I) (M := M) 1 1 :=
   fun θ Y x => θ 0 x (Y 0 x)
 
