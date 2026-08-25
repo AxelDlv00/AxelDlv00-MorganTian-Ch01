@@ -295,6 +295,7 @@ theorem maximalGeodesic_lifetime_unboundedAbove
     [T3Space M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
+    {p : M} {v : TangentSpace I p}
     (G : MaximalGeodesic (I := I) g p v)
     (hcontinue : MaximalGeodesicContinuation (I := I) g p v G) :
     LifetimeUnboundedAbove G.lifetime := by
@@ -316,6 +317,7 @@ theorem maximalGeodesic_lifetime_unboundedBelow
     [T3Space M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
+    {p : M} {v : TangentSpace I p}
     (G : MaximalGeodesic (I := I) g p v)
     (hcontinue : MaximalGeodesicContinuation (I := I) g p v G) :
     LifetimeUnboundedBelow G.lifetime := by
@@ -336,6 +338,7 @@ theorem maximalGeodesic_lifetime_eq_univ_of_complete
     [T3Space M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
+    {p : M} {v : TangentSpace I p}
     (G : MaximalGeodesic (I := I) g p v)
     (hcontinue : MaximalGeodesicContinuation (I := I) g p v G) :
     G.lifetime = (Set.univ : Set ℝ) := by
@@ -356,6 +359,7 @@ theorem exists_globalGeodesic_of_complete
     [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
+    {p : M} {v : TangentSpace I p}
     (G : MaximalGeodesic (I := I) g p v)
     (hcontinue : MaximalGeodesicContinuation (I := I) g p v G) :
     ∃ γ : ℝ → M,
