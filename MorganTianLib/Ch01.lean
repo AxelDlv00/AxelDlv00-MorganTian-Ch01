@@ -3,6 +3,7 @@ import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
+import MorganTianLib.Ch01.Connection.TensorLaplacian
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Comparison.DeterminantDensity
 import MorganTianLib.Ch01.Comparison.PositiveRiccati
