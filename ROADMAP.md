@@ -205,8 +205,14 @@ choices are:
   than using a finite-radius facade.
 - **Jacobi fields.** `JacobiField gamma` is an intrinsic tangent-bundle field
   along `gamma` satisfying the source-ordered covariant Jacobi equation
-  `D^2 J + R J V V = 0`.  Chart `(J,DJ)` pairs and parallel-frame matrices are
-  private proof representations, with explicit equivalence theorems.
+  `D^2 J + R J V V = 0`.  The intended final API keeps chart `(J,DJ)` pairs
+  and parallel-frame matrices as proof representations with explicit
+  equivalence theorems.  The current S21--S22 slice exposes the
+  source-constrained
+  `IsGeodesicJacobiFieldOn` certificate and its fixed-chart algebra; the
+  chart-transfer, ODE existence/uniqueness, and variation-commutation
+  producers remain explicit continuation work until those equivalence
+  theorems are proved.
   Conjugacy means a nonzero endpoint-vanishing intrinsic Jacobi field; the
   kernel of `d exp` equivalence is proved before local-diffeomorphism arguments.
 - **Index form.** The public index form is the intrinsic symmetric bilinear
@@ -353,8 +359,8 @@ claims the result.
 | S18 | Geodesic equation, coordinate ODE, IVP uniqueness/smoothness: Definition 1.17 and following paragraph, p. 41; `morganTian2007`; `doCarmo1992`, Ch. 3, pp. 61--75 | `Geodesic.isGeodesic`, intrinsic IVP/maximal solution | F2 | S02; `[CompleteSpace E]` for the checked ODE API; `[BoundarylessManifold I M]` for the all-initial-data contract, or `I.IsInteriorPoint p` for a point-local IVP | prove chart ODE/intrinsic equivalence, interval maximality, and smooth dependence; export the weakest manifold-level/interior-point hypothesis rather than `[I.Boundaryless]`; a pointwise equation is insufficient | Open; candidate code is prior art only |
 | S19 | On a complete boundaryless manifold, minimizing geodesics and the Hopf--Rinow implication: paragraph before and Theorem 1.18, pp. 41--42; `morganTian2007`; `doCarmo1992`, Ch. 7, pp. 157--166; `lee2018`, Thm. 6.19 | `Geodesic.exists_minimizingGeodesic`, `hopfRinow` | F2 | S01, metric completeness, and the all-initial-data `[BoundarylessManifold I M]` branch of S18 | keep metric completeness and boundarylessness as independent public assumptions, and connect them to the canonical maximal geodesic and minimizer existence, with connected-component assumptions explicit | **Partial.** `Ch01.Geodesic.HopfRinow` now exports the canonical selected-distance completeness predicate, explicit maximal-lifetime/continuation contracts, proved unbounded-lifetime and all-real-time consequences, constant-speed/restriction/translation adapters, finite-distance component probes, and the zero-length regression. The actual S18 continuation and compactness/minimizer producers remain explicit interfaces (`CompleteMaximalGeodesicData`, `MinimizingGeodesicData`); no rejected dependency facade or proof hole is used. |
 | S20 | Energy, first variation, criticality, constant speed, and energy/length inequalities: pp. 41--43; `morganTian2007`; `doCarmo1992`, Ch. 9, pp. 185--201 | `Geodesic.energy`, `Variation.firstEnergyVariation` | F2 | S01--S02 and S18 | exact path/variation regularity, endpoint terms, and equality conditions must remain visible | Open; Mathlib supplies length only |
-| S21 | Geodesic variations, Jacobi equation, and initial-data uniqueness: pp. 43--44; `morganTian2007`; `doCarmo1992`, Ch. 5, pp. 101--121 | `Jacobi.JacobiField`, variation bridge, existence/uniqueness | J1 | F1 and F2 | intrinsic equation `D^2 J + R J V V = 0` must agree with chart/frame adapters and frozen curvature order | Open |
-| S22 | Conjugate point: Definition 1.19, p. 44; `morganTian2007` | `Jacobi.IsConjugate` | J1 | S21 | quantify a nonzero intrinsic field vanishing at the initial and target endpoints | Open |
+| S21 | Geodesic variations, Jacobi equation, and initial-data uniqueness: pp. 43--44; `morganTian2007`; `doCarmo1992`, Ch. 5, pp. 101--121 | `Jacobi.JacobiField`, variation bridge, existence/uniqueness | J1 | F1 and F2 | intrinsic equation `D^2 J + R J V V = 0` must agree with chart/frame adapters and frozen curvature order | **Partial.** `Ch01.Jacobi` now exports dependent tangent-bundle fields, source-ordered curvature/derivative certificates on interval windows, fixed-chart zero/add/scalar and model-sign regressions, restriction and zero checks, an ordered initial-data map, and `GeodesicVariation` with explicit smoothness, slice-geodesic, variational-`mfderiv`, and commutation fields. Chart transfer, smooth-family-to-Jacobi proof, initial-data ODE existence/uniqueness, cross-chart linearity, and affine transport remain open continuation work |
+| S22 | Conjugate point: Definition 1.19, p. 44; `morganTian2007` | `Jacobi.IsConjugate` | J1 | S21 | quantify a nonzero intrinsic field vanishing at the initial and target endpoints | **Partial.** `Jacobi.IsConjugate`/`IsConjugatePointAt` require a geodesic, continuity, local intrinsic Jacobi certificate, endpoint zeros, and an explicit nonzero interior witness; restriction consequences and the `d exp` kernel bridge remain open |
 | S23 | Full second variation, boundary term, bilinear form, and endpoint-fixed index form: pp. 43--45; `morganTian2007`; `doCarmo1992`, Ch. 9, pp. 185--201; `lee2018`, Thm. 10.22 and Prop. 10.24 | `IndexForm.indexForm`, `secondVariation` | V1 | S20--S21 | select and prove sufficient regularity for arbitrary families; do not silently drop the free-end boundary term | Open |
 | S24 | Unique minimizing subsegments and no interior conjugate point: Proposition 1.20 (`jacmin`), pp. 44--45; `morganTian2007`; `petersen2006`, Ch. 5, Prop. 19 and Lemma 14, pp. 139--140 | `IndexForm.minimizer_no_conjugate` | V1 | S22--S23 | justify corner shortening and piecewise-field smoothing rather than formalizing the source sketch as an axiom | Open |
 | S25 | Index-form null space equals endpoint-vanishing Jacobi fields: Claim 1.21, p. 44; `morganTian2007` | `IndexForm.nullspace_iff_jacobi` | V1 | S21 and S23 | supply the fundamental-lemma/density argument at the selected field regularity | Open |
@@ -560,7 +566,9 @@ Node contracts:
   supplies S28 nullity but owns no post-N1 polar-density equality; that work is
   N2.
 - **J1** (`F1`, `F2`): intrinsic Jacobi equation, existence/uniqueness/linearity, chart and
-  frame reductions, geodesic variations, and `d exp`.
+  frame reductions, geodesic variations, and `d exp`.  The current S21--S22
+  slice is partial: it establishes the intrinsic certificate and conjugacy
+  contracts while leaving the chart-transfer/ODE producers explicit.
 - **V1** (`J1`): exact regularity for arbitrary-family first/second variation,
   intrinsic/frame index equality, fundamental lemma, negative directions, and
   the minimizer/no-conjugate theorem.
