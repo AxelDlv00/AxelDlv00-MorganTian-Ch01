@@ -297,7 +297,7 @@ files are created by G0:
 | Module | Public families | Internal/provisional material |
 | --- | --- | --- |
 | `Metric` | canonical bundle metric predicates, distance/topology bridges, rescaling | chart components |
-| `Volume` | normalized Riemannian volume, Borel and metric-measure coherence | chart and polar Jacobians |
+| `Volume` | normalized Riemannian volume, Borel and metric-measure coherence | chart, tangent-Jacobian, and polar Jacobians |
 | `Connection` | `CovariantDerivative`, metric compatibility, torsion-free, `hessian`, function and tensor connection Laplacians | Christoffel computations |
 | `Curvature` | `curvature`, `(0,4)` form, `sectionalCurvature`, `ricci`, scalar, Bianchi, pullback naturality | coordinate contractions |
 | `Models` | `constantCurvature`, Einstein consequences, `coneMetric`, cone curvature | model-specific coordinates |
@@ -535,14 +535,22 @@ Node contracts:
   chart-set, transition, null-transport, and normalized-Euclidean Jacobian
   layer is stated over the accepted arbitrary finite-dimensional real normed
   model, with only a C¹ manifold assumption where tangent derivatives are
-  used.  It uses Mathlib's `LinearMap.normDet` and determinant APIs directly;
-  no project Jacobian facade or duplicate Mathlib alias is part of the route.
-  The slice does not yet identify `riemannianVolume` with the chart-density
-  integral: the pinned Mathlib API has no Hausdorff-volume/chart-density bridge,
-  and no assumption-backed replacement or second global measure is introduced.
-  That bridge and the sphere/radial and ratio-of-integrals toolkit remain open
-  A2 work.  A2 supplies S28 nullity but owns no post-N1 polar-density equality;
-  that work is N2.
+  used.  It uses Mathlib's `LinearMap.normDet` and determinant APIs directly.
+  The same direct leaf contains a provisional tangent-space
+  `riemannianJacobian`/`chartCoordinateJacobian` adapter: its intrinsic value is
+  a source-dimensional tangent-fibre area factor, not a path-metric volume
+  density or a competing global Jacobian.  This leaf is intentionally not
+  exported by the stable `Ch01.lean` umbrella.  Its first named downstream
+  consumer is the N1 `Normal.cutLocus`/`exp_on_regularDomain` nullity proof;
+  when that consumer lands, retain the adapter only if that proof needs the
+  intrinsic tangent factor, and otherwise migrate to Mathlib's `normDet` and
+  delete the compatibility wrappers.  The slice does not yet identify
+  `riemannianVolume` with the chart-density integral: the pinned Mathlib API
+  has no Hausdorff-volume/chart-density bridge, and no assumption-backed
+  replacement or second global measure is introduced.  That bridge and the
+  sphere/radial and ratio-of-integrals toolkit remain open A2 work.  A2
+  supplies S28 nullity but owns no post-N1 polar-density equality; that work is
+  N2.
 - **J1** (`F1`, `F2`): intrinsic Jacobi equation, existence/uniqueness/linearity, chart and
   frame reductions, geodesic variations, and `d exp`.
 - **V1** (`J1`): exact regularity for arbitrary-family first/second variation,
@@ -672,6 +680,7 @@ debt on its own prerequisite.
 | Chart-coordinate `(J,DJ)` pairs, state-transition flows, chart partitions, parallel frames | Private proof reductions for J1/V1/C1/C2; duplicate coordinates and increase bridge obligations | Intrinsic Jacobi existence plus chart/frame equivalence theorem lands; final theorem signatures contain no chart artifact |
 | Complete-space `globalGeodesic`/`expMapGlobal` helpers | F2 exploration only; they hide maximal-domain and local-domain cases | F2 proves the canonical maximal exponential API and a complete-case equivalence |
 | `IsRadialJacobi`, polar-density, cut-time, cut-locus, local-isometry, and injectivity-radius facades | A1/A2/N1/N2 integration scaffolding only; producer semantics are otherwise absent | Retire or make private when N1/N2/C2 proves the named geometric producer/equivalence; no final source theorem quantifies over the facade |
+| Provisional tangent/chart Jacobian leaf (`riemannianJacobian`, `chartCoordinateJacobian`) | Direct leaf import only; source-dimensional tangent area factor for the future N1 nullity consumer, with no path-metric volume claim or stable umbrella export | When `Normal.cutLocus`/`exp_on_regularDomain` consumes it, either retain the intrinsic factor with that named proof as its caller or migrate to Mathlib `LinearMap.normDet` and delete the wrappers |
 | Abstract `expBallVolume` density ratios | Analytic ratio lemmas only; not a manifold volume theorem | C3 proves polar density = Riemannian measure and exp preimage = metric ball off the null cut locus |
 | `Option`-valued exceptional cut time, radius, or exponential-domain helpers | Private construction aid only; `none` is easy to misread and duplicates the canonical extended value | Replace at the public boundary by the proved `WithTop`/maximal-domain representation; delete after N1 equivalences land |
 | Wrappers duplicating Mathlib/shared declarations | Temporary compatibility only with a named caller | Delete after migration to the canonical declaration |
@@ -758,7 +767,7 @@ revision established.  The audit history is:
 | `A2-chart-jacobian-review-response` / `d0c3aa977df35ee68a2bf7f011490f9b0769193a` | Split the inner-product Gram/smooth-density proofs from the C1 arbitrary-normed chart-transition layer and the finite-dimensional `muHE` Jacobian/null layer; made `LinearMap.normDet` primary with absolute-determinant corollaries; removed the project facade and duplicate Mathlib aliases, weakened tangent/nullity consumers to the upstream C1 contract, renamed predicate-first declarations, removed the provisional leaf from the stable Chapter 1 umbrella, and corrected the Hausdorff-normalization wording with the `morganTian2007` citation | Morgan--Tian Chapter 1 volume and cut-locus discussion, pp. 45--50 (`morganTian2007`); pinned Mathlib `NormDet`, `MeasureTheory.Function.Jacobian`, and tangent-coordinate APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; ROADMAP ownership/G2 migration rules; focused leaf/root compiler and exported-signature probes plus source and import scans | Keep `ChangeOfVariables` as a direct leaf import pending a named stable consumer; retain the canonical chart-density/`riemannianVolume` bridge, sphere/radial and ratio-of-integrals work, and N1/N2 debt; introduce no competing measure or Jacobian facade |
 | `A2-normdet-change-of-variables` / `6a73f13bfc390a1a234c015b507a89a33040d4a9` | Added the continuous-linear-map `LinearMap.normDet` adapter for coordinate determinants, same-dimensional composition and inverse positivity laws, named identity/scaling/zero- and one-dimensional regressions, a separate image-measurability wrapper, canonical-normDet critical-value nullity, injective `μHE` change-of-variables and area formulas, and the normDet chart-transition corollary; exported the focused leaf through `MorganTianLib/Ch01.lean` | Morgan--Tian Chapter 1 volume and cut-locus discussion, pp. 45--50 (`morganTian2007`); pinned Mathlib `Analysis.InnerProductSpace.NormDet` and `MeasureTheory.Function.Jacobian` APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; `Volume.lean`'s canonical `riemannianVolume`/`euclidean_volume_coherence` declarations; focused pinned-artifact elaboration, root-import compilation, and source/import scans | Mark this additional pre-N1 A2 subset implemented.  Keep Mathlib's `LinearMap.normDet` and `μHE[finrank ℝ E]` as the only canonical Jacobian/measure choices; the chart-density identification with `riemannianVolume`, sphere/radial and ratio-of-integrals results, and N1/N2 claims remain open, with no competing measure, metric instance, or Jacobian facade |
 | `A2-normdet-alias-cleanup` / `MorganTianLib/Ch01/Volume/ChangeOfVariables.lean` | Removed the exact project alias of `MeasureTheory.measurable_image_of_fderivWithin`, retained the upstream theorem as the separately documented image-measurability result, and kept the specialized canonical-normDet Sard and change-of-variables API unchanged | Pinned Mathlib `MeasureTheory.Function.Jacobian` source at `520045ab14e26149ee970e2e617ca04b09bde5d6`; accepted A2 no-duplicate-alias route; focused leaf and Chapter 1 umbrella elaboration, exported-signature probes, and representative axiom checks | Keep Mathlib's declaration as the canonical image-measurability result and avoid a second vocabulary.  Preserve the implemented pre-N1 A2 subset and all open chart-density, sphere/radial, ratio-of-integrals, N1, and N2 debt |
-| `A2-tangent-riemannian-jacobian` / `669380f85b241e8a028b90666b9143d1b7586fa7` | Added the basis-independent tangent-space `riemannianJacobian`, a model-coordinate `chartCoordinateJacobian` adapter, the exact-source density-weighted coordinate agreement law, and identity/composition laws with explicit same-dimension transport through `VectorBundle.finiteDimensional` and `VectorBundle.finrank_eq` | Morgan--Tian Chapter 1 volume and cut-locus discussion, pp. 45--50 (`morganTian2007`); pinned Mathlib `Topology.VectorBundle.FiniteDimensional`, `Geometry.Manifold.MFDeriv.Tangent`, `Topology.VectorBundle.Basic`, and `Analysis.InnerProductSpace.NormDet` APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; canonical `riemannianVolume` declarations in `Volume.lean`; fresh leaf/umbrella `.olean` elaboration, exported signatures, and axiom probes | Mark this tangent-Jacobian/chart-compatibility subset implemented.  Keep `riemannianVolume`/chart-density identification, sphere/radial and ratio-of-integrals results, nullity consumers in N1, and all N1/N2 claims open; retain Mathlib `normDet` and `μHE[finrank ℝ E]` as the only global Jacobian/measure choices |
+| `A2-tangent-riemannian-jacobian` / `669380f85b241e8a028b90666b9143d1b7586fa7` | Added the basis-independent tangent-space `riemannianJacobian`, a model-coordinate `chartCoordinateJacobian` adapter, the exact-source density-weighted coordinate agreement law, and identity/composition laws with explicit source/middle dimension transport through `VectorBundle.finiteDimensional` and `VectorBundle.finrank_eq` | Morgan--Tian Chapter 1 volume and cut-locus discussion, pp. 45--50 (`morganTian2007`); pinned Mathlib `Topology.VectorBundle.FiniteDimensional`, `Geometry.Manifold.MFDeriv.Tangent`, `Topology.VectorBundle.Basic`, and `Analysis.InnerProductSpace.NormDet` APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; canonical `riemannianVolume` declarations in `Volume.lean`; fresh leaf elaboration, exported signatures, and axiom probes | Mark this tangent-Jacobian/chart-compatibility subset implemented as a provisional direct leaf, not as a stable umbrella API.  The intrinsic definition/id/composition contexts use arbitrary finite-dimensional normed model spaces; coordinate/density adapters retain inner-product assumptions.  The first named consumer is N1 `Normal.cutLocus`/`exp_on_regularDomain`; until it lands, keep the leaf direct-only and retain no path-metric volume or competing Jacobian claim.  Keep `riemannianVolume`/chart-density identification, sphere/radial and ratio-of-integrals results, nullity consumers in N1, and all N1/N2 claims open; retain Mathlib `normDet` and `μHE[finrank ℝ E]` as the only global Jacobian/measure choices |
 
 ## Review and completion checklist
 

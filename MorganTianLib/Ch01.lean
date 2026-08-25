@@ -1,7 +1,6 @@
 import MorganTianLib.Ch01.MetricExistence
 import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
-import MorganTianLib.Ch01.Volume.ChangeOfVariables
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Curvature
@@ -20,9 +19,10 @@ curvature-convention kernel, and the standalone scalar, vector/operator,
 traced Riccati, and normalized determinant/density comparison layers.  Later
 milestones add manifold curvature, geodesic, Jacobi, normal-coordinate, and
 manifold-comparison modules.  The A2 chart-density and normalized
-change-of-variables substrate is exported here as the canonical pre-N1
-measure-theoretic boundary; it uses Mathlib's `LinearMap.normDet` and
-`μHE[finrank ℝ E]` directly and does not install a competing global measure.
+change-of-variables substrate remains a direct provisional leaf until the
+named N1 cut-locus consumer fixes its stable boundary; it uses Mathlib's
+`LinearMap.normDet` and `μHE[finrank ℝ E]` directly and does not install a
+competing global measure.
 -/
 
 namespace MorganTianLib

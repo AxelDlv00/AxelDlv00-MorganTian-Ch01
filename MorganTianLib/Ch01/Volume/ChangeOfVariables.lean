@@ -14,11 +14,11 @@ For a smooth Riemannian metric it constructs the Gram density of a chart,
 proves its smoothness, positivity, square-root determinant formula, and overlap
 law, and proves that coordinate nullity is independent of the chosen chart.
 
-The inner-product Gram-density and Jacobian sections use Mathlib's
-basis-independent `LinearMap.normDet` directly. The tangent-space adapter uses
+The model-space, inner-product Gram-density, coordinate, and `μHE` sections use Mathlib's
+basis-independent `LinearMap.normDet` directly. The intrinsic tangent-space adapter uses
 `VectorBundle.finiteDimensional`, `ContinuousLinearMap.inCoordinates_eq`,
 `mfderiv_comp`, and `LinearMap.normDet_comp_of_finrank_eq`; its coordinate adapter
-is only a charted expression of that intrinsic Jacobian. The generic
+is only a charted expression of that intrinsic area factor. The generic
 chart-transition and normalized change-of-variables sections use Mathlib's
 determinant and absolute-determinant APIs, with C1 manifold charts where tangent
 derivatives are used. Their critical-value and area statements are direct specializations of
@@ -30,15 +30,19 @@ and `MeasureTheory.addHaar_image_eq_zero_of_det_fderivWithin_eq_zero` to
 `μHE[finrank ℝ E]`, with the same Hausdorff normalization convention used by
 `riemannianVolume`.
 
-The exported `riemannianJacobian` is the canonical same-dimensional Riemannian
-Jacobian API. `chartCoordinateJacobian` is deliberately only a local coordinate
-adapter, related to it by the density-weighted chart theorem below; it is not a
-second global Jacobian or measure definition.
+The tangent-space `riemannianJacobian` and its `chartCoordinateJacobian` adapter
+are provisional pre-N1 declarations in this direct leaf.  The first intended
+downstream consumer is the N1 `Normal.cutLocus`/`exp_on_regularDomain` nullity
+proof; until that consumer lands, the leaf is not part of the stable Chapter 1
+umbrella.  The intrinsic quantity is a source-dimensional tangent-fibre volume
+factor (and is therefore total for rectangular derivatives), not a second
+global Jacobian or measure definition.  The coordinate adapter is related to it
+by the density-weighted chart theorem below.
 
 The pinned Mathlib API does not yet identify the Hausdorff measure of the
 Riemannian path metric with this chart density. Accordingly, this module does
 not define another global measure and does not assert the unavailable local
-chart-density formula. The normalization used by the exported formulas is
+chart-density formula. The normalization used by the formulas in this leaf is
 the canonical `riemannianVolume` choice recorded in `Volume.lean`.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
@@ -663,12 +667,11 @@ end NormDetJacobian
 section RiemannianJacobian
 
 variable
-  {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [FiniteDimensional ℝ E]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M] [IsManifold I ∞ M]
-  {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
-  [FiniteDimensional ℝ F]
+  {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
   {K : Type*} [TopologicalSpace K] {J : ModelWithCorners ℝ F K}
   {N : Type*} [TopologicalSpace N] [ChartedSpace K N] [IsManifold J ∞ N]
 
@@ -679,6 +682,7 @@ inner products come from the two supplied `ContMDiffRiemannianMetric` structures
 definition is total because `mfderiv` is total; the agreement theorem below records the
 geometric interpretation at exact chart-source points. -/
 noncomputable def riemannianJacobian
+    [FiniteDimensional ℝ F]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (h : Bundle.ContMDiffRiemannianMetric J ∞ F (TangentSpace J : N → Type _))
     (f : M → N) (x : M) : ℝ := by
@@ -691,6 +695,18 @@ noncomputable def riemannianJacobian
   letI : FiniteDimensional ℝ (TangentSpace J (f x)) :=
     VectorBundle.finiteDimensional ℝ F (TangentSpace J) (f x)
   exact (mfderiv I J f x).toLinearMap.normDet
+
+section RiemannianJacobianCoordinates
+
+variable
+  {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [FiniteDimensional ℝ E]
+  {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
+  {M : Type*} [TopologicalSpace M] [ChartedSpace H M] [IsManifold I ∞ M]
+  {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+  [FiniteDimensional ℝ F]
+  {K : Type*} [TopologicalSpace K] {J : ModelWithCorners ℝ F K}
+  {N : Type*} [TopologicalSpace N] [ChartedSpace K N] [IsManifold J ∞ N]
 
 /-- The norm-determinant of a manifold derivative after transporting it to the model
 coordinates of the selected source and target charts.  This adapter uses Mathlib's
@@ -779,9 +795,10 @@ theorem riemannianJacobian_mul_chartDensity_eq_chartCoordinateJacobian
     · exact (VectorBundle.finrank_eq ℝ E (TangentSpace I) x).symm
   · exact hdim.trans (VectorBundle.finrank_eq ℝ F (TangentSpace J) (f x)).symm
 
-/-- The identity and composition laws expose the same-dimensional contract at the
-manifold level; the underlying `normDet` identity and equivalence/scaling laws are
-the model-space regressions above. -/
+end RiemannianJacobianCoordinates
+
+/-- The identity law for the tangent-space area factor; the underlying `normDet`
+identity is the model-space regression above and requires no dimension equality. -/
 @[simp]
 theorem riemannianJacobian_id
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
@@ -795,23 +812,22 @@ theorem riemannianJacobian_id
   simp
 
 /-- The tangent-space Jacobian is multiplicative under composition of differentiable
-maps.  The two explicit model-space dimension equalities are transported to the tangent
-fibres by `VectorBundle.finrank_eq`; both are stated so this exported law remains on the
-same-dimensional Jacobian boundary, even though the pinned `normDet` multiplication lemma
-only consumes the source/middle equality. -/
+maps.  The source/middle model-space equality is transported to the tangent fibres by
+`VectorBundle.finrank_eq`; no target-dimension equality is needed because Mathlib's
+`LinearMap.normDet` is a source-dimensional area factor for rectangular maps. -/
 theorem riemannianJacobian_comp
-    {G : Type*} [NormedAddCommGroup G] [InnerProductSpace ℝ G]
+    {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     [FiniteDimensional ℝ G]
     {L : Type*} [TopologicalSpace L] {JTarget : ModelWithCorners ℝ G L}
     {P : Type*} [TopologicalSpace P] [ChartedSpace L P] [IsManifold JTarget ∞ P]
+    [FiniteDimensional ℝ F]
     (gSource : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gMiddle : Bundle.ContMDiffRiemannianMetric J ∞ F (TangentSpace J : N → Type _))
     (gTarget : Bundle.ContMDiffRiemannianMetric JTarget ∞ G
       (TangentSpace JTarget : P → Type _))
     (f : M → N) (k : N → P) (x : M)
     (hf : MDiffAt f x) (hk : MDiffAt k (f x))
-    (hdimSource : Module.finrank ℝ E = Module.finrank ℝ F)
-    (hdimTarget : Module.finrank ℝ F = Module.finrank ℝ G) :
+    (hdimSource : Module.finrank ℝ E = Module.finrank ℝ F) :
     riemannianJacobian (I := I) (J := JTarget) gSource gTarget (k ∘ f) x =
       riemannianJacobian (I := J) (J := JTarget) gMiddle gTarget k (f x) *
         riemannianJacobian (I := I) (J := J) gSource gMiddle f x := by
@@ -836,15 +852,6 @@ theorem riemannianJacobian_comp
       _ = Module.finrank ℝ F := hdimSource
       _ = Module.finrank ℝ (TangentSpace J (f x)) :=
         VectorBundle.finrank_eq ℝ F (TangentSpace J) (f x)
-  have hdim₂ :
-      Module.finrank ℝ (TangentSpace J (f x)) =
-        Module.finrank ℝ (TangentSpace JTarget (k (f x))) := by
-    calc
-      Module.finrank ℝ (TangentSpace J (f x)) = Module.finrank ℝ F :=
-        (VectorBundle.finrank_eq ℝ F (TangentSpace J) (f x)).symm
-      _ = Module.finrank ℝ G := hdimTarget
-      _ = Module.finrank ℝ (TangentSpace JTarget (k (f x))) :=
-        VectorBundle.finrank_eq ℝ G (TangentSpace JTarget) (k (f x))
   simp only [riemannianJacobian]
   rw [mfderiv_comp x hk hf]
   change
