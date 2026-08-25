@@ -389,6 +389,158 @@ private theorem chartSpraySection_contMDiffOn
         (chartSprayState_mapsTo_interior (I := I) alpha)
     exact hcomp.congr heq
 
+/-! The global section smoothness lemma above is convenient on a boundaryless
+manifold, but a local IVP only needs the prescribed base point to be interior.
+The following private lemmas retain that weaker point-local contract. -/
+
+omit [FiniteDimensional ℝ E] in
+private theorem tangent_isInteriorPoint_of_base
+    {p : TangentBundle I M} (hp : I.IsInteriorPoint p.proj) :
+    I.tangent.IsInteriorPoint p := by
+  rw [ModelWithCorners.isInteriorPoint_iff]
+  rw [show extChartAt I.tangent p =
+      extChartAt I.tangent (⟨p.proj, (0 : E)⟩ : TangentBundle I M) from rfl]
+  rw [FiberBundle.extChartAt_target]
+  rw [FiberBundle.extChartAt]
+  simp only [PartialEquiv.trans_apply, PartialEquiv.prod_coe,
+    PartialEquiv.refl_coe]
+  have hbase :
+      (extChartAt I p.proj).target ∩
+          (extChartAt I p.proj).symm ⁻¹'
+            (trivializationAt E (TangentSpace I) p.proj).baseSet =
+        (extChartAt I p.proj).target := by
+    refine inter_eq_left.mpr ?_
+    intro y hy
+    rw [mem_preimage, TangentBundle.trivializationAt_baseSet, ← extChartAt_source I]
+    exact (extChartAt I p.proj).map_target hy
+  rw [hbase, interior_prod_eq, interior_univ, mem_prod]
+  constructor
+  · have hfst :
+        ((trivializationAt E (TangentSpace I) p.proj).toPartialEquiv p).1 = p.proj := by
+      rfl
+    rw [hfst]
+    exact (ModelWithCorners.isInteriorPoint_iff.mp hp)
+  · trivial
+
+omit [FiniteDimensional ℝ E] in
+private theorem chartSprayState_mem_interior_of_base
+    {alpha : M} {p : TangentBundle I M}
+    (hpbase : I.IsInteriorPoint p.proj)
+    (hp : p ∈ chartSprayDomain (I := I) alpha) :
+    chartSprayState (I := I) alpha p ∈
+      interior (extChartAt I alpha).target ×ˢ (Set.univ : Set E) := by
+  have hproj : p.proj ∈ (chartAt H alpha).source := hp
+  have hcoord :
+      (extChartAt I alpha) p.proj ∈ interior (extChartAt I alpha).target :=
+    (I.isInteriorPoint_iff_of_mem_atlas (n := ∞) (by simp)
+      (e := chartAt H alpha) (chart_mem_atlas H alpha) hproj).mp hpbase
+  change (extChartAt I alpha) p.proj ∈ interior (extChartAt I alpha).target ∧
+    (trivializationAt E (TangentSpace I) alpha p).2 ∈ (Set.univ : Set E)
+  exact ⟨hcoord, Set.mem_univ _⟩
+
+private theorem chartSpraySection_contMDiffAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) {p : TangentBundle I M}
+    (hpbase : I.IsInteriorPoint p.proj)
+    (hp : p ∈ chartSprayDomain (I := I) alpha) :
+    ContMDiffAt I.tangent I.tangent.tangent ∞
+      (fun p : TangentBundle I M =>
+        (⟨p, chartSpraySection (I := I) g alpha p⟩ :
+          TangentBundle I.tangent (TangentBundle I M))) p := by
+  classical
+  let e := trivializationAt (E × E) (TangentSpace I.tangent)
+    (⟨alpha, (0 : E)⟩ : TangentBundle I M)
+  letI : MemTrivializationAtlas e :=
+    ⟨FiberBundle.trivialization_mem_atlas (E × E) (TangentSpace I.tangent) _⟩
+  have hdomain : chartSprayDomain (I := I) alpha = e.baseSet := by
+    unfold chartSprayDomain e
+    ext q
+    rw [Set.mem_preimage,
+      TangentBundle.trivializationAt_baseSet (I := I.tangent)
+        (M := TangentBundle I M) (⟨alpha, (0 : E)⟩ : TangentBundle I M)]
+    exact (TangentBundle.mem_chart_source_iff (I := I) (M := M) q
+      (⟨alpha, (0 : E)⟩ : TangentBundle I M)).symm
+  have hMapsTo :
+      MapsTo
+        (fun q : TangentBundle I M =>
+          (⟨q, chartSpraySection (I := I) g alpha q⟩ :
+            TangentBundle I.tangent (TangentBundle I M)))
+        (chartSprayDomain (I := I) alpha) e.source := by
+    intro q hq
+    rw [Trivialization.source_eq, ← hdomain]
+    exact hq
+  have hp_source :
+      (⟨p, chartSpraySection (I := I) g alpha p⟩ :
+        TangentBundle I.tangent (TangentBundle I M)) ∈ e.source := hMapsTo hp
+  rw [Bundle.Trivialization.contMDiffAt_iff (e := e)
+    (B := TangentBundle I M) (F := E × E) (M := TangentBundle I M)
+    (E := TangentSpace I.tangent) (IM := I.tangent) (IB := I.tangent)
+    (n := (∞ : WithTop ℕ∞)) hp_source]
+  refine ⟨?_, ?_⟩
+  · change ContMDiffAt I.tangent I.tangent ∞
+      (fun q : TangentBundle I M => q) p
+    exact contMDiffAt_id
+  · have hopen : IsOpen (chartSprayDomain (I := I) alpha) := by
+      exact (chartAt H alpha).open_source.preimage
+        (FiberBundle.continuous_proj E (TangentSpace I))
+    have hstate :
+        ContMDiffAt I.tangent 𝓘(ℝ, E × E) ∞
+          (chartSprayState (I := I) alpha) p :=
+      (chartSprayState_contMDiffOn (I := I) alpha).contMDiffAt
+        (hopen.mem_nhds hp)
+    have htarget := chartSprayState_mem_interior_of_base (I := I)
+      hpbase hp
+    have hspray :
+        ContMDiffAt 𝓘(ℝ, E × E) 𝓘(ℝ, E × E) ∞
+          (chartSpray (I := I) g alpha)
+          (chartSprayState (I := I) alpha p) :=
+      (chartSpray_contDiffAt (I := I) g alpha htarget.1).contMDiffAt
+    have hcomp : ContMDiffAt I.tangent 𝓘(ℝ, E × E) ∞
+        (fun q : TangentBundle I M =>
+          chartSpray (I := I) g alpha (chartSprayState (I := I) alpha q)) p := by
+      simpa [Function.comp_def] using hspray.comp p hstate
+    have heq :
+        (e (⟨p, chartSpraySection (I := I) g alpha p⟩ :
+          TangentBundle I.tangent (TangentBundle I M))).2 =
+          chartSpray (I := I) g alpha (chartSprayState (I := I) alpha p) := by
+      have hp' : p ∈ e.baseSet := by rw [← hdomain]; exact hp
+      unfold chartSpraySection
+      rw [Trivialization.symmL_apply _ hp']
+      change (e (⟨p, e.symm p
+        (chartSpray (I := I) g alpha (chartSprayState (I := I) alpha p))⟩)).2 = _
+      exact congrArg Prod.snd (e.apply_mk_symm hp'
+        (chartSpray (I := I) g alpha (chartSprayState (I := I) alpha p)))
+    have heq' : ∀ᶠ q in 𝓝 p,
+        (e (⟨q, chartSpraySection (I := I) g alpha q⟩ :
+          TangentBundle I.tangent (TangentBundle I M))).2 =
+          chartSpray (I := I) g alpha (chartSprayState (I := I) alpha q) := by
+      filter_upwards [hopen.mem_nhds hp] with q hq
+      have hq' : q ∈ e.baseSet := by rw [← hdomain]; exact hq
+      unfold chartSpraySection
+      rw [Trivialization.symmL_apply _ hq']
+      change (e (⟨q, e.symm q
+        (chartSpray (I := I) g alpha (chartSprayState (I := I) alpha q))⟩)).2 = _
+      exact congrArg Prod.snd (e.apply_mk_symm hq'
+        (chartSpray (I := I) g alpha (chartSprayState (I := I) alpha q)))
+    apply hcomp.congr_of_eventuallyEq
+    exact heq'
+
+private theorem exists_chartSpraySection_integralCurveAt [CompleteSpace E]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) {p : TangentBundle I M}
+    (hpbase : I.IsInteriorPoint p.proj)
+    (hp : p ∈ chartSprayDomain (I := I) alpha) :
+    ∃ gamma : ℝ → TangentBundle I M, gamma 0 = p ∧
+      IsMIntegralCurveAt gamma
+        (fun q : TangentBundle I M => chartSpraySection (I := I) g alpha q) 0 := by
+  have hv := chartSpraySection_contMDiffAt (I := I) g alpha hpbase hp
+  obtain ⟨gamma, hg, hcurve⟩ :=
+    exists_isMIntegralCurveAt_of_contMDiffAt
+      (I := I.tangent) (M := TangentBundle I M) (t₀ := 0) (x₀ := p)
+      (v := fun q : TangentBundle I M => chartSpraySection (I := I) g alpha q)
+      (hv.of_le (by norm_num)) (tangent_isInteriorPoint_of_base (I := I) hpbase)
+  exact ⟨gamma, hg, hcurve⟩
+
 /-- The `E`-coordinate of a tangent vector in the chart trivialisation at `p`.
 
 This is the velocity variable used by the local first-order spray. -/
@@ -402,7 +554,7 @@ def chartReading (alpha : M) (gamma : ℝ → M) : ℝ → E :=
 /-- The second-order regularity needed by the coordinate geodesic equation.
 
 The eventual first-derivative clause is intentional: Mathlib's `deriv` is
-totalized, so differentiability only at the base time would admit spurious
+totalized, so differentiability only at the base time could permit spurious
 second derivatives. -/
 def HasChartGeodesicRegularityAt (alpha : M) (gamma : ℝ → M) (t : ℝ) : Prop :=
   (∀ᶠ s in 𝓝 t, gamma s ∈ (chartAt H alpha).source) ∧
