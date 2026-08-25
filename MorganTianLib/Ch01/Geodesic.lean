@@ -1463,6 +1463,7 @@ theorem isGeodesicAt_iff_coordinate_formula
   rw [isGeodesicAt_iff_chartEquation]
   rfl
 
+omit [FiniteDimensional ℝ E] in
 /-- The chart velocity of the zero tangent vector is zero.  This is the
 initial-data normalization used by the constant-curve regression below. -/
 @[simp] theorem chartVelocityAt_zero
