@@ -18,11 +18,11 @@ coherence layers, the chart Christoffel bridge, the algebraic
 curvature-convention kernel, and the standalone scalar, vector/operator,
 traced Riccati, and normalized determinant/density comparison layers.  Later
 milestones add manifold curvature, geodesic, Jacobi, normal-coordinate, and
-manifold-comparison modules.  The provisional A2 chart-density and
-change-of-variables substrate is available through the direct
-`MorganTianLib.Ch01.Volume.ChangeOfVariables` import; it is not exported by
-this stable umbrella until a named downstream consumer establishes its public
-boundary.
+manifold-comparison modules.  The A2 chart-density and normalized
+change-of-variables substrate remains a direct provisional leaf until the
+named N1 cut-locus consumer fixes its stable boundary; it uses Mathlib's
+`LinearMap.normDet` and `μHE[finrank ℝ E]` directly and does not install a
+competing global measure.
 -/
 
 namespace MorganTianLib
