@@ -18,8 +18,12 @@ keeps three inputs separate:
 The continuation and compactness producers below are the exact interfaces
 still to be supplied by the maximal-domain and variation slices.  The proved
 theorems are the set-theoretic maximal-interval argument and the reusable
-distance/length adapters.  Thus no theorem here treats metric completeness as
-an ODE premise, and every existence claim names its required producer.
+distance/length adapters.  The selected-distance completeness bridge reinstalls
+the exact `EMetricSpace`/`CompleteSpace M` pair used by the predicate, while
+the model-space completion remains a separate premise.  Thus no theorem here
+treats metric completeness as an ODE premise, and every existence claim names
+its required producer.  The maximal-lifetime contract also records openness,
+and bounded-lifetime/model-completion probes guard the incomplete signatures.
 
 The source-facing target is the paragraph preceding Morgan--Tian, Theorem
 1.18, pp. 41--42 (`morganTian2007`); see also do Carmo, Chapter 7, Section 2,
@@ -112,6 +116,27 @@ def RiemannianMetricComplete
   @CompleteSpace M inferInstance
 
 omit [FiniteDimensional ℝ E] in
+/-- Reinstall the exact `EMetricSpace` used by `RiemannianMetricComplete`.
+
+This bridge is intentionally explicit: `CompleteSpace M` depends on the
+uniformity supplied by `EMetricSpace.ofRiemannianMetric`, so a bare hypothesis
+about the selected Riemannian distance must not be mistaken for an arbitrary
+ambient completeness instance.  It is the metric-completeness input used in
+the complete-manifold paragraph before Morgan--Tian, Theorem 1.18; compare
+do Carmo, Chapter 7, and Lee, Theorem 6.19. -/
+theorem completeSpace_of_RiemannianMetricComplete
+    [T3Space M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (hcomplete : RiemannianMetricComplete (I := I) g) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
+      continuousRiemannianBundle g
+    letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
+    @CompleteSpace M inferInstance := by
+  exact hcomplete
+
+omit [FiniteDimensional ℝ E] in
 /-- On a preconnected manifold the selected extended distance is finite. -/
 theorem canonicalRiemannianEDist_lt_top
     [PreconnectedSpace M]
@@ -200,6 +225,8 @@ structure MaximalGeodesic
   /-- The lifetime is interval-convex. -/
   interval :
     ∀ ⦃a b t : ℝ⦄, a ∈ lifetime → b ∈ lifetime → a ≤ t → t ≤ b → t ∈ lifetime
+  /-- The maximal-domain producer supplies an open lifetime. -/
+  lifetime_open : IsOpen lifetime
   /-- No certified geodesic extension has a strictly larger lifetime. -/
   maximal :
     ∀ (s : Set ℝ) (γ : ℝ → M), lifetime ⊆ s →
@@ -232,6 +259,7 @@ def MaximalGeodesic.refl
   interval := by
     intro a b t ha hb hat htb
     exact Set.mem_univ t
+  lifetime_open := isOpen_univ
   maximal := by
     intro s γ hs hgeo hcont heq
     exact fun t ht => Set.mem_univ t
@@ -260,6 +288,16 @@ theorem MaximalGeodesic.refl_unboundedBelow
   intro b
   exact ⟨b - 1, Set.mem_univ _, by linarith⟩
 
+/-- A bounded lifetime is not forward complete.  This small negative control
+keeps incomplete-domain behavior visible in the public API: no theorem may
+turn a finite interval into an all-real-time solution without the named
+continuation producer and metric-completeness input. -/
+theorem incompleteLifetime_probe :
+    ¬ LifetimeUnboundedAbove (Set.Ioo (-1 : ℝ) 1) := by
+  intro h
+  obtain ⟨t, ht, hmore⟩ := h 1
+  exact (lt_irrefl (1 : ℝ)) (hmore.trans ht.2)
+
 /-- The continuation output required from the completed S18 maximal solution.
 
 The hypothesis is parameterized by `RiemannianMetricComplete`; this keeps the
@@ -268,7 +306,7 @@ as the `[CompleteSpace E]` premise of the local ODE. -/
 structure MaximalGeodesicContinuation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) (G : MaximalGeodesic (I := I) g p v)
-    [T3Space M] where
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M] where
   right :
     RiemannianMetricComplete (I := I) g →
       ∀ b : ℝ, (∀ t ∈ G.lifetime, t ≤ b) →
@@ -292,7 +330,7 @@ structure MaximalGeodesicContinuation
 finite upper lifetime.  The proof is the maximality contradiction, so it does
 not identify metric completeness with the model-space ODE completion. -/
 theorem maximalGeodesic_lifetime_unboundedAbove
-    [T3Space M]
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
     (G : MaximalGeodesic (I := I) g p v)
@@ -313,7 +351,7 @@ theorem maximalGeodesic_lifetime_unboundedAbove
 /-- The backward analogue of
 `maximalGeodesic_lifetime_unboundedAbove`. -/
 theorem maximalGeodesic_lifetime_unboundedBelow
-    [T3Space M]
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
     (G : MaximalGeodesic (I := I) g p v)
@@ -333,7 +371,7 @@ theorem maximalGeodesic_lifetime_unboundedBelow
 
 /-- A maximal interval with both continuation directions is all of `ℝ`. -/
 theorem maximalGeodesic_lifetime_eq_univ_of_complete
-    [T3Space M]
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
     (G : MaximalGeodesic (I := I) g p v)
@@ -732,14 +770,44 @@ theorem metric_completeness_probe
     [IsManifold I0 ∞ M0] [T3Space M0]
     (g : Bundle.ContMDiffRiemannianMetric I0 ∞ E0
       (TangentSpace I0 : M0 → Type _))
-    (hcomplete : RiemannianMetricComplete (I := I0) g) :
-    RiemannianMetricComplete (I := I0) g := hcomplete
+    (hcomplete : RiemannianMetricComplete (I := I0) g) : True := by
+  /- This assertion is expected to fail: metric completeness is on `M0`, not
+     the model vector space `E0` used by the local ODE. -/
+  fail_if_success exact (inferInstance : CompleteSpace E0)
+  have _ := hcomplete
+  trivial
+
+/-- Local geodesic existence remains available for a selected metric that is
+not complete.  This regression is deliberately signature-level: it uses the
+actual S18 local-IVP theorem and therefore catches an accidental addition of
+metric completeness to the model-space ODE premise. -/
+theorem local_ivp_of_incomplete_riemannianMetric
+    [T3Space M] [CompleteSpace E]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (_hincomplete : ¬ RiemannianMetricComplete (I := I) g)
+    (p : M) (v : TangentSpace I p) (hp : I.IsInteriorPoint p) :
+    ∃ ε > (0 : ℝ), ∃ γ : ℝ → M,
+      γ 0 = p ∧
+      HasDerivAt (chartReading (I := I) p γ)
+        (chartVelocityAt (I := I) p v) 0 ∧
+      HasChartGeodesicEquationOn (I := I) g p γ (Set.Ioo (-ε) ε) ∧
+      (∀ t ∈ Set.Ioo (-ε) ε, ContinuousAt γ t) :=
+  exists_localChartGeodesicAt g p v hp
 
 /-! ### Euclidean regression -/
 
 section Euclidean
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+
+/-- The standard Euclidean metric, viewed at the `C^∞` regularity used by the
+project (Mathlib's bundled construction is `C^ω` and is downgraded explicitly).
+-/
+noncomputable def euclideanSmoothMetric :
+    Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, F) ∞ F
+      (TangentSpace 𝓘(ℝ, F) : F → Type _) := by
+  let g := riemannianMetricVectorSpace F
+  exact { g with contMDiff := g.contMDiff.of_le (by simp) }
 
 /-- The affine straight line in the standard Euclidean Riemannian manifold. -/
 def euclideanStraightLine (x y : F) :
@@ -760,6 +828,20 @@ theorem euclideanStraightLine_length (x y : F) :
   simp only [mfderivWithin_eq_fderivWithin, enorm_tangentSpace_vectorSpace]
   exact lintegral_fderiv_lineMap_eq_edist
 
+/-- The Euclidean straight line realizes the selected canonical Riemannian
+length as well as the ambient extended distance. -/
+theorem euclideanStraightLine_canonical_length (x y : F) :
+    canonicalPathELength (I := 𝓘(ℝ, F)) (euclideanSmoothMetric (F := F))
+      (euclideanStraightLine x y) 0 1 =
+    canonicalRiemannianEDist (I := 𝓘(ℝ, F)) (euclideanSmoothMetric (F := F)) x y := by
+  change Manifold.pathELength 𝓘(ℝ, F) (ContinuousAffineMap.lineMap x y) 0 1 =
+    Manifold.riemannianEDist 𝓘(ℝ, F) x y
+  have h := euclideanStraightLine_length x y
+  change Manifold.pathELength 𝓘(ℝ, F) (ContinuousAffineMap.lineMap x y) 0 1 =
+    edist x y at h
+  rw [h]
+  exact IsRiemannianManifold.out x y
+
 /-- The Euclidean straight line has the expected constant-speed extended
 distance identity. -/
 theorem euclideanStraightLine_speed (x y : F) (s t : ℝ) :
@@ -775,6 +857,24 @@ theorem euclideanStraightLine_speed (x y : F) (s t : ℝ) :
       (s - t) • (y - x) by module, enorm_smul]
   rw [show ‖y - x‖ₑ = ‖x - y‖ₑ by rw [← neg_sub, enorm_neg]]
 
+/-- The canonical Euclidean distance has the same constant-speed identity as
+the ambient extended distance. -/
+theorem euclideanStraightLine_canonical_speed (x y : F) (s t : ℝ) :
+    canonicalRiemannianEDist (I := 𝓘(ℝ, F)) (euclideanSmoothMetric (F := F))
+      ((euclideanStraightLine x y) s) ((euclideanStraightLine x y) t) =
+      ENNReal.ofReal |s - t| *
+        canonicalRiemannianEDist (I := 𝓘(ℝ, F)) (euclideanSmoothMetric (F := F)) x y := by
+  have hbundle :
+      (⟨(euclideanSmoothMetric (F := F)).toRiemannianMetric⟩ :
+        Bundle.RiemannianBundle (TangentSpace 𝓘(ℝ, F))) =
+      (inferInstance : Bundle.RiemannianBundle (TangentSpace 𝓘(ℝ, F))) := by
+    rfl
+  unfold canonicalRiemannianEDist
+  rw [hbundle]
+  rw [← IsRiemannianManifold.out (I := 𝓘(ℝ, F)) _ _]
+  rw [← IsRiemannianManifold.out (I := 𝓘(ℝ, F)) x y]
+  simpa only [Real.enorm_eq_ofReal_abs] using euclideanStraightLine_speed x y s t
+
 /-! The generic Euclidean witness specializes without additional manifold
 assumptions to the one-dimensional and zero-dimensional model spaces. -/
 
@@ -783,10 +883,29 @@ theorem euclideanStraightLine_one_dimensional (x y : ℝ) :
     (euclideanStraightLine x y).eLength = edist x y :=
   euclideanStraightLine_length x y
 
+/-- The one-dimensional specialization also uses the selected canonical metric.
+-/
+theorem euclideanStraightLine_one_dimensional_canonical (x y : ℝ) :
+    canonicalPathELength (I := 𝓘(ℝ, ℝ)) (euclideanSmoothMetric (F := ℝ))
+      (euclideanStraightLine x y) 0 1 =
+    canonicalRiemannianEDist (I := 𝓘(ℝ, ℝ)) (euclideanSmoothMetric (F := ℝ)) x y :=
+  euclideanStraightLine_canonical_length x y
+
 /-- The zero-dimensional Euclidean model has the same zero-length witness. -/
 theorem euclideanStraightLine_zero_dimensional
     (x y : EuclideanSpace ℝ (Fin 0)) :
     (euclideanStraightLine x y).eLength = edist x y :=
   euclideanStraightLine_length x y
+
+/-- The zero-dimensional specialization retains the selected canonical length
+identity, including the degenerate zero-distance case. -/
+theorem euclideanStraightLine_zero_dimensional_canonical
+    (x y : EuclideanSpace ℝ (Fin 0)) :
+    canonicalPathELength (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+        (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+        (euclideanStraightLine x y) 0 1 =
+      canonicalRiemannianEDist (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+        (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))) x y :=
+  euclideanStraightLine_canonical_length x y
 
 end Euclidean
