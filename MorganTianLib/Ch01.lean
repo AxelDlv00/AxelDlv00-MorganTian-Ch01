@@ -4,6 +4,7 @@ import MorganTianLib.Ch01.Volume
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Geodesic
+import MorganTianLib.Ch01.Geodesic.HopfRinow
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Comparison.DeterminantDensity
 import MorganTianLib.Ch01.Comparison.PositiveRiccati
@@ -18,10 +19,13 @@ existence, the canonical metric, distance, volume, and Levi--Civita connection
 coherence layers, the chart Christoffel and geodesic-equation bridges, the
 algebraic curvature-convention kernel, and the standalone scalar,
 vector/operator,
-traced Riccati, and normalized determinant/density comparison layers.  Later
-milestones add maximal geodesic/exponential, Jacobi, normal-coordinate, and
-manifold-comparison modules.  The provisional A2 chart-density and
-change-of-variables substrate is available through the direct
+traced Riccati, normalized determinant/density comparison, and the S19
+Hopf--Rinow continuation/minimizer interfaces.  The latter keeps metric
+completeness, model-space ODE completeness, and boundarylessness independent;
+its maximal-domain and compactness producers are explicit inputs for the
+remaining S19 proof.  Later milestones add maximal geodesic/exponential,
+Jacobi, normal-coordinate, and manifold-comparison modules.  The provisional
+A2 chart-density and change-of-variables substrate is available through the direct
 `MorganTianLib.Ch01.Volume.ChangeOfVariables` import; it is not exported by
 this stable umbrella until a named downstream consumer establishes its public
 boundary.
