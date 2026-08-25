@@ -17,10 +17,14 @@ The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
 existence, the canonical metric, distance, volume, and Levi--Civita connection
 coherence layers, the chart Christoffel and geodesic-equation bridges, the
 algebraic curvature-convention kernel, and the standalone scalar,
-vector/operator,
-traced Riccati, and normalized determinant/density comparison layers.  Later
-milestones add maximal geodesic/exponential, Jacobi, normal-coordinate, and
-manifold-comparison modules without exposing the private spray/frame plumbing.
+vector/operator, traced Riccati, and normalized determinant/density comparison
+layers.  Later milestones add maximal geodesic/exponential, Jacobi,
+normal-coordinate, and manifold-comparison modules without exposing the
+private spray/frame plumbing.  The A2 chart-density and normalized
+change-of-variables substrate remains a direct provisional leaf until the
+named N1 cut-locus consumer fixes its stable boundary; it uses Mathlib's
+`LinearMap.normDet` and `μHE[finrank ℝ E]` directly and does not install a
+competing global measure.
 -/
 
 namespace MorganTianLib
