@@ -200,6 +200,49 @@ theorem isGeodesicOn_univ_iff
   · intro h t _
     exact h t
 
+/-- Affine transport of a geodesic certificate on a time set.
+
+The new lifetime is the literal preimage under `t ↦ a * t + c`; this keeps
+restriction and translation compatible with the moving-foot equation without
+assuming injectivity, endpoint conventions, or a larger ambient lifetime. -/
+theorem isGeodesicOn_comp_affine
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (s : Set ℝ)
+    (h : isGeodesicOn (I := I) g gamma s) (a c : ℝ) :
+    isGeodesicOn (I := I) g (fun t ↦ gamma (a * t + c))
+      ((fun t : ℝ ↦ a * t + c) ⁻¹' s) := by
+  intro t ht
+  exact IsGeodesicAt.comp_affine (I := I) g gamma a c t
+    (h (a * t + c) ht)
+
+/-- Set-relative time translation, with its exact pulled-back lifetime. -/
+theorem isGeodesicOn_comp_add
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (s : Set ℝ)
+    (h : isGeodesicOn (I := I) g gamma s) (c : ℝ) :
+    isGeodesicOn (I := I) g (fun t ↦ gamma (t + c))
+      ((fun t : ℝ ↦ t + c) ⁻¹' s) := by
+  simpa only [one_mul] using isGeodesicOn_comp_affine (I := I) g gamma s h 1 c
+
+/-- Set-relative time reversal, with its exact pulled-back lifetime. -/
+theorem isGeodesicOn_comp_neg
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (s : Set ℝ)
+    (h : isGeodesicOn (I := I) g gamma s) :
+    isGeodesicOn (I := I) g (fun t ↦ gamma (-t))
+      ((fun t : ℝ ↦ -t) ⁻¹' s) := by
+  simpa only [neg_mul, one_mul, zero_add, add_zero, neg_one_mul] using
+    isGeodesicOn_comp_affine (I := I) g gamma s h (-1) 0
+
+/-- Set-relative velocity rescaling, with its exact pulled-back lifetime. -/
+theorem isGeodesicOn_comp_mul_left
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (s : Set ℝ)
+    (h : isGeodesicOn (I := I) g gamma s) (a : ℝ) :
+    isGeodesicOn (I := I) g (fun t ↦ gamma (a * t))
+      ((fun t : ℝ ↦ a * t) ⁻¹' s) := by
+  simpa only [add_zero] using isGeodesicOn_comp_affine (I := I) g gamma s h a 0
+
 /-- A lifetime is unbounded above, expressed without choosing an endpoint
 convention for open intervals. -/
 def LifetimeUnboundedAbove (s : Set ℝ) : Prop :=
@@ -551,6 +594,27 @@ theorem isGeodesicOn_mono
   intro t ht
   exact hγ t (hs ht)
 
+/-- A geodesic on `[0,1]` stays geodesic after affine normalization of any
+subinterval `[a,b]` contained in it.  The equation transfer is supplied by
+the proved S18 affine lemma; the endpoint hypotheses are used only for the
+interval-membership arithmetic. -/
+theorem isGeodesicOn_affineReparam
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M)
+    (hgamma : isGeodesicOn (I := I) g gamma (Set.Icc (0 : ℝ) 1))
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b) :
+    isGeodesicOn (I := I) g (affineReparam gamma a b) (Set.Icc (0 : ℝ) 1) := by
+  have htransport := isGeodesicOn_comp_affine (I := I) g gamma
+    (Set.Icc (0 : ℝ) 1) hgamma (b - a) a
+  intro t ht
+  have harg : a + (b - a) * t ∈ Set.Icc (0 : ℝ) 1 := by
+    constructor <;> nlinarith [ht.1, ht.2, ha.1, hb.2]
+  change IsGeodesicAt (I := I) g (fun r ↦ gamma (a + (b - a) * r)) t
+  simpa [add_comm] using htransport t (by
+    change (b - a) * t + a ∈ Set.Icc (0 : ℝ) 1
+    simpa only [add_comm] using harg)
+
 omit [TopologicalSpace M] in
 /-- Constant-speed distance data is stable under translation of the parameter.
 The hypotheses explicitly state that the translated times remain in the
@@ -601,10 +665,13 @@ theorem constantSpeed_restrict
 /-- A geodesic segment together with the source-facing minimizing and
 constant-speed certificates.
 
-The `restriction_geodesic` and `translation_geodesic` fields are explicit
-equation-transfer outputs.  They prevent this S19 interface from silently
-asserting affine invariance that has not yet been proved in the local S18
-connection API.  Its source boundary is Morgan--Tian, Theorem 1.18
+The `restriction_geodesic` and `translation_geodesic` fields are retained as
+producer-facing certificates for compatibility with the earlier S19 boundary.
+The proof-backed `restriction_geodesic_proved` and
+`translation_geodesic_proved` lemmas below derive the same compatibility from
+`geodesic_on` using the affine equation-transfer API in `Geodesic`; producers
+may therefore migrate away from duplicating these fields.  Its source boundary
+is Morgan--Tian, Theorem 1.18
 (`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
 and Lee (`lee2018`), Theorem 6.19. -/
 structure MinimizingGeodesic
@@ -649,6 +716,64 @@ theorem MinimizingGeodesic.target
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (x y : M) (G : MinimizingGeodesic (I := I) g x y) :
     G.path 1 = y := G.path.target
+
+/-- The restriction certificate follows from the intrinsic equation itself.
+
+This is the canonical proof-backed replacement for the producer field of the
+same shape: affine reparameterization is handled by the S18 equation-transfer
+lemma, and the interval hypotheses ensure that the pulled-back times remain
+inside `[0,1]`. -/
+theorem MinimizingGeodesic.restriction_geodesic_proved
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b) :
+    isGeodesicOn (I := I) g
+      (affineReparam (G.path : ℝ → M) a b) (Set.Icc (0 : ℝ) 1) :=
+  isGeodesicOn_affineReparam (I := I) g (G.path : ℝ → M)
+    G.geodesic_on ha hb hab
+
+/-- The translated certificate follows from the intrinsic equation and has the
+exact preimage lifetime. -/
+theorem MinimizingGeodesic.translation_geodesic_proved
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y) (c : ℝ) :
+    isGeodesicOn (I := I) g (fun t ↦ (G.path : ℝ → M) (t + c))
+      ((fun t : ℝ ↦ t + c) ⁻¹' Set.Icc (0 : ℝ) 1) :=
+  isGeodesicOn_comp_add (I := I) g (G.path : ℝ → M)
+    (Set.Icc (0 : ℝ) 1) G.geodesic_on c
+
+/-- Construct a minimizing-segment certificate from its geometric core.
+
+The two affine-compatibility fields are filled by the proved S18 transport
+lemmas, so a compactness/variation producer only needs to provide the path,
+its equation, constant speed, and length equality.  This is the producer
+interface intended for the complete-manifold paragraph before Morgan--Tian,
+Theorem 1.18 (`morganTian2007`), with do Carmo Chapter 7 and Lee Theorem 6.19
+as comparison references. -/
+def MinimizingGeodesic.of_core
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (path : SmoothPath I x y)
+    (hgeo : isGeodesicOn (I := I) g (path : ℝ → M) (Set.Icc (0 : ℝ) 1))
+    (hcont : ContinuousOn (path : ℝ → M) (Set.Icc (0 : ℝ) 1))
+    (hspeed : ∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
+      canonicalRiemannianEDist (I := I) g (path s) (path t) =
+        ENNReal.ofReal |s - t| * canonicalRiemannianEDist (I := I) g x y)
+    (hlen : canonicalPathELength (I := I) g (path : ℝ → M) 0 1 =
+      canonicalRiemannianEDist (I := I) g x y) :
+    MinimizingGeodesic (I := I) g x y where
+  path := path
+  geodesic_on := hgeo
+  continuous_on := hcont
+  constant_speed := hspeed
+  length_eq_distance := hlen
+  restriction_geodesic := by
+    intro a b ha hb hab
+    exact isGeodesicOn_affineReparam (I := I) g (path : ℝ → M) hgeo ha hb hab
+  translation_geodesic := by
+    intro c
+    exact isGeodesicOn_comp_add (I := I) g (path : ℝ → M)
+      (Set.Icc (0 : ℝ) 1) hgeo c
 
 /-- The zero-length constant segment.  Besides being useful in later proofs,
 this is the zero-dimensional/one-point regression for the interface. -/

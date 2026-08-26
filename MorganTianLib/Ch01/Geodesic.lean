@@ -2,8 +2,10 @@ import MorganTianLib.Ch01.Connection.Christoffel
 import Mathlib.Geometry.Manifold.IntegralCurve.ExistUnique
 import Mathlib.Geometry.Manifold.VectorBundle.Tangent
 import Mathlib.Analysis.Calculus.Deriv.Add
+import Mathlib.Analysis.Calculus.Deriv.CompMul
 import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Analysis.Calculus.Deriv.Prod
+import Mathlib.Analysis.Calculus.Deriv.Shift
 
 /-!
 # Geodesics
@@ -186,6 +188,51 @@ theorem chartChristoffelContraction_eq_leviCivita
               (Connection.leviCivitaConnection g (t.localFrame b j) q
                 (t.localFrame b i q)) * b.repr v i * b.repr w j) • b k := by
   rfl
+
+/-! ### Algebraic transport of the coordinate equation -/
+
+/-- The canonical connection contraction is quadratic in a repeated velocity:
+`Gamma(a v, a v) = a^2 Gamma(v, v)`.  This is the algebraic ingredient needed
+for affine reparameterization of the geodesic equation.  The statement uses
+the same bundled `leviCivitaConnection` as the coordinate equation above; it
+does not introduce a second connection representation.  Compare the affine
+reparameterization step in do Carmo, Chapter 3, and Morgan--Tian's geodesic
+equation (Definition 1.17, `morganTian2007`). -/
+theorem chartConnectionContraction_smul_smul
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) (a : ℝ) (v y : E) :
+    chartConnectionContraction (I := I) g alpha y (a • v) (a • v) =
+      (a * a) • chartConnectionContraction (I := I) g alpha y v v := by
+  classical
+  unfold chartConnectionContraction
+  simp only [Finset.smul_sum, smul_smul]
+  apply Finset.sum_congr rfl
+  intro k hk
+  congr 1
+  rw [Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro i hi
+  rw [Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro j hj
+  have hi_smul : ((Module.finBasis ℝ E).repr (a • v)) i =
+      a * ((Module.finBasis ℝ E).repr v i) := by
+    rw [map_smul]
+    rfl
+  have hj_smul : ((Module.finBasis ℝ E).repr (a • v)) j =
+      a * ((Module.finBasis ℝ E).repr v j) := by
+    rw [map_smul]
+    rfl
+  rw [hi_smul, hj_smul]
+  ring_nf
+
+/-- The public Christoffel spelling of the quadratic contraction law. -/
+theorem chartChristoffelContraction_smul_smul
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) (a : ℝ) (v y : E) :
+    chartChristoffelContraction (I := I) g alpha y (a • v) (a • v) =
+      (a * a) • chartChristoffelContraction (I := I) g alpha y v v := by
+  exact chartConnectionContraction_smul_smul (I := I) g alpha a v y
 
 private theorem chartSpraySecond_eq_neg_contraction
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
@@ -662,6 +709,201 @@ theorem isGeodesicAt_iff_coordinate_formula
           (deriv (chartReading (I := I) (gamma t) gamma) t) = 0 := by
   rw [isGeodesicAt_iff_chartEquation]
   rfl
+
+/-! ### Affine reparameterization -/
+
+omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
+/-- Second-order chart regularity is preserved by an affine change of time.
+
+The derivative is transported as
+`(u ∘ (s ↦ a * s + c))' = a • (u' ∘ (s ↦ a * s + c))`.
+Keeping this lemma separate makes the totalized-derivative side condition
+explicit when later modules restrict or translate a geodesic. -/
+theorem HasChartGeodesicRegularityAt.comp_affine
+    (alpha : M) (gamma : ℝ → M) (a c t : ℝ)
+    (h : HasChartGeodesicRegularityAt (I := I) alpha gamma (a * t + c)) :
+    HasChartGeodesicRegularityAt (I := I) alpha
+      (fun s ↦ gamma (a * s + c)) t := by
+  rcases h with ⟨hsrc, hfirst, hev, hdiff⟩
+  let φ : ℝ → ℝ := fun s ↦ a * s + c
+  let u : ℝ → E := chartReading (I := I) alpha gamma
+  let u' : ℝ → E := chartReading (I := I) alpha (fun s ↦ gamma (φ s))
+  have hφcont : Continuous φ := by
+    dsimp [φ]
+    exact (continuous_const.mul continuous_id).add continuous_const
+  have hφt : Tendsto φ (𝓝 t) (𝓝 (φ t)) :=
+    hφcont.continuousAt.tendsto
+  have hφderiv (s : ℝ) : HasDerivAt φ a s := by
+    dsimp [φ]
+    simpa only [mul_comm] using (hasDerivAt_const_mul a).add_const c
+  have hu' : u' = u ∘ φ := by
+    funext s
+    rfl
+  have hderiv_comp (s : ℝ) : deriv u' s = a • deriv u (φ s) := by
+    rw [hu']
+    calc
+      deriv (u ∘ φ) s = deriv (fun r ↦ u (a * r + c)) s := by rfl
+      _ = a • deriv (fun z ↦ u (z + c)) (a * s) := by
+        exact deriv_comp_mul_left a (fun z ↦ u (z + c)) s
+      _ = a • deriv u (a * s + c) := by
+        rw [deriv_comp_add_const]
+      _ = a • deriv u (φ s) := by rfl
+  have hsrc' : ∀ᶠ s in 𝓝 t,
+      (fun r ↦ gamma (φ r)) s ∈ (chartAt H alpha).source := by
+    exact hφt.eventually hsrc
+  have hfirst' : HasDerivAt u' (deriv u' t) t := by
+    have hc := hfirst.scomp t (hφderiv t)
+    have hc' : HasDerivAt u' (a • deriv u (φ t)) t := by
+      simpa only [u', u, hu', Function.comp_def] using hc
+    exact hc'.congr_deriv (hderiv_comp t).symm
+  have hev' : ∀ᶠ s in 𝓝 t, HasDerivAt u' (deriv u' s) s := by
+    have hev0 := hφt.eventually hev
+    filter_upwards [hev0] with s hs
+    have hc := hs.scomp s (hφderiv s)
+    have hc' : HasDerivAt u' (a • deriv u (φ s)) s := by
+      simpa only [u', u, hu', Function.comp_def] using hc
+    exact hc'.congr_deriv (hderiv_comp s).symm
+  have hdiff' : DifferentiableAt ℝ (deriv u') t := by
+    rw [hu'] at hderiv_comp
+    have hcomp : DifferentiableAt ℝ (deriv u ∘ φ) t :=
+      hdiff.comp t (hφderiv t).differentiableAt
+    have hsmul := hcomp.const_smul a
+    rw [show deriv u' = fun s ↦ a • deriv u (φ s) by
+      funext s; exact hderiv_comp s]
+    have hfun : (a • (deriv u ∘ φ)) =
+        (fun s ↦ a • deriv u (φ s)) := by
+      funext s
+      rfl
+    rw [← hfun]
+    exact hsmul
+  exact ⟨hsrc', hfirst', hev', hdiff'⟩
+
+/-- The fixed-chart geodesic equation is invariant under affine time change.
+
+The acceleration and the connection contraction both acquire the common
+factor `a * a`; the zero equation therefore transfers even when `a = 0`.
+This is the homogeneity step used by the restriction and translation
+adapters in the S19 Hopf--Rinow boundary. -/
+theorem HasChartGeodesicEquationAt.comp_affine
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha : M) (gamma : ℝ → M) (a c t : ℝ)
+    (h : HasChartGeodesicEquationAt (I := I) g alpha gamma (a * t + c)) :
+    HasChartGeodesicEquationAt (I := I) g alpha
+      (fun s ↦ gamma (a * s + c)) t := by
+  rcases h with ⟨hreg, hzero⟩
+  let φ : ℝ → ℝ := fun s ↦ a * s + c
+  let u : ℝ → E := chartReading (I := I) alpha gamma
+  let u' : ℝ → E := chartReading (I := I) alpha (fun s ↦ gamma (φ s))
+  have hφcont : Continuous φ := by
+    dsimp [φ]
+    exact (continuous_const.mul continuous_id).add continuous_const
+  have hφderiv (s : ℝ) : HasDerivAt φ a s := by
+    dsimp [φ]
+    simpa only [mul_comm] using (hasDerivAt_const_mul a).add_const c
+  have hu' : u' = u ∘ φ := by
+    funext s
+    rfl
+  have hderiv_comp (s : ℝ) : deriv u' s = a • deriv u (φ s) := by
+    rw [hu']
+    calc
+      deriv (u ∘ φ) s = deriv (fun r ↦ u (a * r + c)) s := by rfl
+      _ = a • deriv (fun z ↦ u (z + c)) (a * s) := by
+        exact deriv_comp_mul_left a (fun z ↦ u (z + c)) s
+      _ = a • deriv u (a * s + c) := by
+        rw [deriv_comp_add_const]
+      _ = a • deriv u (φ s) := by rfl
+  have hsecond : HasDerivAt (deriv u')
+      ((a * a) • deriv (deriv u) (φ t)) t := by
+    have hbase := hreg.2.2.2
+    have hcomp := hbase.hasDerivAt.scomp t (hφderiv t)
+    have hsmul := HasDerivAt.const_smul a hcomp
+    have hfun : (a • (deriv u ∘ φ)) =
+        (fun s ↦ a • deriv u (φ s)) := by
+      funext s
+      rfl
+    have hsmul' : HasDerivAt (fun s ↦ a • deriv u (φ s))
+        (a • (a • deriv (deriv u) (φ t))) t := by
+      rw [← hfun]
+      exact hsmul
+    have heq : deriv u' =ᶠ[𝓝 t] (fun s ↦ a • deriv u (φ s)) :=
+      Filter.Eventually.of_forall (fun s ↦ hderiv_comp s)
+    have hsmul'' := hsmul'.congr_of_eventuallyEq heq
+    have hval : a • (a • deriv (deriv u) (φ t)) =
+        (a * a) • deriv (deriv u) (φ t) := by
+      rw [smul_smul]
+    exact hsmul''.congr_deriv hval
+  have hreg' := HasChartGeodesicRegularityAt.comp_affine
+    (I := I) alpha gamma a c t hreg
+  refine ⟨hreg', ?_⟩
+  change deriv (deriv u') t +
+      chartConnectionContraction (I := I) g alpha (u' t)
+        (deriv u' t) (deriv u' t) = 0
+  rw [hsecond.deriv, hderiv_comp t]
+  have hut : u' t = u (φ t) := by
+    rw [hu']
+    rfl
+  rw [hut, chartConnectionContraction_smul_smul]
+  have hzero' : deriv (deriv u) (φ t) +
+      chartConnectionContraction (I := I) g alpha (u (φ t))
+        (deriv u (φ t)) (deriv u (φ t)) = 0 := by
+    simpa only [chartAcceleration, u, φ] using hzero
+  rw [← smul_add, hzero', smul_zero]
+
+/-- The moving-foot geodesic predicate is invariant under affine time change.
+This is the point-local bridge from the fixed-chart calculation to the
+intrinsic `Connection.leviCivitaConnection` predicate. -/
+theorem IsGeodesicAt.comp_affine
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (a c t : ℝ)
+    (h : IsGeodesicAt (I := I) g gamma (a * t + c)) :
+    IsGeodesicAt (I := I) g (fun s ↦ gamma (a * s + c)) t := by
+  have hbase := (isGeodesicAt_iff_chartEquation (I := I) g gamma
+    (a * t + c)).mp h
+  rcases hbase with ⟨hsource, hcont, heq⟩
+  apply (isGeodesicAt_iff_chartEquation (I := I) g
+    (fun s ↦ gamma (a * s + c)) t).mpr
+  refine ⟨?_, ?_, ?_⟩
+  · exact hsource
+  · have hphi : Continuous (fun s : ℝ ↦ a * s + c) := by
+      exact (continuous_const.mul continuous_id).add continuous_const
+    have hphi_at : ContinuousAt (fun s : ℝ ↦ a * s + c) t :=
+      hphi.continuousAt
+    have hc : ContinuousAt (gamma ∘ (fun s : ℝ ↦ a * s + c)) t :=
+      ContinuousAt.comp (f := fun s : ℝ ↦ a * s + c) (g := gamma)
+        (x := t) hcont hphi_at
+    simpa only [Function.comp_def] using hc
+  · exact HasChartGeodesicEquationAt.comp_affine (I := I) g
+      (gamma (a * t + c)) gamma a c t heq
+
+/-- A global geodesic remains global after affine reparameterization. -/
+theorem isGeodesic_comp_affine
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (h : isGeodesic (I := I) g gamma) (a c : ℝ) :
+    isGeodesic (I := I) g (fun s ↦ gamma (a * s + c)) := by
+  intro t
+  exact IsGeodesicAt.comp_affine (I := I) g gamma a c t (h (a * t + c))
+
+/-- Time translation is the unit-slope instance of affine transport. -/
+theorem isGeodesic_comp_add
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (h : isGeodesic (I := I) g gamma) (c : ℝ) :
+    isGeodesic (I := I) g (fun s ↦ gamma (s + c)) := by
+  simpa only [one_mul] using isGeodesic_comp_affine (I := I) g gamma h 1 c
+
+/-- Time reversal is the slope `-1` instance of affine transport. -/
+theorem isGeodesic_comp_neg
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (h : isGeodesic (I := I) g gamma) :
+    isGeodesic (I := I) g (fun s ↦ gamma (-s)) := by
+  simpa only [neg_mul, one_mul, zero_add, add_zero, neg_one_mul] using
+    isGeodesic_comp_affine (I := I) g gamma h (-1) 0
+
+/-- Velocity rescaling is the zero-offset instance of affine transport. -/
+theorem isGeodesic_comp_mul_left
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (h : isGeodesic (I := I) g gamma) (a : ℝ) :
+    isGeodesic (I := I) g (fun s ↦ gamma (a * s)) := by
+  simpa only [add_zero] using isGeodesic_comp_affine (I := I) g gamma h a 0
 
 end Coordinates
 

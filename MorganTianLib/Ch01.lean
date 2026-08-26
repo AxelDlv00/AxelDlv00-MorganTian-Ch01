@@ -24,6 +24,7 @@ Hopf--Rinow continuation/minimizer interfaces.  The latter keeps metric
 completeness, model-space ODE completeness, and boundarylessness independent;
 its selected-distance completeness bridge, open/order-connected maximal-lifetime
 contract, source-facing geodesic-completeness wrapper, and
+proved affine geodesic/restriction transport plus
 bounded-lifetime/model-completion regressions make those distinctions
 checkable.  Its maximal-domain and compactness producers are explicit inputs
 for the remaining S19 proof; the geodesic-completeness wrapper is an existence
