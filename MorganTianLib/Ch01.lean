@@ -24,12 +24,13 @@ private chart calculation is kept out of this umbrella.  Later milestones add
 geodesic, Jacobi, normal-coordinate, and manifold-comparison modules without
 exposing chart plumbing as public API.  It also exposes the algebraic
 curvature-convention kernel and the standalone scalar, vector/operator,
-traced Riccati, and normalized determinant/density comparison layers.  The
-provisional A2 chart-density and
-change-of-variables substrate is available through the direct
-`MorganTianLib.Ch01.Volume.ChangeOfVariables` import; it is not exported by
-this stable umbrella until a named downstream consumer establishes its public
-boundary.
+traced Riccati, and normalized determinant/density comparison layers.  The A2
+chart-density and normalized change-of-variables substrate, including its
+`LinearMap.normDet` and tangent-space Jacobian adapters, remains a direct
+provisional leaf until a named N1 cut-locus consumer fixes its stable boundary.
+It is available through the direct
+`MorganTianLib.Ch01.Volume.ChangeOfVariables` import and is not exported by
+this stable umbrella; it does not install a competing global measure.
 -/
 
 namespace MorganTianLib
