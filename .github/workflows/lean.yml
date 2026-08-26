@@ -32,7 +32,5 @@ jobs:
           build: true
           test: false
           lint: false
-          # The hosted Mathlib artifact endpoint can fail before `lake build`
-          # starts; the pinned toolchain can rebuild the dependency locally.
-          use-mathlib-cache: false
+          use-mathlib-cache: true
           use-github-cache: false
