@@ -12,6 +12,14 @@ inner-product-space sign/order kernel and all five regressions.  The ledger's
 geodesic-equation row is an F2-owned handoff after G2, not a G2 prerequisite.
 Therefore G2 is complete and F1, F2, and A2 are unlocked at `07d2a0b`.
 
+The original G2 audit used `Ch01.Curvature` as the name of the independent
+sign/order kernel.  The subsequent F1 integration split that owner into the
+connection-free `Ch01.Curvature.Model` leaf and the dependent manifold
+commutator in `Ch01.Curvature`; the umbrella imports both.  This is an
+ownership/import reconciliation, not a new G2 completion claim.  The historical
+rows below retain the names used at their recorded revisions; the current
+ledger and the append-only audit record supersede that naming for new code.
+
 The status was re-audited at protected branch head
 `8f43241e6f754e6958266d15537fdef10e73175c`.  S03 was subsequently completed by
 the canonical Christoffel theorem at
@@ -325,7 +333,7 @@ R_K X Y W = K * (g Y W * X - g X W * Y),
 R4_K X Y Z W = K * (g X Z * g Y W - g X W * g Y Z).
 ```
 
-`Ch01.Curvature` encodes these formulas without a connection or manifold
+`Ch01.Curvature.Model` encodes these formulas without a connection or manifold
 producer and establishes all of the following signs before F1 exports
 geometric curvature:
 
@@ -384,12 +392,13 @@ downstream geometric producer is counted as G2 evidence.
 | Distance/topology | `Ch01.Metric`; base coherence at `599f5241fee042dd50e9e60a3a343a1cbac7aa39`, final source correspondence at `07d2a0be1a7aa3e38d827756b6585edb5a2ade60` | `edist_eq_riemannianEDist`, `topology_eq_riemannianEMetric`, `dist_eq_riemannianEDist_toReal`, `metric_ball_eq_riemannianEDist`, the quantitative replacement theorems, exact `PiecewiseSmoothPath.toSmooth` length preservation, `piecewiseSmoothPathEDist_eq_riemannianEDist`, `smoothPathEDist_eq_riemannianEDist`, and the finite preconnected witness | G2 complete; this is the last family to land |
 | Measure/volume | `Ch01.Volume`; `599f5241fee042dd50e9e60a3a343a1cbac7aa39` | `riemannianVolume`, `riemannianVolume_eq_euclideanHausdorffMeasure`, `riemannianVolume_eq_smul_hausdorffMeasure`, `isOpen_measurableSet_riemannianVolume`, `measurableSet_riemannianMetric_ball`, and `euclidean_volume_coherence` | G2 complete |
 | Connection | `Ch01.Connection`; `ae92775c2e3bff2278da8cfb38e12b560d2ba213` | `leviCivitaConnection`, `isMetricCompatible_leviCivitaConnection`, `torsion_leviCivitaConnection_eq_zero`, `leviCivitaConnection_koszul`, `leviCivitaConnection_eq_at_of_isMetricCompatible_of_torsion_eq_zero`, and `contMDiff_leviCivitaConnection` | G2 complete |
-| Curvature signs | `Ch01.Curvature`; `c65121f0410f368b75dd8d57fe7df09620f9fe12` | `modelCurvature`, `modelCurvature4`, their pairing and component theorems, the Jacobi/index/sectional regressions, and `sum_modelCurvature4_orthonormalBasis` | G2 complete |
+| Curvature signs | `Ch01.Curvature.Model`; `c65121f0410f368b75dd8d57fe7df09620f9fe12` | `modelCurvature`, `modelCurvature4`, their pairing and component theorems, the Jacobi/index/sectional regressions, and `sum_modelCurvature4_orthonormalBasis` | G2 complete |
 | Geodesic equation | `Ch01.Geodesic` in F2; no producer yet | F2 must define intrinsic vanishing acceleration and prove any chart equivalence it uses; the selected route needs no G2 coordinate adapter | Pending after G2; not a G2 prerequisite |
 
 All four G2 producer heads are ancestors of
 `07d2a0be1a7aa3e38d827756b6585edb5a2ade60`, whose `MorganTianLib/Ch01.lean`
-imports `Metric`, `Volume`, `Connection`, and `Curvature`.  Requiring the
+imports `Metric`, `Volume`, `Connection`, `Curvature.Model`, and the dependent
+`Curvature` consumer.  Requiring the
 geodesic row before opening G2's descendant F2 would create the cycle
 `G2 -> F2 -> G2`; the accepted DAG instead makes that row F2-owned evidence
 after the gate.  Thus the six G2-owned rows are complete at `07d2a0b` and F1,
