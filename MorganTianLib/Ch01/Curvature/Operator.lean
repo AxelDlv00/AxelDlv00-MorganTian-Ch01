@@ -15,9 +15,10 @@ bilinear form and its decomposable-wedge evaluation is the normalization
 `g(X,Z)g(Y,W)-g(X,W)g(Y,Z)`.
 
 The construction is independent of coordinates and of the manifold producer.
-The canonical connection-produced facade is provided at the end with an
-explicit algebraic-curvature witness, so the pending last-pair symmetry of the
-selected-extension producer is not silently assumed.
+The selected-extension tangent operator facade is kept in the direct-only
+`Curvature.OperatorProvisional` module under `Curvature.Provisional`, with an
+explicit algebraic-curvature witness; it is not imported here or by the stable
+Chapter 1 umbrella.
 
 The normalization and positivity direction cross-check Morgan--Tian
 Definition 1.7 (`morganTian2007`) and the algebraic curvature-form treatments
@@ -31,8 +32,8 @@ in do Carmo, Chapter 4 (`doCarmo1992`), and Petersen, Chapter 3
 noncomputable section
 
 open exteriorPower
-open Bundle FiberBundle Manifold Matrix Module
-open scoped Bundle ContDiff Manifold Matrix RealInnerProductSpace Topology
+open Matrix Module
+open scoped Matrix RealInnerProductSpace
 
 namespace MorganTianLib
 namespace Ch01
@@ -176,12 +177,6 @@ wedge generators. -/
   simp only [Matrix.cons_val_zero, Matrix.cons_val_one, curvBilinOuter_apply,
     alternatingMapLinearEquiv_apply_ιMulti, curvInnerAlt, bilinToAlt2_apply,
     curvBilinInner_apply]
-
-/-- ASCII-compatible alias for `curvatureOperator_ιMulti`. -/
-theorem curvatureOperator_iMulti (hB : IsAlgebraicCurvature B)
-    (x y z w : V) :
-    curvatureOperator hB (ιMulti ℝ 2 ![x, y]) (ιMulti ℝ 2 ![z, w]) = B x y z w :=
-  curvatureOperator_ιMulti hB x y z w
 
 /-- Pair symmetry of the curvature operator, proved on the decomposable
 generators of the exterior power and extended by `exteriorPower.linearMap_ext`. -/
@@ -408,105 +403,6 @@ theorem modelCurvatureOperator_fin_zero
     curvatureOperator (isAlgebraicCurvature_modelCurvature4 (W := W) 0) phi psi = 0 := by
   rw [modelCurvatureOperator_eq_smul_wedgeInnerOperator]
   simp
-
-/-! ### Tangent-space operator facade -/
-
-section TangentSpace
-
-variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
-  {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
-  {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
-  [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
-
-/-- The curvature operator at a point, once the selected-extension curvature has
-been supplied with its full algebraic-curvature witness.  The witness is
-explicit because the current producer has not yet proved metric last-pair
-skew/pair interchange. -/
-noncomputable def curvatureOperatorAt
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
-    (p : M) (hR : IsAlgebraicCurvatureAt g p) :
-    (⋀[ℝ]^2 (TangentSpace I p)) →ₗ[ℝ]
-      (⋀[ℝ]^2 (TangentSpace I p) →ₗ[ℝ] ℝ) :=
-  curvatureOperator hR
-
-/-- Pointwise decomposable evaluation recovers `Provisional.curvature4`. -/
-theorem curvatureOperatorAt_ιMulti
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
-    (p : M) (hR : IsAlgebraicCurvatureAt g p)
-    (x y z w : TangentSpace I p) :
-    curvatureOperatorAt g p hR (ιMulti ℝ 2 ![x, y])
-        (ιMulti ℝ 2 ![z, w]) =
-      Provisional.curvature4 g p x y z w := by
-  exact curvatureOperator_ιMulti hR x y z w
-
-/-- Symmetry of the pointwise operator under its explicit witness. -/
-theorem curvatureOperatorAt_symm
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
-    (p : M) (hR : IsAlgebraicCurvatureAt g p)
-    (phi psi : ⋀[ℝ]^2 (TangentSpace I p)) :
-    curvatureOperatorAt g p hR phi psi = curvatureOperatorAt g p hR psi phi := by
-  exact curvatureOperator_symm hR phi psi
-
-/-- Pointwise quadratic evaluation on a decomposable tangent wedge. -/
-theorem curvatureOperatorAt_wedge_self
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
-    (p : M) (hR : IsAlgebraicCurvatureAt g p)
-    (x y : TangentSpace I p) :
-    curvatureOperatorAt g p hR (ιMulti ℝ 2 ![x, y])
-        (ιMulti ℝ 2 ![x, y]) = Provisional.curvature4 g p x y x y := by
-  exact curvatureOperator_ιMulti hR x y x y
-
-/-- The pointwise sectional quotient is the operator quadratic form divided by
-the bundled metric Gram determinant. -/
-theorem sectionalCurvatureAt_eq_curvatureOperatorAt
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
-    (p : M) (hR : IsAlgebraicCurvatureAt g p)
-    (x y : TangentSpace I p) :
-    sectionalCurvatureAt g p x y =
-      curvatureOperatorAt g p hR (ιMulti ℝ 2 ![x, y])
-          (ιMulti ℝ 2 ![x, y]) / metricWedgeSqAt g p x y := by
-  unfold sectionalCurvatureAt
-  rw [curvatureOperatorAt_wedge_self]
-
-/-- A pointwise nonnegative operator gives a nonnegative tangent sectional
-quotient when the metric Gram determinant is supplied as nonnegative. -/
-theorem curvatureOperatorAt_nonnegative_sectional
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
-    (p : M) (hR : IsAlgebraicCurvatureAt g p)
-    (h : HasNonnegativeCurvatureOperator hR)
-    (x y : TangentSpace I p)
-    (hgram : 0 ≤ metricWedgeSqAt g p x y) :
-    0 ≤ sectionalCurvatureAt g p x y := by
-  rw [sectionalCurvatureAt_eq_curvatureOperatorAt g p hR x y]
-  exact div_nonneg (h _) hgram
-
-/-- Pointwise nonnegative curvature-operator positivity transfers to sectional
-curvature. -/
-theorem sectionalCurvatureAt_nonneg_of_hasNonnegativeCurvatureOperator
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
-    (p : M) (hR : IsAlgebraicCurvatureAt g p)
-    (h : HasNonnegativeCurvatureOperator hR)
-    (x y : TangentSpace I p) :
-    0 ≤ sectionalCurvatureAt g p x y := by
-  exact curvatureOperatorAt_nonnegative_sectional g p hR h x y
-    (metricWedgeSqAt_nonneg g p x y)
-
-/-- Pointwise positive curvature-operator positivity transfers to sectional
-curvature under explicit nondegeneracy hypotheses. -/
-theorem sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
-    (p : M) (hR : IsAlgebraicCurvatureAt g p)
-    (h : HasPositiveCurvatureOperator hR)
-    {x y : TangentSpace I p}
-    (hphi : ιMulti ℝ 2 ![x, y] ≠ 0)
-    (hgram : metricWedgeSqAt g p x y ≠ 0) :
-    0 < sectionalCurvatureAt g p x y := by
-  rw [sectionalCurvatureAt_eq_curvatureOperatorAt g p hR x y]
-  have hgram_pos : 0 < metricWedgeSqAt g p x y :=
-    (metricWedgeSqAt_nonneg g p x y).lt_of_ne (Ne.symm hgram)
-  exact div_pos (h _ hphi) hgram_pos
-
-end TangentSpace
 
 end Curvature
 end Ch01

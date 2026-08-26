@@ -207,17 +207,17 @@ coordinate weight, while the two displayed components detect both the frozen
 third/fourth slot order and the sign of the antisymmetry. -/
 
 /-- A two-coordinate algebraic metric whose first coordinate has weight `t`. -/
-def componentProbeMetric (t : ℝ) (x y : Fin 2 → ℝ) : ℝ :=
+private def componentProbeMetric (t : ℝ) (x y : Fin 2 → ℝ) : ℝ :=
   t * x 0 * y 0 + x 1 * y 1
 
 /-- The determinant curvature form induced by `componentProbeMetric`. -/
-def componentProbeCurvature4 (t : ℝ) (x y z w : Fin 2 → ℝ) : ℝ :=
+private def componentProbeCurvature4 (t : ℝ) (x y z w : Fin 2 → ℝ) : ℝ :=
   componentProbeMetric t x z * componentProbeMetric t y w -
     componentProbeMetric t x w * componentProbeMetric t y z
 
 /-- The weighted component probe detects reversal of the final curvature
 slots through an explicit sign change. -/
-theorem componentProbeCurvature4_slots (t : ℝ) :
+private theorem componentProbeCurvature4_slots (t : ℝ) :
     let e₀ : Fin 2 → ℝ := fun i => if i = 0 then 1 else 0
     let e₁ : Fin 2 → ℝ := fun i => if i = 1 then 1 else 0
     componentProbeCurvature4 t e₀ e₁ e₀ e₁ = t ∧
