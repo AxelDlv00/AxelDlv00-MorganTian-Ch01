@@ -1,4 +1,3 @@
-import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Linarith
 import MorganTianLib.Ch01.Curvature.Model
@@ -10,8 +9,8 @@ This module is the connection-free intrinsic algebraic boundary for
 Morgan--Tian Chapter 1, Definitions 1.6--1.7 (`morganTian2007`).  It works
 fibrewise on a real inner-product space (and, for a plain symmetric bilinear
 form).  The selected-extension tangent adapters live in the direct-only
-`Curvature.SectionalProvisional` module under `Curvature.Provisional`; they
-are intentionally absent from this intrinsic import.
+`Curvature.SectionalProvisional` module; they are intentionally absent from
+this intrinsic import.
 
 The sign and slot order are the repository convention
 `curvature4 X Y Z W = g (curvature X Y W) Z`, so the constant model is

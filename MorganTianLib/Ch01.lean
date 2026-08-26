@@ -7,6 +7,8 @@ import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Curvature.Manifold
 import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Curvature.Operator
+import MorganTianLib.Ch01.Curvature.SectionalProvisional
+import MorganTianLib.Ch01.Curvature.OperatorProvisional
 import MorganTianLib.Ch01.Comparison.DeterminantDensity
 import MorganTianLib.Ch01.Comparison.PositiveRiccati
 import MorganTianLib.Ch01.Comparison.OperatorRiccati
@@ -23,9 +25,11 @@ layer (including its proved tensorial and first-Bianchi subset).  The intrinsic
 arbitrary-extension producer remains a named S06 replacement target; the
 private chart calculation is kept out of this umbrella.  The public curvature
 consumers include the algebraic sectional-curvature layer and the symmetric
-second-exterior-power operator; their provisional tangent-space adapters retain
-an explicit algebraic-curvature witness until the S07 metric symmetry boundary
-is proved and do not replace the producer.  Later milestones add geodesic,
+second-exterior-power operator.  Their direct-only tangent adapters are exported
+by `Curvature.SectionalProvisional` and `Curvature.OperatorProvisional`; every
+plane or operator property retains an explicit algebraic-curvature witness
+until the S07 metric symmetry boundary is proved, and these adapters do not
+replace the producer.  Later milestones add geodesic,
 Jacobi, normal-coordinate, and manifold-comparison modules without exposing
 chart plumbing as public API.  It
 also exposes the algebraic curvature-convention kernel and the standalone

@@ -1,7 +1,5 @@
 import Mathlib.LinearAlgebra.ExteriorPower.Basic
 import Mathlib.Tactic.FinCases
-import Mathlib.Tactic.LinearCombination
-import Mathlib.Tactic.Linarith
 import MorganTianLib.Ch01.Curvature.Sectional
 
 /-!
@@ -16,9 +14,8 @@ bilinear form and its decomposable-wedge evaluation is the normalization
 
 The construction is independent of coordinates and of the manifold producer.
 The selected-extension tangent operator facade is kept in the direct-only
-`Curvature.OperatorProvisional` module under `Curvature.Provisional`, with an
-explicit algebraic-curvature witness; it is not imported here or by the stable
-Chapter 1 umbrella.
+`Curvature.OperatorProvisional` module, with an explicit algebraic-curvature
+witness; it is not imported here or by the stable intrinsic layer.
 
 The normalization and positivity direction cross-check Morgan--Tian
 Definition 1.7 (`morganTian2007`) and the algebraic curvature-form treatments
