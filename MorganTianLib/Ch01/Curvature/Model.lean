@@ -1,4 +1,3 @@
-import MorganTianLib.Ch01.Connection.Christoffel
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
