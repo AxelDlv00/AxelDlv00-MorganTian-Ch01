@@ -19,14 +19,19 @@ canonical metric is always `Bundle.ContMDiffRiemannianMetric`, and the
 canonical connection is `Connection.leviCivitaConnection`.
 
 The pinned connection layer does not yet expose a covariant derivative along a
-curve.  Accordingly, the first-variation declarations below make the
-covariant-acceleration and test-field completeness witnesses explicit.  This
-is the S18 handoff: no coordinate acceleration or competing geodesic predicate
-is introduced here.  The slice proves the energy/length inequality and its
-equality condition, but deliberately introduces no minimizer predicate; the
-existence and identification of minimizers belong to S19.  The integral
-density uses unrestricted `mfderiv`; the separate `velocityWithin` accessor
-retains the one-sided derivative needed by endpoint terms.
+curve.  Accordingly, `FirstVariationData` keeps the covariant-acceleration
+field as an explicit, variation-local regularity witness.  The valid
+zero-acceleration implication remains one-way; the converse from criticality
+against *all* fixed-endpoint variations is deliberately deferred until S18 can
+provide one curve-level acceleration field and the test-field realization
+theorem.  No per-variation completeness witness or criticality equivalence is
+exported here.  This is the S18 handoff: no coordinate acceleration or
+competing geodesic predicate is introduced here.  The slice proves the
+energy/length inequality and its equality condition, but deliberately
+introduces no minimizer predicate; the existence and identification of
+minimizers belong to S19.  The integral density uses unrestricted `mfderiv`;
+the separate `velocityWithin` accessor retains the one-sided derivative needed
+by endpoint terms.
 -/
 
 open Bundle Filter Function Manifold MeasureTheory Set
@@ -559,9 +564,11 @@ theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_const_norm_velocit
     intro t ht
     simpa [speed_eq_norm_velocity (I := I) g gamma t] using hc t ht
 
-/-- A typed intrinsic acceleration contract.  The acceleration is intended to
-be supplied by the S18 connection/geodesic producer; this module stores no
-coordinate acceleration and does not define a competing geodesic predicate. -/
+/-- A typed, curve-level intrinsic acceleration contract.  Its acceleration is
+indexed only by the base curve and interval, independently of any variation;
+it is intended to be supplied by the S18 connection/geodesic producer.  This
+module stores no coordinate acceleration and does not define a competing
+geodesic predicate. -/
 structure CovariantAccelerationData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (a b : ℝ) : Type _ where
@@ -868,10 +875,12 @@ private theorem metric_sign_probe_of_nonzero_velocity
 
 /-! ### Reparameterization and variation contracts -/
 
-/-- Positive affine reparameterization of a curve scales energy by its speed
-factor.  `density_eq` is the manifold chain-rule witness: it is intentionally
-visible because the current Mathlib connection layer has no along-curve
-derivative producer. -/
+/-- A density-scaling helper for a positive affine change of variables.
+`density_eq` is the manifold chain-rule witness: it is intentionally visible
+because the current Mathlib connection layer has no along-curve derivative
+producer.  The composition hypothesis that identifies `delta` with the
+reparameterized curve is supplied by
+`energy_affine_reparam_of_composition`, not by this density-only theorem. -/
 theorem energy_affine_reparam_of_density
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma delta : ℝ → M} {a b alpha beta : ℝ} (hab : a ≤ b) (halpha : 0 < alpha)
@@ -1138,7 +1147,9 @@ The factor `1/2` in the energy cancels the `2` from differentiating the
 metric square, leaving the unhalved pairing below.
 The fields are deliberately witnesses rather than axioms hidden in a theorem:
 they expose exactly which regularity remains to be discharged by the S18
-geodesic producer. -/
+geodesic producer.  In particular, `acceleration` is local to this variation;
+this structure does not claim that it is the single curve-level acceleration
+used by the fundamental lemma. -/
 structure FirstVariationData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
@@ -1277,20 +1288,10 @@ def IsZeroCovariantAcceleration
     (D : FirstVariationData (I := I) g V) : Prop :=
   ∀ t ∈ Ioo a b, D.acceleration t = 0
 
-/-- The S18/fundamental-lemma witness needed for the converse criticality
-direction.  It is separated from `FirstVariationData` so a future S18 module
-can supply it without changing the endpoint/sign contract here. -/
-structure FixedEndpointCriticalityWitness
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    {gamma : ℝ → M} {a b epsilon : ℝ}
-    (V : SmoothVariation (I := I) gamma a b epsilon)
-  (D : FirstVariationData (I := I) g V) : Prop where
-  zero_of_critical :
-    EndpointVectorsZero (I := I) V →
-      IsEnergyCritical (I := I) g V → IsZeroCovariantAcceleration (I := I) g D
-
 /-- Zero intrinsic acceleration implies criticality for a fixed-endpoint
-variation. -/
+variation.  This is intentionally a one-way, variation-local statement: it
+does not identify `D.acceleration` with the curve-level
+`CovariantAccelerationData` used by the future S18 fundamental-lemma proof. -/
 theorem isEnergyCritical_of_zero_covariantAcceleration
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
@@ -1311,26 +1312,12 @@ theorem isEnergyCritical_of_zero_covariantAcceleration
   rw [hacc] at hderiv
   simpa [IsEnergyCritical] using hderiv
 
-/-- Under the explicit S18 test-field witness, criticality is equivalent to
-vanishing intrinsic covariant acceleration. -/
-theorem isEnergyCritical_iff_zero_covariantAcceleration
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    {gamma : ℝ → M} {a b epsilon : ℝ}
-    {V : SmoothVariation (I := I) gamma a b epsilon}
-    (D : FirstVariationData (I := I) g V)
-    (hend : EndpointVectorsZero (I := I) V)
-    (W : FixedEndpointCriticalityWitness (I := I) g V D) :
-    IsEnergyCritical (I := I) g V ↔ IsZeroCovariantAcceleration (I := I) g D := by
-  constructor
-  · exact W.zero_of_critical hend
-  · exact isEnergyCritical_of_zero_covariantAcceleration (I := I) g D hend
-
-/-- All fixed-endpoint variations are critical, with the S18 producer made
-explicit as an existential data/witness package.  The predicate records
-`a ≤ b` directly, and each quantified `SmoothVariation` carries the same
-order field.  The nonempty endpoint-fixed variation premise prevents the
-universal statement from becoming vacuous for a curve that admits no such
-variation. -/
+/-- The universal fixed-endpoint criticality premise used by the future
+fundamental-lemma theorem.  This is only a premise: this module deliberately
+does not assert a converse or identify a per-variation acceleration witness
+with the curve-level `CovariantAccelerationData`.  The nonempty endpoint-fixed
+variation premise prevents the universal statement from becoming vacuous for a
+curve that admits no such variation. -/
 def AllFixedEndpointEnergyCritical
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (a b : ℝ) : Prop :=
@@ -1339,39 +1326,6 @@ def AllFixedEndpointEnergyCritical
       EndpointVectorsZero (I := I) V) ∧
     ∀ epsilon, ∀ V : SmoothVariation (I := I) gamma a b epsilon,
       EndpointVectorsZero (I := I) V → IsEnergyCritical (I := I) g V
-
-/-- A family of first-variation/test-field witnesses for the all-variations
-criticality statement. -/
-structure AllVariationCriticalityWitness
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) (a b : ℝ) : Prop where
-  interval_order : a ≤ b
-  variation_exists : ∃ epsilon, ∃ V : SmoothVariation (I := I) gamma a b epsilon,
-    EndpointVectorsZero (I := I) V
-  data : ∀ epsilon (V : SmoothVariation (I := I) gamma a b epsilon),
-    EndpointVectorsZero (I := I) V →
-      ∃ D : FirstVariationData (I := I) g V,
-        FixedEndpointCriticalityWitness (I := I) g V D
-
-/-- The all-variation formulation of the criticality/acceleration contract. -/
-theorem allFixedEndpointEnergyCritical_iff_zero_covariantAcceleration
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) {a b : ℝ}
-    (C : AllVariationCriticalityWitness (I := I) g gamma a b) :
-    AllFixedEndpointEnergyCritical (I := I) g gamma a b ↔
-      ∀ epsilon (V : SmoothVariation (I := I) gamma a b epsilon),
-        ∀ _hend : EndpointVectorsZero (I := I) V,
-          ∃ D : FirstVariationData (I := I) g V,
-            IsZeroCovariantAcceleration (I := I) g D := by
-  constructor
-  · rintro ⟨_, _, h⟩ epsilon V hend
-    rcases C.data epsilon V hend with ⟨D, W⟩
-    exact ⟨D, W.zero_of_critical hend (h epsilon V hend)⟩
-  · intro h
-    refine ⟨C.interval_order, C.variation_exists, ?_⟩
-    intro epsilon V hend
-    rcases h epsilon V hend with ⟨D, hzero⟩
-    exact isEnergyCritical_of_zero_covariantAcceleration (I := I) g D hend hzero
 
 end CurveEnergy
 
