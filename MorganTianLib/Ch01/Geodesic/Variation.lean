@@ -1,6 +1,5 @@
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Metric
-import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 
 /-!
@@ -14,18 +13,25 @@ the source-normalized quantity
 The source is Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, the
 energy/variation paragraph on pp. 41--43 (`morganTian2007`), with do Carmo,
 Chapter 9, pp. 185--201 (`doCarmo1992`) as a cross-check.  Differentiation
-under the integral is expressed using the pinned Mathlib
-`ParametricIntervalIntegral` API and interval integration by parts.  The
+under the integral and interval integration by parts remain explicit
+regularity witnesses in the first-variation data.  The
 canonical metric is always `Bundle.ContMDiffRiemannianMetric`, and the
 canonical connection is `Connection.leviCivitaConnection`.
 
 The pinned connection layer does not yet expose a covariant derivative along a
-curve.  Accordingly, the first-variation declarations below make the
-covariant-acceleration and test-field completeness witnesses explicit.  This
-is the S18 handoff: no coordinate acceleration or competing geodesic predicate
-is introduced here.  The slice proves the energy/length inequality and its
-equality condition, but deliberately introduces no minimizer predicate; the
-existence and identification of minimizers belong to S19.
+curve.  Accordingly, `FirstVariationData` keeps the covariant-acceleration
+field as an explicit, variation-local regularity witness.  The valid
+zero-acceleration implication remains one-way; the converse from criticality
+against *all* fixed-endpoint variations is deliberately deferred until S18 can
+provide one curve-level acceleration field and the test-field realization
+theorem.  No per-variation completeness witness or criticality equivalence is
+exported here.  This is the S18 handoff: no coordinate acceleration or
+competing geodesic predicate is introduced here.  The slice proves the
+energy/length inequality and its equality condition, but deliberately
+introduces no minimizer predicate; the existence and identification of
+minimizers belong to S19.  The integral density uses unrestricted `mfderiv`;
+the separate `velocityWithin` accessor retains the one-sided derivative needed
+by endpoint terms.
 -/
 
 open Bundle Filter Function Manifold MeasureTheory Set
@@ -166,45 +172,69 @@ section CurveEnergy
 variable
   (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
 
-/-- The canonical velocity of a parameterized curve on an oriented interval.
+/-- The canonical (unrestricted) velocity density of a parameterized curve.
 
-The derivative is Mathlib's manifold derivative of the curve restricted to the
-interval; no coordinate velocity is introduced. -/
-noncomputable def velocity (gamma : ℝ → M) (a b t : ℝ) : TangentSpace I (gamma t) :=
+This is the derivative used by the integral energy and length densities, in
+the same form as Mathlib's `Manifold.pathELength`. -/
+noncomputable def velocity (gamma : ℝ → M) (t : ℝ) : TangentSpace I (gamma t) :=
+  (mfderiv 𝓘(ℝ, ℝ) I gamma t) 1
+
+/-- The one-sided, interval-restricted velocity used for endpoint terms.
+
+Its values can differ from `velocity` at interval endpoints; those values are
+retained only where the first-variation boundary formula needs them. -/
+noncomputable def velocityWithin (gamma : ℝ → M) (a b t : ℝ) : TangentSpace I (gamma t) :=
   (mfderiv[Icc a b] gamma t) 1
 
-/-- The squared speed measured by the supplied bundle metric. -/
-noncomputable def speedSq (gamma : ℝ → M) (a b t : ℝ) : ℝ :=
-  g.inner (gamma t) (velocity (I := I) gamma a b t) (velocity (I := I) gamma a b t)
+omit [IsManifold I ∞ M] in
+/-- Away from the endpoints, the boundary-aware accessor agrees with the
+canonical unrestricted velocity density. -/
+theorem velocityWithin_eq_velocity_of_mem_Ioo
+    {gamma : ℝ → M} {a b t : ℝ} (ht : t ∈ Ioo a b) :
+    velocityWithin (I := I) gamma a b t = velocity (I := I) gamma t := by
+  rw [velocityWithin, velocity, mfderivWithin_of_mem_nhds]
+  exact Icc_mem_nhds ht.1 ht.2
 
-/-- The nonnegative metric speed. -/
-noncomputable def speed (gamma : ℝ → M) (a b t : ℝ) : ℝ :=
-  Real.sqrt (speedSq (I := I) g gamma a b t)
+/-- The squared speed density measured by the supplied bundle metric. -/
+noncomputable def speedSq (gamma : ℝ → M) (t : ℝ) : ℝ :=
+  g.inner (gamma t) (velocity (I := I) gamma t) (velocity (I := I) gamma t)
+
+/-- The nonnegative speed density. -/
+noncomputable def speed (gamma : ℝ → M) (t : ℝ) : ℝ :=
+  Real.sqrt (speedSq (I := I) g gamma t)
 
 /-- The energy of a curve on `[a,b]`, with the Morgan--Tian normalization from
 Morgan--Tian (`morganTian2007`, pp. 41--43). -/
 noncomputable def energy (gamma : ℝ → M) (a b : ℝ) : ℝ :=
-  (1 / 2 : ℝ) * ∫ t in a..b, speedSq (I := I) g gamma a b t
+  (1 / 2 : ℝ) * ∫ t in a..b, speedSq (I := I) g gamma t
 
 /-- The auxiliary real speed integral used for Cauchy--Schwarz.  It is not a
 second manifold-length representation: `ofReal_curveLength_eq_pathELength`
 below identifies it with Mathlib's canonical `Manifold.pathELength` when
 `a ≤ b`; the totalized definition remains available for arbitrary endpoints. -/
 noncomputable def curveLength (gamma : ℝ → M) (a b : ℝ) : ℝ :=
-  ∫ t in a..b, speed (I := I) g gamma a b t
+  ∫ t in a..b, speed (I := I) g gamma t
 
 omit [IsManifold I ∞ M] in
-/-- A constant curve has zero interval-restricted manifold velocity. -/
+/-- A constant curve has zero unrestricted manifold velocity. -/
 @[simp]
-theorem velocity_const (x : M) (a b t : ℝ) :
-    velocity (I := I) (fun _ : ℝ => x) a b t = 0 := by
-  simp [velocity, mfderivWithin_const]
+theorem velocity_const (x : M) (t : ℝ) :
+    velocity (I := I) (fun _ : ℝ => x) t = 0 := by
+  simp [velocity]
+
+omit [IsManifold I ∞ M] in
+/-- A constant curve has zero endpoint-restricted velocity as well. -/
+@[simp]
+theorem velocityWithin_const (x : M) (a b t : ℝ) :
+    velocityWithin (I := I) (fun _ : ℝ => x) a b t = 0 := by
+  rw [velocityWithin, mfderivWithin_const]
+  simp
 
 /-- The squared speed of a constant curve is zero.  This is the concrete
 zero-velocity regression for the canonical metric energy. -/
 @[simp]
-theorem speedSq_zero (x : M) (a b t : ℝ) :
-    speedSq (I := I) g (fun _ : ℝ => x) a b t = 0 := by
+theorem speedSq_zero (x : M) (t : ℝ) :
+    speedSq (I := I) g (fun _ : ℝ => x) t = 0 := by
   simp only [speedSq, velocity_const]
   simp
 
@@ -222,27 +252,27 @@ theorem metric_inner_self_nonneg (x : M) (v : TangentSpace I x) :
   · exact (g.pos x v hv).le
 
 /-- Nonnegativity of the canonical squared speed. -/
-theorem speedSq_nonneg (gamma : ℝ → M) (a b t : ℝ) :
-    0 ≤ speedSq (I := I) g gamma a b t := by
-  exact metric_inner_self_nonneg (I := I) g (gamma t) (velocity (I := I) gamma a b t)
+theorem speedSq_nonneg (gamma : ℝ → M) (t : ℝ) :
+    0 ≤ speedSq (I := I) g gamma t := by
+  exact metric_inner_self_nonneg (I := I) g (gamma t) (velocity (I := I) gamma t)
 
 /-- Nonnegativity of the metric speed. -/
 @[simp]
-theorem speed_nonneg (gamma : ℝ → M) (a b t : ℝ) :
-    0 ≤ speed (I := I) g gamma a b t :=
+theorem speed_nonneg (gamma : ℝ → M) (t : ℝ) :
+    0 ≤ speed (I := I) g gamma t :=
   Real.sqrt_nonneg _
 
 /-- Squaring the nonnegative speed recovers the metric speed square. -/
-theorem speed_sq (gamma : ℝ → M) (a b t : ℝ) :
-    (speed (I := I) g gamma a b t) ^ 2 = speedSq (I := I) g gamma a b t := by
-  exact Real.sq_sqrt (speedSq_nonneg (I := I) g gamma a b t)
+theorem speed_sq (gamma : ℝ → M) (t : ℝ) :
+    (speed (I := I) g gamma t) ^ 2 = speedSq (I := I) g gamma t := by
+  exact Real.sq_sqrt (speedSq_nonneg (I := I) g gamma t)
 
 /-- The scalar speed is the norm of the intrinsic tangent velocity for the
 canonical metric bundle instance. -/
-theorem speed_eq_norm_velocity (gamma : ℝ → M) (a b t : ℝ) :
+theorem speed_eq_norm_velocity (gamma : ℝ → M) (t : ℝ) :
     letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
-    speed (I := I) g gamma a b t = ‖velocity (I := I) gamma a b t‖ := by
+    speed (I := I) g gamma t = ‖velocity (I := I) gamma t‖ := by
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   rw [speed, MorganTianLib.Ch01.norm_eq_sqrt_metric]
@@ -251,19 +281,19 @@ theorem speed_eq_norm_velocity (gamma : ℝ → M) (a b t : ℝ) :
 /-- Unfolding the Morgan--Tian energy normalization. -/
 theorem energy_eq_half_integral_speedSq (gamma : ℝ → M) (a b : ℝ) :
     energy (I := I) g gamma a b =
-      (1 / 2 : ℝ) * ∫ t in a..b, speedSq (I := I) g gamma a b t := rfl
+      (1 / 2 : ℝ) * ∫ t in a..b, speedSq (I := I) g gamma t := rfl
 
 /-- The same normalization expressed using the scalar speed. -/
 theorem energy_eq_half_integral_speed_sq (gamma : ℝ → M) (a b : ℝ) :
     energy (I := I) g gamma a b =
-      (1 / 2 : ℝ) * ∫ t in a..b, (speed (I := I) g gamma a b t) ^ 2 := by
+      (1 / 2 : ℝ) * ∫ t in a..b, (speed (I := I) g gamma t) ^ 2 := by
   simp_rw [speed_sq]
   rfl
 
 /-- Unfolding the real speed-integral adapter used by the inequalities. -/
 theorem curveLength_eq_integral_speed (gamma : ℝ → M) (a b : ℝ) :
     curveLength (I := I) g gamma a b =
-      ∫ t in a..b, speed (I := I) g gamma a b t := rfl
+      ∫ t in a..b, speed (I := I) g gamma t := rfl
 
 /-! `curveLength` is the real-valued speed integral used by the
 Cauchy--Schwarz lemmas.  The canonical manifold length is Mathlib's
@@ -276,22 +306,22 @@ is the pinned `MeasureTheory.ofReal_integral_eq_lintegral_ofReal` bridge; the
 metric-bundle instance is local and definitionally the supplied `g`. -/
 theorem ofReal_curveLength_eq_pathELength_integral
     (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
-    (hs : IntervalIntegrable (speed (I := I) g gamma a b) volume a b) :
+    (hs : IntervalIntegrable (speed (I := I) g gamma) volume a b) :
     letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
     ENNReal.ofReal (curveLength (I := I) g gamma a b) =
-      ∫⁻ t in Icc a b, ‖(mfderiv[Icc a b] gamma t) 1‖ₑ := by
+      ∫⁻ t in Icc a b, ‖(mfderiv 𝓘(ℝ, ℝ) I gamma t) 1‖ₑ := by
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   rw [curveLength, intervalIntegral.integral_of_le hab, ← integral_Icc_eq_integral_Ioc]
-  have hIoc : IntegrableOn (speed (I := I) g gamma a b) (Ioc a b) volume := by
+  have hIoc : IntegrableOn (speed (I := I) g gamma) (Ioc a b) volume := by
     rw [← uIoc_of_le hab]
     exact (intervalIntegrable_iff.mp hs)
-  have hIcc : IntegrableOn (speed (I := I) g gamma a b) (Icc a b) volume :=
+  have hIcc : IntegrableOn (speed (I := I) g gamma) (Icc a b) volume :=
     (integrableOn_Icc_iff_integrableOn_Ioc).2 hIoc
   have hnonneg : 0 ≤ᵐ[volume.restrict (Icc a b)]
-      speed (I := I) g gamma a b :=
-    Filter.Eventually.of_forall (fun t => speed_nonneg (I := I) g gamma a b t)
+      speed (I := I) g gamma :=
+    Filter.Eventually.of_forall (fun t => speed_nonneg (I := I) g gamma t)
   rw [MeasureTheory.ofReal_integral_eq_lintegral_ofReal hIcc hnonneg]
   apply setLIntegral_congr_fun measurableSet_Icc
   intro t ht
@@ -304,79 +334,67 @@ theorem ofReal_curveLength_eq_pathELength_integral
 `Manifold.pathELength` (`PathELength.lean`). -/
 theorem ofReal_curveLength_eq_pathELength
     (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
-    (hs : IntervalIntegrable (speed (I := I) g gamma a b) volume a b) :
+    (hs : IntervalIntegrable (speed (I := I) g gamma) volume a b) :
     letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
     ENNReal.ofReal (curveLength (I := I) g gamma a b) =
       Manifold.pathELength I gamma a b := by
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
-  rw [Manifold.pathELength_eq_lintegral_mfderivWithin_Icc]
+  rw [Manifold.pathELength_eq_lintegral_mfderiv_Icc]
   exact ofReal_curveLength_eq_pathELength_integral (I := I) g gamma hab hs
 
-/-- Energy is additive across adjacent intervals whenever its density is
-integrable on the two pieces.  The interval argument in `velocity` is
-deliberate: `mfderivWithin` can depend on the chosen closed interval at its
-boundary.  Additivity therefore takes the compatibility equalities as
-hypotheses instead of silently identifying different boundary derivatives. -/
-theorem energy_add (gamma : ℝ → M) {a b c : ℝ} (_hab : a ≤ b) (_hbc : b ≤ c)
-    {q : ℝ → ℝ}
-    (h₁ : IntervalIntegrable q volume a b) (h₂ : IntervalIntegrable q volume b c)
-    (hEq : EqOn (speedSq (I := I) g gamma a c) q (uIcc a c))
-    (hEq₁ : EqOn (speedSq (I := I) g gamma a b) q (uIcc a b))
-    (hEq₂ : EqOn (speedSq (I := I) g gamma b c) q (uIcc b c)) :
+/-- Energy is additive across adjacent intervals for the canonical
+unrestricted density. Endpoint values of the separate `velocityWithin`
+accessor are null for this integral and do not enter the API. -/
+theorem energy_add (gamma : ℝ → M) {a b c : ℝ}
+    (h₁ : IntervalIntegrable (speedSq (I := I) g gamma) volume a b)
+    (h₂ : IntervalIntegrable (speedSq (I := I) g gamma) volume b c) :
     energy (I := I) g gamma a c =
       energy (I := I) g gamma a b + energy (I := I) g gamma b c := by
   simp only [energy]
-  rw [intervalIntegral.integral_congr hEq,
-    intervalIntegral.integral_congr hEq₁,
-    intervalIntegral.integral_congr hEq₂]
   rw [← intervalIntegral.integral_add_adjacent_intervals h₁ h₂]
   ring
 
-/-- Positivity is the metric part of the energy contract (Morgan--Tian,
-`morganTian2007`, pp. 41--43).  The interval-integrability witness remains in
-the signature even though Mathlib's totalized interval integral makes the
-nonnegativity proof itself independent of it. -/
-theorem energy_nonneg (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
-    (_hint : IntervalIntegrable (fun t => speedSq (I := I) g gamma a b t) volume a b) :
+/-- Positivity follows from interval order and pointwise metric positivity;
+Mathlib's totalized interval integral needs no separate integrability witness. -/
+theorem energy_nonneg (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b) :
     0 ≤ energy (I := I) g gamma a b := by
   rw [energy]
   have h := intervalIntegral.integral_nonneg (μ := volume) hab
-    (fun t ht => speedSq_nonneg (I := I) g gamma a b t)
+    (fun t ht => speedSq_nonneg (I := I) g gamma t)
   positivity
 
 /-- Nonnegativity of the auxiliary real speed integral on an ordered interval.
 The canonical manifold length is obtained from it through the `pathELength`
 bridge above. -/
-theorem curveLength_nonneg (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
-    (_hint : IntervalIntegrable (speed (I := I) g gamma a b) volume a b) :
+theorem curveLength_nonneg (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b) :
     0 ≤ curveLength (I := I) g gamma a b := by
   rw [curveLength]
   exact intervalIntegral.integral_nonneg hab
-    (fun t _ => speed_nonneg (I := I) g gamma a b t)
+    (fun t _ => speed_nonneg (I := I) g gamma t)
 
 /-- The interval energy/length inequality is the Cauchy--Schwarz step in
 Morgan--Tian (`morganTian2007`, pp. 41--43) and do Carmo (`doCarmo1992`,
 Ch. 9, Section 2). -/
 theorem curveLength_sq_le_two_mul_interval_sub_mul_energy
     (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
-    (hs : IntervalIntegrable (speed (I := I) g gamma a b) volume a b)
+    (hs : IntervalIntegrable (speed (I := I) g gamma) volume a b)
     (hs2 : IntervalIntegrable
-      (fun t => (speed (I := I) g gamma a b t) ^ 2) volume a b) :
+      (fun t => (speed (I := I) g gamma t) ^ 2) volume a b) :
     (curveLength (I := I) g gamma a b) ^ 2 ≤
       2 * (b - a) * energy (I := I) g gamma a b := by
   rw [curveLength_eq_integral_speed, energy_eq_half_integral_speed_sq]
-  have h := sq_intervalIntegral_le_mul_intervalIntegral_sq (f := speed (I := I) g gamma a b)
+  have h := sq_intervalIntegral_le_mul_intervalIntegral_sq (f := speed (I := I) g gamma)
     hab hs hs2
   nlinarith
 
 /-- The normalized `[0,1]` energy/length inequality (Morgan--Tian,
 `morganTian2007`, pp. 41--43). -/
 theorem curveLength_sq_le_two_mul_energy (gamma : ℝ → M)
-    (hs : IntervalIntegrable (speed (I := I) g gamma 0 1) volume 0 1)
+    (hs : IntervalIntegrable (speed (I := I) g gamma) volume 0 1)
     (hs2 : IntervalIntegrable
-      (fun t => (speed (I := I) g gamma 0 1 t) ^ 2) volume 0 1) :
+      (fun t => (speed (I := I) g gamma t) ^ 2) volume 0 1) :
     (curveLength (I := I) g gamma 0 1) ^ 2 ≤
       2 * energy (I := I) g gamma 0 1 := by
   simpa using curveLength_sq_le_two_mul_interval_sub_mul_energy
@@ -387,43 +405,24 @@ the pointwise upgrade below uses continuity (Morgan--Tian,
 `morganTian2007`, pp. 41--43; do Carmo, `doCarmo1992`, Ch. 9). -/
 theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff
     (gamma : ℝ → M) {a b : ℝ} (hab : a < b)
-    (hs : IntervalIntegrable (speed (I := I) g gamma a b) volume a b)
+    (hs : IntervalIntegrable (speed (I := I) g gamma) volume a b)
     (hs2 : IntervalIntegrable
-      (fun t => (speed (I := I) g gamma a b t) ^ 2) volume a b) :
+      (fun t => (speed (I := I) g gamma t) ^ 2) volume a b) :
     ((curveLength (I := I) g gamma a b) ^ 2 =
         2 * (b - a) * energy (I := I) g gamma a b) ↔
-      speed (I := I) g gamma a b =ᵐ[volume.restrict (Ioc a b)]
+      speed (I := I) g gamma =ᵐ[volume.restrict (Ioc a b)]
         Function.const ℝ (curveLength (I := I) g gamma a b / (b - a)) := by
   rw [curveLength_eq_integral_speed, energy_eq_half_integral_speed_sq]
   convert sq_intervalIntegral_eq_iff_ae_eq_const hab hs hs2 using 1
   all_goals ring_nf
 
-/-! ### Regularity and the geodesic speed regression -/
-
-/-- The explicit regularity package used by the interval energy statements.
-
-The `CMDiff` field is the intrinsic `C¹` path hypothesis.  The two
-`IntervalIntegrable` fields are kept separate because differentiation of the
-energy uses the squared speed while the length inequality uses both speed and
-its square. -/
-structure CurveRegularity
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) (a b : ℝ) : Prop where
-  interval_order : a ≤ b
-  smoothOn : CMDiff[Icc a b] 1 gamma
-  speed_integrable :
-    IntervalIntegrable (speed (I := I) g gamma a b) volume a b
-  speedSq_integrable :
-    IntervalIntegrable
-      (fun t => (speed (I := I) g gamma a b t) ^ 2) volume a b
-
 /-- A smooth-speed version of the equality characterization. -/
 theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_of_continuousOn
     (gamma : ℝ → M) {a b : ℝ} (hab : a < b)
-    (hs : ContinuousOn (speed (I := I) g gamma a b) (Icc a b)) :
+    (hs : ContinuousOn (speed (I := I) g gamma) (Icc a b)) :
     ((curveLength (I := I) g gamma a b) ^ 2 =
         2 * (b - a) * energy (I := I) g gamma a b) ↔
-      speed (I := I) g gamma a b =ᵐ[volume.restrict (Ioc a b)]
+      speed (I := I) g gamma =ᵐ[volume.restrict (Ioc a b)]
         Function.const ℝ (curveLength (I := I) g gamma a b / (b - a)) := by
   apply curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff (I := I) g gamma hab
   · exact hs.intervalIntegrable_of_Icc hab.le
@@ -433,16 +432,16 @@ theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_of_continuousOn
 pointwise constant norm of the velocity (including the endpoint values). -/
 theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_constOn
     (gamma : ℝ → M) {a b : ℝ} (hab : a < b)
-    (hs : ContinuousOn (speed (I := I) g gamma a b) (Icc a b)) :
+    (hs : ContinuousOn (speed (I := I) g gamma) (Icc a b)) :
     ((curveLength (I := I) g gamma a b) ^ 2 =
         2 * (b - a) * energy (I := I) g gamma a b) ↔
-      ∃ c : ℝ, ∀ t ∈ Icc a b, speed (I := I) g gamma a b t = c := by
+      ∃ c : ℝ, ∀ t ∈ Icc a b, speed (I := I) g gamma t = c := by
   have hbase := curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_of_continuousOn
     (I := I) g gamma hab hs
   constructor
   · intro heq
     have haeIoc := hbase.mp heq
-    have haeIcc : speed (I := I) g gamma a b =ᵐ[volume.restrict (Icc a b)]
+    have haeIcc : speed (I := I) g gamma =ᵐ[volume.restrict (Icc a b)]
         Function.const ℝ (curveLength (I := I) g gamma a b / (b - a)) := by
       rw [Measure.restrict_congr_set (μ := volume) Ioc_ae_eq_Icc] at haeIoc
       exact haeIoc
@@ -450,14 +449,14 @@ theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_constOn
     exact Measure.eqOn_Icc_of_ae_eq volume hab.ne haeIcc hs continuousOn_const
   · rintro ⟨c, hc⟩
     rw [curveLength_eq_integral_speed, energy_eq_half_integral_speed_sq]
-    have hEq : EqOn (speed (I := I) g gamma a b)
+    have hEq : EqOn (speed (I := I) g gamma)
         (fun _ : ℝ => c) (uIcc a b) := by
       intro t ht
       exact hc t (by simpa [uIcc_of_le hab.le] using ht)
-    have hEq2 : EqOn (fun t => (speed (I := I) g gamma a b t) ^ 2)
+    have hEq2 : EqOn (fun t => (speed (I := I) g gamma t) ^ 2)
         (fun _ : ℝ => c ^ 2) (uIcc a b) := by
       intro t ht
-      change (speed (I := I) g gamma a b t) ^ 2 = c ^ 2
+      change (speed (I := I) g gamma t) ^ 2 = c ^ 2
       rw [hc t (by simpa [uIcc_of_le hab.le] using ht)]
     rw [intervalIntegral.integral_congr hEq,
       intervalIntegral.integral_congr hEq2,
@@ -469,16 +468,16 @@ interval (Morgan--Tian, `morganTian2007`, pp. 41--43).  This is separated
 from the positive-length theorem so its denominator remains visibly nonzero. -/
 theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_constOn_of_le
     (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
-    (hs : ContinuousOn (speed (I := I) g gamma a b) (Icc a b)) :
+    (hs : ContinuousOn (speed (I := I) g gamma) (Icc a b)) :
     ((curveLength (I := I) g gamma a b) ^ 2 =
         2 * (b - a) * energy (I := I) g gamma a b) ↔
-      ∃ c : ℝ, ∀ t ∈ Icc a b, speed (I := I) g gamma a b t = c := by
+      ∃ c : ℝ, ∀ t ∈ Icc a b, speed (I := I) g gamma t = c := by
   rcases hab.eq_or_lt with rfl | hlt
   · simp only [sub_self, mul_zero, curveLength, intervalIntegral.integral_same,
       pow_two, energy]
     constructor
     · intro _
-      refine ⟨speed (I := I) g gamma a a a, ?_⟩
+      refine ⟨speed (I := I) g gamma a, ?_⟩
       intro t ht
       have hta : t = a := by simpa using ht
       simp [hta]
@@ -492,18 +491,18 @@ energy/length inequality, including the degenerate interval case (Morgan--Tian,
 `morganTian2007`, pp. 41--43). -/
 theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_of_const_speed
     (gamma : ℝ → M) {a b c : ℝ} (hab : a ≤ b)
-    (hconst : ∀ t ∈ Icc a b, speed (I := I) g gamma a b t = c) :
+    (hconst : ∀ t ∈ Icc a b, speed (I := I) g gamma t = c) :
     (curveLength (I := I) g gamma a b) ^ 2 =
       2 * (b - a) * energy (I := I) g gamma a b := by
   rw [curveLength_eq_integral_speed, energy_eq_half_integral_speed_sq]
-  have hEq : EqOn (speed (I := I) g gamma a b)
+  have hEq : EqOn (speed (I := I) g gamma)
       (fun _ : ℝ => c) (uIcc a b) := by
     intro t ht
     exact hconst t (by simpa [uIcc_of_le hab] using ht)
-  have hEq2 : EqOn (fun t => (speed (I := I) g gamma a b t) ^ 2)
+  have hEq2 : EqOn (fun t => (speed (I := I) g gamma t) ^ 2)
       (fun _ : ℝ => c ^ 2) (uIcc a b) := by
     intro t ht
-    change (speed (I := I) g gamma a b t) ^ 2 = c ^ 2
+    change (speed (I := I) g gamma t) ^ 2 = c ^ 2
     rw [hconst t (by simpa [uIcc_of_le hab] using ht)]
   rw [intervalIntegral.integral_congr hEq,
     intervalIntegral.integral_congr hEq2,
@@ -514,13 +513,13 @@ theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_of_const_speed
 norm of the intrinsic velocity in the canonical metric bundle. -/
 theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_const_norm_velocity
     (gamma : ℝ → M) {a b : ℝ} (hab : a < b)
-    (hs : ContinuousOn (speed (I := I) g gamma a b) (Icc a b)) :
+    (hs : ContinuousOn (speed (I := I) g gamma) (Icc a b)) :
     letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
     ((curveLength (I := I) g gamma a b) ^ 2 =
         2 * (b - a) * energy (I := I) g gamma a b) ↔
       ∃ c : ℝ, ∀ t ∈ Icc a b,
-        ‖velocity (I := I) gamma a b t‖ = c := by
+        ‖velocity (I := I) gamma t‖ = c := by
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   have hbase := curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_constOn
@@ -530,25 +529,25 @@ theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_const_norm_velocit
     rcases hbase.mp h with ⟨c, hc⟩
     refine ⟨c, ?_⟩
     intro t ht
-    simpa [speed_eq_norm_velocity (I := I) g gamma a b t] using hc t ht
+    simpa [speed_eq_norm_velocity (I := I) g gamma t] using hc t ht
   · rintro ⟨c, hc⟩
     apply hbase.mpr
     refine ⟨c, ?_⟩
     intro t ht
-    simpa [speed_eq_norm_velocity (I := I) g gamma a b t] using hc t ht
+    simpa [speed_eq_norm_velocity (I := I) g gamma t] using hc t ht
 
 /-- The same norm-velocity equality characterization, including a degenerate
 interval.  The positive-length theorem above is retained separately so its
 strict denominator hypothesis remains visible. -/
 theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_const_norm_velocity_of_le
     (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
-    (hs : ContinuousOn (speed (I := I) g gamma a b) (Icc a b)) :
+    (hs : ContinuousOn (speed (I := I) g gamma) (Icc a b)) :
     letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
     ((curveLength (I := I) g gamma a b) ^ 2 =
         2 * (b - a) * energy (I := I) g gamma a b) ↔
       ∃ c : ℝ, ∀ t ∈ Icc a b,
-        ‖velocity (I := I) gamma a b t‖ = c := by
+        ‖velocity (I := I) gamma t‖ = c := by
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   have hbase := curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_constOn_of_le
@@ -558,25 +557,27 @@ theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_const_norm_velocit
     rcases hbase.mp h with ⟨c, hc⟩
     refine ⟨c, ?_⟩
     intro t ht
-    simpa [speed_eq_norm_velocity (I := I) g gamma a b t] using hc t ht
+    simpa [speed_eq_norm_velocity (I := I) g gamma t] using hc t ht
   · rintro ⟨c, hc⟩
     apply hbase.mpr
     refine ⟨c, ?_⟩
     intro t ht
-    simpa [speed_eq_norm_velocity (I := I) g gamma a b t] using hc t ht
+    simpa [speed_eq_norm_velocity (I := I) g gamma t] using hc t ht
 
-/-- A typed intrinsic acceleration contract.  The acceleration is intended to
-be supplied by the S18 connection/geodesic producer; this module stores no
-coordinate acceleration and does not define a competing geodesic predicate. -/
+/-- A typed, curve-level intrinsic acceleration contract.  Its acceleration is
+indexed only by the base curve and interval, independently of any variation;
+it is intended to be supplied by the S18 connection/geodesic producer.  This
+module stores no coordinate acceleration and does not define a competing
+geodesic predicate. -/
 structure CovariantAccelerationData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (a b : ℝ) : Type _ where
   acceleration : ∀ t, TangentSpace I (gamma t)
   speedSq_continuous :
-    ContinuousOn (speedSq (I := I) g gamma a b) (Icc a b)
+    ContinuousOn (speedSq (I := I) g gamma) (Icc a b)
   speedSq_deriv : ∀ t ∈ Ioo a b,
-    HasDerivAt (fun s => speedSq (I := I) g gamma a b s)
-      (2 * g.inner (gamma t) (velocity (I := I) gamma a b t) (acceleration t)) t
+    HasDerivAt (fun s => speedSq (I := I) g gamma s)
+      (2 * g.inner (gamma t) (velocity (I := I) gamma t) (acceleration t)) t
 
 section CanonicalConnection
 
@@ -591,7 +592,7 @@ structure VelocityExtension (gamma : ℝ → M) (a b : ℝ) : Type _ where
   field : ∀ x : M, TangentSpace I x
   mdifferentiable : MDiff (T% field)
   agrees : ∀ t ∈ uIcc a b,
-    field (gamma t) = velocity (I := I) gamma a b t
+    field (gamma t) = velocityWithin (I := I) gamma a b t
 
 /-- Covariant differentiation of the supplied velocity section by the canonical
 Levi--Civita connection.  The argument order is `∇_velocity velocity`. -/
@@ -601,7 +602,7 @@ noncomputable def canonicalAcceleration
     (X : VelocityExtension (I := I) gamma a b) (t : ℝ) :
     TangentSpace I (gamma t) :=
   Connection.leviCivitaConnection g X.field (gamma t)
-    (velocity (I := I) gamma a b t)
+    (velocityWithin (I := I) gamma a b t)
 
 /-- A covariant-acceleration package whose connection-side value is explicit. -/
 structure CanonicalAccelerationData
@@ -612,11 +613,15 @@ structure CanonicalAccelerationData
   acceleration_eq : ∀ t ∈ uIcc a b,
     acceleration t = canonicalAcceleration g extension t
   speedSq_continuous :
-    ContinuousOn (speedSq (I := I) g gamma a b) (Icc a b)
+    ContinuousOn (speedSq (I := I) g gamma) (Icc a b)
   speedSq_deriv : ∀ t ∈ Ioo a b,
-    HasDerivAt (fun s => speedSq (I := I) g gamma a b s)
-      (2 * g.inner (gamma t) (velocity (I := I) gamma a b t) (acceleration t)) t
+    HasDerivAt (fun s => speedSq (I := I) g gamma s)
+      (2 * g.inner (gamma t) (velocity (I := I) gamma t) (acceleration t)) t
 
+/-- Forget the explicit Levi--Civita extension fields and retain the
+acceleration and squared-speed derivative data as a generic
+`CovariantAccelerationData` package.  This conversion does not create an
+along-curve derivative producer. -/
 def CanonicalAccelerationData.toCovariant
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
     {gamma : ℝ → M} {a b : ℝ}
@@ -634,9 +639,9 @@ the derivative order and endpoint orientation visible. -/
 theorem speedSq_eq_of_zero_acceleration
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b : ℝ} (hacc : CovariantAccelerationData g gamma a b)
-    (hab : a ≤ b) (hzero : ∀ t ∈ Icc a b, hacc.acceleration t = 0) :
+    (_hab : a ≤ b) (hzero : ∀ t ∈ Ioo a b, hacc.acceleration t = 0) :
     ∀ t₁ t₂, t₁ ∈ Icc a b → t₂ ∈ Icc a b →
-      speedSq (I := I) g gamma a b t₁ = speedSq (I := I) g gamma a b t₂ := by
+      speedSq (I := I) g gamma t₁ = speedSq (I := I) g gamma t₂ := by
   intro t₁ t₂ ht₁ ht₂
   let lo := min t₁ t₂
   let hi := max t₁ t₂
@@ -647,23 +652,18 @@ theorem speedSq_eq_of_zero_acceleration
   have hsub : Icc lo hi ⊆ Icc a b := by
     intro t ht
     exact ⟨hlo.1.trans ht.1, ht.2.trans hhi.2⟩
-  have hzero_u : ∀ t ∈ uIcc a b, hacc.acceleration t = 0 := by
-    intro t ht
-    exact hzero t (by simpa [uIcc_of_le hab] using ht)
   have hderiv : ∀ t ∈ Ioo lo hi,
-      HasDerivAt (fun s => speedSq (I := I) g gamma a b s) 0 t := by
+      HasDerivAt (fun s => speedSq (I := I) g gamma s) 0 t := by
     intro t ht
     have ht' : t ∈ Ioo a b := ⟨lt_of_le_of_lt hlo.1 ht.1,
       lt_of_lt_of_le ht.2 hhi.2⟩
-    have ht'' : t ∈ uIcc a b := by
-      simpa [uIcc_of_le hab] using hsub (mem_Icc_of_Ioo ht)
-    simpa [hzero_u t ht''] using hacc.speedSq_deriv t ht'
+    simpa [hzero t ht'] using hacc.speedSq_deriv t ht'
   have hftc := intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le
     min_le_max (hacc.speedSq_continuous.mono hsub) hderiv
     (intervalIntegrable_const : IntervalIntegrable
       (fun _ : ℝ => (0 : ℝ)) volume lo hi)
-  have hconst : speedSq (I := I) g gamma a b hi =
-      speedSq (I := I) g gamma a b lo := by
+  have hconst : speedSq (I := I) g gamma hi =
+      speedSq (I := I) g gamma lo := by
     simp only [intervalIntegral.integral_const, smul_eq_mul] at hftc
     linarith
   rcases le_total t₁ t₂ with h | h
@@ -678,23 +678,26 @@ theorem speedSq_eq_of_zero_canonical_acceleration
     [FiniteDimensional ℝ E]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b : ℝ} (hacc : CanonicalAccelerationData g gamma a b)
-    (hab : a ≤ b) (hzero : ∀ t ∈ Icc a b,
+    (hab : a ≤ b) (hzero : ∀ t ∈ Ioo a b,
       canonicalAcceleration (I := I) g hacc.extension t = 0) :
     ∀ t₁ t₂, t₁ ∈ Icc a b → t₂ ∈ Icc a b →
-      speedSq (I := I) g gamma a b t₁ = speedSq (I := I) g gamma a b t₂ := by
+      speedSq (I := I) g gamma t₁ = speedSq (I := I) g gamma t₂ := by
   apply speedSq_eq_of_zero_acceleration (I := I) g gamma hacc.toCovariant hab
   intro t ht
   change hacc.acceleration t = 0
-  rw [hacc.acceleration_eq t (by simpa [uIcc_of_le hab] using ht)]
+  have ht_u : t ∈ uIcc a b := by
+    rw [uIcc_of_le hab]
+    exact ⟨ht.1.le, ht.2.le⟩
+  rw [hacc.acceleration_eq t ht_u]
   exact hzero t ht
 
 /-- Constant squared speed on an ordered interval implies constant speed. -/
 theorem speed_eq_of_zero_acceleration_on_Icc
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b : ℝ} (hacc : CovariantAccelerationData g gamma a b)
-    (hab : a ≤ b) (hzero : ∀ t ∈ Icc a b, hacc.acceleration t = 0)
+    (hab : a ≤ b) (hzero : ∀ t ∈ Ioo a b, hacc.acceleration t = 0)
     (t₁ t₂ : ℝ) (ht₁ : t₁ ∈ Icc a b) (ht₂ : t₂ ∈ Icc a b) :
-    speed (I := I) g gamma a b t₁ = speed (I := I) g gamma a b t₂ := by
+    speed (I := I) g gamma t₁ = speed (I := I) g gamma t₂ := by
   have hsq := speedSq_eq_of_zero_acceleration (I := I) g gamma hacc
     hab hzero t₁ t₂ ht₁ ht₂
   unfold speed
@@ -708,15 +711,18 @@ theorem speed_eq_of_zero_canonical_acceleration_on_Icc
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b : ℝ} (hacc : CanonicalAccelerationData g gamma a b)
     (hab : a ≤ b)
-    (hzero : ∀ t ∈ Icc a b,
+    (hzero : ∀ t ∈ Ioo a b,
       canonicalAcceleration (I := I) g hacc.extension t = 0)
     (t₁ t₂ : ℝ) (ht₁ : t₁ ∈ Icc a b) (ht₂ : t₂ ∈ Icc a b) :
-    speed (I := I) g gamma a b t₁ = speed (I := I) g gamma a b t₂ := by
+    speed (I := I) g gamma t₁ = speed (I := I) g gamma t₂ := by
   refine speed_eq_of_zero_acceleration_on_Icc (I := I) g gamma hacc.toCovariant hab ?_
       t₁ t₂ ht₁ ht₂
   intro t ht
   change hacc.acceleration t = 0
-  rw [hacc.acceleration_eq t (by simpa [uIcc_of_le hab] using ht)]
+  have ht_u : t ∈ uIcc a b := by
+    rw [uIcc_of_le hab]
+    exact ⟨ht.1.le, ht.2.le⟩
+  rw [hacc.acceleration_eq t ht_u]
   exact hzero t ht
 
 /-- A zero-acceleration package supplies a single pointwise speed on the whole
@@ -724,9 +730,9 @@ ordered interval. -/
 theorem exists_const_speed_of_zero_acceleration_on_Icc
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b : ℝ} (hacc : CovariantAccelerationData g gamma a b)
-    (hab : a ≤ b) (hzero : ∀ t ∈ Icc a b, hacc.acceleration t = 0) :
-    ∃ c : ℝ, ∀ t ∈ Icc a b, speed (I := I) g gamma a b t = c := by
-  refine ⟨speed (I := I) g gamma a b a, ?_⟩
+    (hab : a ≤ b) (hzero : ∀ t ∈ Ioo a b, hacc.acceleration t = 0) :
+    ∃ c : ℝ, ∀ t ∈ Icc a b, speed (I := I) g gamma t = c := by
+  refine ⟨speed (I := I) g gamma a, ?_⟩
   intro t ht
   exact speed_eq_of_zero_acceleration_on_Icc (I := I) g gamma hacc hab hzero
     t a ht (left_mem_Icc.2 hab)
@@ -738,10 +744,10 @@ theorem exists_const_speed_of_zero_canonical_acceleration_on_Icc
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b : ℝ} (hacc : CanonicalAccelerationData g gamma a b)
     (hab : a ≤ b)
-    (hzero : ∀ t ∈ Icc a b,
+    (hzero : ∀ t ∈ Ioo a b,
       canonicalAcceleration (I := I) g hacc.extension t = 0) :
-    ∃ c : ℝ, ∀ t ∈ Icc a b, speed (I := I) g gamma a b t = c := by
-  refine ⟨speed (I := I) g gamma a b a, ?_⟩
+    ∃ c : ℝ, ∀ t ∈ Icc a b, speed (I := I) g gamma t = c := by
+  refine ⟨speed (I := I) g gamma a, ?_⟩
   intro t ht
   exact speed_eq_of_zero_canonical_acceleration_on_Icc (I := I) g gamma hacc hab hzero
     t a ht (left_mem_Icc.2 hab)
@@ -751,10 +757,10 @@ theorem energy_eq_half_interval_mul_of_speedSq_eq_const
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b c : ℝ} (hab : a ≤ b)
     (hconst : ∀ t ∈ Icc a b,
-      speedSq (I := I) g gamma a b t = c ^ 2) :
+      speedSq (I := I) g gamma t = c ^ 2) :
     energy (I := I) g gamma a b = (1 / 2 : ℝ) * (b - a) * c ^ 2 := by
   unfold energy
-  have hEq : EqOn (speedSq (I := I) g gamma a b)
+  have hEq : EqOn (speedSq (I := I) g gamma)
       (fun _ : ℝ => c ^ 2) (uIcc a b) := by
     intro t ht
     exact hconst t (by simpa [uIcc_of_le hab] using ht)
@@ -766,7 +772,7 @@ theorem energy_eq_half_interval_mul_of_speedSq_eq_const
 has exactly the normalized energy `1/2 * interval length * speed²`.  This is
 the flat affine model used to check the normalization without introducing a
 second metric bundle. -/
-theorem euclidean_straightLine_energy_density (a b v : ℝ) (_hab : a ≤ b) :
+private theorem euclidean_straightLine_energy_density (a b v : ℝ) (_hab : a ≤ b) :
     (1 / 2 : ℝ) * (∫ _t in a..b, v ^ 2) =
       (1 / 2 : ℝ) * (b - a) * v ^ 2 := by
   rw [intervalIntegral.integral_const]
@@ -778,8 +784,8 @@ theorem euclidean_straightLine_energy_density (a b v : ℝ) (_hab : a ≤ b) :
 constant slope. -/
 private theorem euclidean_straightLine_velocity (p v : ℝ) {a b t : ℝ}
     (hab : a < b) (ht : t ∈ Icc a b) :
-    velocity (I := 𝓘(ℝ, ℝ)) (fun s : ℝ => p + s * v) a b t = v := by
-  rw [velocity, mfderivWithin_eq_fderivWithin]
+    velocityWithin (I := 𝓘(ℝ, ℝ)) (fun s : ℝ => p + s * v) a b t = v := by
+  rw [velocityWithin, mfderivWithin_eq_fderivWithin]
   change (fderivWithin ℝ (fun s : ℝ => p + s * v) (Icc a b) t) 1 = v
   have hd : HasDerivAt (fun s : ℝ => p + s * v) v t := by
     simpa using ((hasDerivAt_id t).mul_const v).const_add p
@@ -787,22 +793,30 @@ private theorem euclidean_straightLine_velocity (p v : ℝ) {a b t : ℝ}
     ((uniqueDiffOn_Icc hab).uniqueDiffWithinAt ht)]
   simp
 
+private theorem euclidean_straightLine_velocity_unrestricted (p v t : ℝ) :
+    velocity (I := 𝓘(ℝ, ℝ)) (fun s : ℝ => p + s * v) t = v := by
+  rw [velocity, mfderiv_eq_fderiv]
+  change (fderiv ℝ (fun s : ℝ => p + s * v) t) 1 = v
+  have hd : HasDerivAt (fun s : ℝ => p + s * v) v t := by
+    simpa using ((hasDerivAt_id t).mul_const v).const_add p
+  rw [hd.hasFDerivAt.fderiv]
+  simp
+
 /-- The affine real line has the expected Euclidean squared speed. -/
-private theorem euclidean_straightLine_speedSq (p v : ℝ) {a b t : ℝ}
-    (hab : a < b) (ht : t ∈ Icc a b) :
+private theorem euclidean_straightLine_speedSq (p v : ℝ) (t : ℝ) :
     let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, ℝ) ∞ ℝ
         (fun x : ℝ => TangentSpace 𝓘(ℝ, ℝ) x) :=
       { riemannianMetricVectorSpace ℝ with
         contMDiff := (riemannianMetricVectorSpace ℝ).contMDiff.of_le (by simp) }
-    speedSq (I := 𝓘(ℝ, ℝ)) g (fun s : ℝ => p + s * v) a b t = v ^ 2 := by
+    speedSq (I := 𝓘(ℝ, ℝ)) g (fun s : ℝ => p + s * v) t = v ^ 2 := by
   dsimp
-  rw [speedSq, euclidean_straightLine_velocity p v hab ht]
+  rw [speedSq, euclidean_straightLine_velocity_unrestricted p v t]
   change inner ℝ v v = v ^ 2
   simp
 
 /-- The concrete Euclidean straight line has the normalized energy
 `(1/2) * (b-a) * v^2`. -/
-private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (hab : a < b) :
+private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (_hab : a < b) :
     let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, ℝ) ∞ ℝ
         (fun x : ℝ => TangentSpace 𝓘(ℝ, ℝ) x) :=
       { riemannianMetricVectorSpace ℝ with
@@ -815,11 +829,11 @@ private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (hab : a <
       (speedSq (I := 𝓘(ℝ, ℝ))
         ({ riemannianMetricVectorSpace ℝ with
           contMDiff := (riemannianMetricVectorSpace ℝ).contMDiff.of_le (by simp) })
-        (fun s : ℝ => p + s * v) a b)
+        (fun s : ℝ => p + s * v))
       (fun _ : ℝ => v ^ 2) (uIcc a b) := by
     intro t ht
-    rw [uIcc_of_le hab.le] at ht
-    exact euclidean_straightLine_speedSq p v hab ht
+    rw [uIcc_of_le _hab.le] at ht
+    exact euclidean_straightLine_speedSq p v t
   rw [intervalIntegral.integral_congr hEq, intervalIntegral.integral_const]
   simp [smul_eq_mul]
   ring
@@ -828,10 +842,10 @@ private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (hab : a <
 theorem energy_eq_zero_of_velocity_eq_zero
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
-    (hzero : ∀ t ∈ Icc a b, velocity (I := I) gamma a b t = 0) :
+    (hzero : ∀ t ∈ Icc a b, velocity (I := I) gamma t = 0) :
     energy (I := I) g gamma a b = 0 := by
   unfold energy
-  have hEq : EqOn (speedSq (I := I) g gamma a b)
+  have hEq : EqOn (speedSq (I := I) g gamma)
       (fun _ : ℝ => (0 : ℝ)) (uIcc a b) := by
     intro t ht
     rw [speedSq]
@@ -842,53 +856,53 @@ theorem energy_eq_zero_of_velocity_eq_zero
 /-- Pointwise sign regression valid for a nonconstant metric as well as a
 constant one: positive definiteness, not metric constancy, controls every
 energy density. -/
-theorem nonconstant_metric_sign_probe
+private theorem nonconstant_metric_sign_probe
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) (a b t : ℝ) :
-    0 ≤ g.inner (gamma t) (velocity (I := I) gamma a b t)
-      (velocity (I := I) gamma a b t) :=
-  speedSq_nonneg (I := I) g gamma a b t
+    (gamma : ℝ → M) (t : ℝ) :
+    0 ≤ g.inner (gamma t) (velocity (I := I) gamma t)
+      (velocity (I := I) gamma t) :=
+  speedSq_nonneg (I := I) g gamma t
 
 /-- Strict positivity at a nonzero velocity, valid for a metric that varies
 with the base point as well as for a constant Euclidean metric. -/
-theorem metric_sign_probe_of_nonzero_velocity
+private theorem metric_sign_probe_of_nonzero_velocity
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) (a b t : ℝ)
-    (hv : velocity (I := I) gamma a b t ≠ 0) :
-    0 < g.inner (gamma t) (velocity (I := I) gamma a b t)
-      (velocity (I := I) gamma a b t) :=
+    (gamma : ℝ → M) (t : ℝ)
+    (hv : velocity (I := I) gamma t ≠ 0) :
+    0 < g.inner (gamma t) (velocity (I := I) gamma t)
+      (velocity (I := I) gamma t) :=
   g.pos (gamma t) _ hv
 
 /-! ### Reparameterization and variation contracts -/
 
-/-- Positive affine reparameterization of a curve scales energy by its speed
-factor.  `density_eq` is the manifold chain-rule witness: it is intentionally
-visible because the current Mathlib connection layer has no along-curve
-derivative producer. -/
+/-- A density-scaling helper for a positive affine change of variables.
+`density_eq` is the manifold chain-rule witness: it is intentionally visible
+because the current Mathlib connection layer has no along-curve derivative
+producer.  The composition hypothesis that identifies `delta` with the
+reparameterized curve is supplied by
+`energy_affine_reparam_of_composition`, not by this density-only theorem. -/
 theorem energy_affine_reparam_of_density
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma delta : ℝ → M} {a b alpha beta : ℝ} (hab : a ≤ b) (halpha : 0 < alpha)
     (density_eq : ∀ t ∈ uIcc a b,
-      speedSq (I := I) g delta a b t =
-        alpha ^ 2 * speedSq (I := I) g gamma
-          (alpha * a + beta) (alpha * b + beta) (alpha * t + beta))
+      speedSq (I := I) g delta t =
+        alpha ^ 2 * speedSq (I := I) g gamma (alpha * t + beta))
     (hgamma : ContinuousOn
-      (speedSq (I := I) g gamma (alpha * a + beta) (alpha * b + beta))
+      (speedSq (I := I) g gamma)
       (Icc (alpha * a + beta) (alpha * b + beta))) :
     energy (I := I) g delta a b =
       alpha * energy (I := I) g gamma (alpha * a + beta) (alpha * b + beta) := by
   unfold energy
-  have hEq : EqOn (speedSq (I := I) g delta a b)
-      (fun t => alpha ^ 2 * speedSq (I := I) g gamma
-        (alpha * a + beta) (alpha * b + beta) (alpha * t + beta)) (uIcc a b) := by
+  have hEq : EqOn (speedSq (I := I) g delta)
+      (fun t => alpha ^ 2 * speedSq (I := I) g gamma (alpha * t + beta))
+      (uIcc a b) := by
     intro t ht
     exact density_eq t ht
   have hchange :
       (∫ t in a..b,
-        (speedSq (I := I) g gamma (alpha * a + beta) (alpha * b + beta) ∘
-          (fun x : ℝ => alpha * x + beta)) t * alpha) =
+        (speedSq (I := I) g gamma ∘ (fun x : ℝ => alpha * x + beta)) t * alpha) =
         ∫ t in alpha * a + beta..alpha * b + beta,
-          speedSq (I := I) g gamma (alpha * a + beta) (alpha * b + beta) t := by
+          speedSq (I := I) g gamma t := by
     apply intervalIntegral.integral_comp_mul_deriv'
     · intro x hx
       simpa [Function.comp_def] using
@@ -900,20 +914,17 @@ theorem energy_affine_reparam_of_density
       constructor <;> nlinarith [ht.1, ht.2, halpha]
   have hscale :
       (∫ t in a..b, alpha ^ 2 *
-        speedSq (I := I) g gamma (alpha * a + beta) (alpha * b + beta)
-          (alpha * t + beta)) =
+        speedSq (I := I) g gamma (alpha * t + beta)) =
         alpha * (∫ t in a..b,
-          speedSq (I := I) g gamma (alpha * a + beta) (alpha * b + beta)
-            (alpha * t + beta) * alpha) := by
+          speedSq (I := I) g gamma (alpha * t + beta) * alpha) := by
     rw [intervalIntegral.integral_const_mul, intervalIntegral.integral_mul_const]
     ring
   rw [intervalIntegral.integral_congr hEq, hscale]
   have hchange' :
       (∫ t in a..b,
-        speedSq (I := I) g gamma (alpha * a + beta) (alpha * b + beta)
-          (alpha * t + beta) * alpha) =
+        speedSq (I := I) g gamma (alpha * t + beta) * alpha) =
         ∫ t in alpha * a + beta..alpha * b + beta,
-          speedSq (I := I) g gamma (alpha * a + beta) (alpha * b + beta) t := by
+          speedSq (I := I) g gamma t := by
     simpa [Function.comp_def] using hchange
   rw [hchange']
   ring
@@ -926,11 +937,10 @@ theorem energy_affine_reparam_of_composition
     {gamma delta : ℝ → M} {a b alpha beta : ℝ} (hab : a ≤ b) (halpha : 0 < alpha)
     (hdelta : delta = gamma ∘ (fun t : ℝ => alpha * t + beta))
     (density_eq : ∀ t ∈ uIcc a b,
-      speedSq (I := I) g (gamma ∘ (fun t : ℝ => alpha * t + beta)) a b t =
-        alpha ^ 2 * speedSq (I := I) g gamma
-          (alpha * a + beta) (alpha * b + beta) (alpha * t + beta))
+      speedSq (I := I) g (gamma ∘ (fun t : ℝ => alpha * t + beta)) t =
+        alpha ^ 2 * speedSq (I := I) g gamma (alpha * t + beta))
     (hgamma : ContinuousOn
-      (speedSq (I := I) g gamma (alpha * a + beta) (alpha * b + beta))
+      (speedSq (I := I) g gamma)
       (Icc (alpha * a + beta) (alpha * b + beta))) :
     energy (I := I) g delta a b =
       alpha * energy (I := I) g gamma (alpha * a + beta) (alpha * b + beta) := by
@@ -1038,9 +1048,9 @@ noncomputable def variationEnergy
     (V : SmoothVariation (I := I) gamma a b epsilon) (s : ℝ) : ℝ :=
   energy (I := I) g (fun t => V.family s t) a b
 
-/-- The zero slice has the prescribed curve energy.  The derivative congruence
-uses Mathlib's `mfderivWithin_congr_of_mem`; endpoint equality alone would not
-justify this identity because `velocity` is interval-restricted. -/
+/-- The zero slice has the prescribed curve energy.  The unrestricted density
+is compared on the open interval, where the zero-slice equality supplies the
+needed neighborhood congruence; endpoint values are null for the integral. -/
 theorem variationEnergy_zero_eq_energy
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
@@ -1048,34 +1058,32 @@ theorem variationEnergy_zero_eq_energy
     variationEnergy (I := I) g V 0 = energy (I := I) g gamma a b := by
   rw [variationEnergy, energy, energy]
   congr 1
-  apply intervalIntegral.integral_congr
+  apply intervalIntegral.integral_congr_Ioo_of_le V.interval_order
   intro t ht
-  have ht' : t ∈ Icc a b := by
-    simpa [uIcc_of_le V.interval_order] using ht
-  have hderiv := mfderivWithin_congr_of_mem (I := 𝓘(ℝ, ℝ)) (I' := I)
-    (f₁ := baseCurve V) (f := gamma) (s := Icc a b)
-    (fun x hx => V.zero_slice x hx) ht'
-  change speedSq (I := I) g (baseCurve V) a b t =
-    speedSq (I := I) g gamma a b t
-  rw [speedSq, velocity, hderiv, baseCurve_eq_gamma_on V t ht']
-  rfl
+  have hlocal : baseCurve V =ᶠ[𝓝 t] gamma := by
+    filter_upwards [Icc_mem_nhds ht.1 ht.2] with x hx
+    exact V.zero_slice x hx
+  change speedSq (I := I) g (baseCurve V) t =
+    speedSq (I := I) g gamma t
+  simp only [speedSq, velocity]
+  rw [hlocal.mfderiv_eq, hlocal.self_of_nhds]
 
 /-- The metric pairing of the variational field and base velocity. -/
 noncomputable def variationPairing
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
-    (V : SmoothVariation (I := I) gamma a b epsilon) (t : ℝ) : ℝ :=
+  (V : SmoothVariation (I := I) gamma a b epsilon) (t : ℝ) : ℝ :=
   g.inner (baseCurve V t) (variationalVectorField V t)
-    (velocity (I := I) (baseCurve V) a b t)
+    (velocityWithin (I := I) (baseCurve V) a b t)
 
 /-- Pairing of a supplied covariant derivative with the base velocity. -/
 noncomputable def covariantPairing
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
-    (V : SmoothVariation (I := I) gamma a b epsilon)
+  (V : SmoothVariation (I := I) gamma a b epsilon)
     (D : ∀ t, TangentSpace I (baseCurve V t)) (t : ℝ) : ℝ :=
   g.inner (baseCurve V t) (D t)
-    (velocity (I := I) (baseCurve V) a b t)
+    (velocity (I := I) (baseCurve V) t)
 
 /-- Pairing of the variational field with a supplied covariant acceleration. -/
 noncomputable def accelerationPairing
@@ -1130,41 +1138,18 @@ theorem endpointVectorsZero_of_fixed_endpoints
 
 /-! ### Differentiation under the integral and first variation -/
 
-/-- Pinned Mathlib differentiation-under-the-integral contract.
-
-This wrapper keeps the measurable, integrable, dominated, and pointwise
-`HasDerivAt` hypotheses in the public API.  It is the exact
-`intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le`
-(`ParametricIntervalIntegral.lean`) used to construct the `energy_deriv`
-field below. -/
-theorem hasDerivAt_intervalIntegral_of_dominated_loc
-    {F F' : ℝ → ℝ → ℝ} {a b x₀ : ℝ} {s : Set ℝ}
-    (hs : s ∈ 𝓝 x₀)
-    (hF_meas : ∀ᶠ x : ℝ in 𝓝 x₀,
-      AEStronglyMeasurable (F x) (volume.restrict (uIoc a b)))
-    (hF_int : IntervalIntegrable (F x₀) volume a b)
-    (hF'_meas : AEStronglyMeasurable (F' x₀)
-      (volume.restrict (uIoc a b)))
-    {bound : ℝ → ℝ}
-    (h_bound : ∀ᵐ t ∂volume, t ∈ uIoc a b → ∀ x ∈ s, ‖F' x t‖ ≤ bound t)
-    (bound_integrable : IntervalIntegrable bound volume a b)
-    (h_diff : ∀ᵐ t ∂volume, t ∈ uIoc a b → ∀ x ∈ s,
-      HasDerivAt (fun x => F x t) (F' x t) x) :
-    IntervalIntegrable (F' x₀) volume a b ∧
-      HasDerivAt (fun x => ∫ t in a..b, F x t) (∫ t in a..b, F' x₀ t) x₀ :=
-  intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le
-    hs hF_meas hF_int hF'_meas h_bound bound_integrable h_diff
-
 /-- All analytic data needed for the intrinsic first variation (Morgan--Tian,
 `morganTian2007`, pp. 41--43; do Carmo, `doCarmo1992`, Ch. 9, Sections 2--3).
 
-`energy_deriv_eq_integral` is where the preceding dominated-integral theorem,
-metric compatibility, and the mixed-partial/connection bridge are supplied.
+`energy_deriv_eq_integral` is the supplied differentiation-under-the-integral,
+metric-compatibility, and mixed-partial/connection bridge.
 The factor `1/2` in the energy cancels the `2` from differentiating the
 metric square, leaving the unhalved pairing below.
 The fields are deliberately witnesses rather than axioms hidden in a theorem:
 they expose exactly which regularity remains to be discharged by the S18
-geodesic producer. -/
+geodesic producer.  In particular, `acceleration` is local to this variation;
+this structure does not claim that it is the single curve-level acceleration
+used by the fundamental lemma. -/
 structure FirstVariationData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
@@ -1293,28 +1278,20 @@ theorem isEnergyCritical_iff_energyDerivative_eq_zero
     change HasDerivAt (variationEnergy (I := I) g V) 0 0
     simpa [h] using D.energy_deriv
 
-/-- The intrinsic acceleration-zero predicate attached to a first-variation
-data package.  Its interval and regularity hypotheses are explicit. -/
+/-- The intrinsic acceleration-zero predicate on the open curve interior.
+Endpoint acceleration values are deliberately excluded because the derivative
+and interval-integral contracts are insensitive to null endpoint changes. -/
 def IsZeroCovariantAcceleration
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
     {V : SmoothVariation (I := I) gamma a b epsilon}
     (D : FirstVariationData (I := I) g V) : Prop :=
-  ∀ t ∈ Icc a b, D.acceleration t = 0
-
-/-- The S18/fundamental-lemma witness needed for the converse criticality
-direction.  It is separated from `FirstVariationData` so a future S18 module
-can supply it without changing the endpoint/sign contract here. -/
-structure FixedEndpointCriticalityWitness
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    {gamma : ℝ → M} {a b epsilon : ℝ}
-    (V : SmoothVariation (I := I) gamma a b epsilon)
-    (D : FirstVariationData (I := I) g V) : Prop where
-  zero_of_critical :
-    IsEnergyCritical (I := I) g V → IsZeroCovariantAcceleration (I := I) g D
+  ∀ t ∈ Ioo a b, D.acceleration t = 0
 
 /-- Zero intrinsic acceleration implies criticality for a fixed-endpoint
-variation. -/
+variation.  This is intentionally a one-way, variation-local statement: it
+does not identify `D.acceleration` with the curve-level
+`CovariantAccelerationData` used by the future S18 fundamental-lemma proof. -/
 theorem isEnergyCritical_of_zero_covariantAcceleration
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
@@ -1327,36 +1304,20 @@ theorem isEnergyCritical_of_zero_covariantAcceleration
   have hacc : (∫ t in a..b,
       accelerationPairing (I := I) g V D.acceleration t) = 0 := by
     have hEq : EqOn (fun t => accelerationPairing (I := I) g V D.acceleration t)
-        (fun _ : ℝ => (0 : ℝ)) (uIcc a b) := by
+        (fun _ : ℝ => (0 : ℝ)) (Ioo a b) := by
       intro t ht
-      have ht' : t ∈ Icc a b := by
-        simpa [uIcc_of_le V.interval_order] using ht
-      simp [accelerationPairing, hzero t ht']
-    rw [intervalIntegral.integral_congr hEq]
+      simp [accelerationPairing, hzero t ht]
+    rw [intervalIntegral.integral_congr_Ioo_of_le V.interval_order hEq]
     simp
   rw [hacc] at hderiv
   simpa [IsEnergyCritical] using hderiv
 
-/-- Under the explicit S18 test-field witness, criticality is equivalent to
-vanishing intrinsic covariant acceleration. -/
-theorem isEnergyCritical_iff_zero_covariantAcceleration
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    {gamma : ℝ → M} {a b epsilon : ℝ}
-    {V : SmoothVariation (I := I) gamma a b epsilon}
-    (D : FirstVariationData (I := I) g V)
-    (hend : EndpointVectorsZero (I := I) V)
-    (W : FixedEndpointCriticalityWitness (I := I) g V D) :
-    IsEnergyCritical (I := I) g V ↔ IsZeroCovariantAcceleration (I := I) g D := by
-  constructor
-  · exact W.zero_of_critical
-  · exact isEnergyCritical_of_zero_covariantAcceleration (I := I) g D hend
-
-/-- All fixed-endpoint variations are critical, with the S18 producer made
-explicit as an existential data/witness package.  The predicate records
-`a ≤ b` directly, and each quantified `SmoothVariation` carries the same
-order field.  The nonempty endpoint-fixed variation premise prevents the
-universal statement from becoming vacuous for a curve that admits no such
-variation. -/
+/-- The universal fixed-endpoint criticality premise used by the future
+fundamental-lemma theorem.  This is only a premise: this module deliberately
+does not assert a converse or identify a per-variation acceleration witness
+with the curve-level `CovariantAccelerationData`.  The nonempty endpoint-fixed
+variation premise prevents the universal statement from becoming vacuous for a
+curve that admits no such variation. -/
 def AllFixedEndpointEnergyCritical
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (a b : ℝ) : Prop :=
@@ -1366,39 +1327,6 @@ def AllFixedEndpointEnergyCritical
     ∀ epsilon, ∀ V : SmoothVariation (I := I) gamma a b epsilon,
       EndpointVectorsZero (I := I) V → IsEnergyCritical (I := I) g V
 
-/-- A family of first-variation/test-field witnesses for the all-variations
-criticality statement. -/
-structure AllVariationCriticalityWitness
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) (a b : ℝ) : Prop where
-  interval_order : a ≤ b
-  variation_exists : ∃ epsilon, ∃ V : SmoothVariation (I := I) gamma a b epsilon,
-    EndpointVectorsZero (I := I) V
-  data : ∀ epsilon (V : SmoothVariation (I := I) gamma a b epsilon),
-    EndpointVectorsZero (I := I) V →
-      ∃ D : FirstVariationData (I := I) g V,
-        FixedEndpointCriticalityWitness (I := I) g V D
-
-/-- The all-variation formulation of the criticality/acceleration contract. -/
-theorem allFixedEndpointEnergyCritical_iff_zero_covariantAcceleration
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) {a b : ℝ}
-    (C : AllVariationCriticalityWitness (I := I) g gamma a b) :
-    AllFixedEndpointEnergyCritical (I := I) g gamma a b ↔
-      ∀ epsilon (V : SmoothVariation (I := I) gamma a b epsilon),
-        ∀ _hend : EndpointVectorsZero (I := I) V,
-          ∃ D : FirstVariationData (I := I) g V,
-            IsZeroCovariantAcceleration (I := I) g D := by
-  constructor
-  · rintro ⟨_, _, h⟩ epsilon V hend
-    rcases C.data epsilon V hend with ⟨D, W⟩
-    exact ⟨D, W.zero_of_critical (h epsilon V hend)⟩
-  · intro h
-    refine ⟨C.interval_order, C.variation_exists, ?_⟩
-    intro epsilon V hend
-    rcases h epsilon V hend with ⟨D, hzero⟩
-    exact isEnergyCritical_of_zero_covariantAcceleration (I := I) g D hend hzero
-
 end CurveEnergy
 
 end Variation
@@ -1406,7 +1334,7 @@ end Variation
 /-! The primitive energy names are re-exported at the geodesic ownership
 boundary.  The variation-specific contracts remain under `Geodesic.Variation`.
 -/
-export Variation (velocity speedSq speed energy curveLength speed_eq_norm_velocity)
+export Variation (velocity velocityWithin speedSq speed energy curveLength speed_eq_norm_velocity)
 
 end Geodesic
 end Ch01
