@@ -18,6 +18,11 @@ of the S18 construction.  Smooth dependence on initial data is likewise left
 to the parameter-flow slice: the pinned Mathlib ODE API supplies time
 smoothness and local uniqueness, but no joint smooth-flow theorem.
 
+The overlap kinematics include the second-order chain rule for the moving
+transition derivative.  This is the calculus input for the Christoffel
+transformation law; that metric-dependent identity and the resulting gluing
+remain separate S18 work.
+
 In a chart `alpha`, the equation is
 
 `u''^k + Gamma^k_ij (u) u'^i u'^j = 0`,
@@ -709,6 +714,52 @@ theorem geodesicChartTransition_hasFDerivAt_fderiv {alpha beta x : M}
       (extChartAt I alpha x) :=
     hcont.fderiv_right (WithTop.coe_le_coe.2 le_top)
   exact (hcont₁.differentiableAt one_ne_zero).hasFDerivAt
+
+omit [FiniteDimensional ℝ E] in
+/-- Applying the second derivative of an overlapping chart transition to a
+curve velocity gives the inhomogeneous term in the second-order chain rule.
+
+The theorem is deliberately expressed for the `alpha` chart reading.  It
+uses only the transition's source/interior hypotheses and the two ordinary
+time derivatives of that reading; no Christoffel transformation or metric
+coherence is built into the statement.  The order of the two terms follows
+`HasDerivAt.clm_apply`: `D²τ(u') u' + Dτ(u'')`.
+
+Source anchor: Morgan--Tian, Definition 1.17 and the coordinate/initial-value
+paragraph on printed p. 41 (`morganTian2007`). -/
+theorem chartReading_transition_deriv_fderiv_apply_hasDerivAt
+    {alpha beta : M} {gamma : ℝ → M} {t : ℝ}
+    (hα : gamma t ∈ (chartAt H alpha).source)
+    (hβ : gamma t ∈ (chartAt H beta).source)
+    (hx : I.IsInteriorPoint (gamma t))
+    (hfirst : HasDerivAt (chartReading (I := I) alpha gamma)
+      (deriv (chartReading (I := I) alpha gamma) t) t)
+    (hsecond : HasDerivAt (deriv (chartReading (I := I) alpha gamma))
+      (deriv (deriv (chartReading (I := I) alpha gamma)) t) t) :
+    HasDerivAt
+      (fun s ↦
+        (fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+          (chartReading (I := I) alpha gamma s))
+          (deriv (chartReading (I := I) alpha gamma) s))
+      (fderiv ℝ (fderiv ℝ (geodesicChartTransition (I := I) alpha beta))
+          (chartReading (I := I) alpha gamma t)
+          (deriv (chartReading (I := I) alpha gamma) t)
+          (deriv (chartReading (I := I) alpha gamma) t)
+        + fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+          (chartReading (I := I) alpha gamma t)
+          (deriv (deriv (chartReading (I := I) alpha gamma)) t)) t := by
+  have hτ₂ := geodesicChartTransition_hasFDerivAt_fderiv
+    (I := I) hα hβ hx
+  have hc : HasDerivAt
+      (fun s ↦ fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+        (chartReading (I := I) alpha gamma s))
+      (fderiv ℝ (fderiv ℝ (geodesicChartTransition (I := I) alpha beta))
+        (chartReading (I := I) alpha gamma t)
+        (deriv (chartReading (I := I) alpha gamma) t)) t := by
+    simpa [Function.comp_def, chartReading] using
+      hτ₂.comp_hasDerivAt t hfirst
+  have happly := hc.clm_apply hsecond
+  simpa only [add_comm] using happly
 
 omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
 /-- On a neighbourhood where a curve remains in two chart sources, its two
@@ -1834,6 +1885,77 @@ theorem isGeodesic_const_riemannianMetricVectorSpace
     { riemannianMetricVectorSpace F with
         contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }
   exact isGeodesic_const (I := 𝓘(ℝ, F)) g p
+
+/-! ### Global zero-velocity solution regression
+
+The general nonempty maximal-domain witness still needs the fixed-to-moving
+Christoffel law.  The constant curve is independent of that law, however, and
+therefore supplies a useful canonical boundary case for the domain substrate.
+-/
+
+/-- The constant curve gives a global intrinsic solution for zero initial
+velocity.  This is a genuine `GeodesicSolution` witness on `Set.univ`, not a
+pointwise equation or a chosen totalized representative.
+
+Source anchor: Morgan--Tian, Definition 1.17 and the coordinate/initial-value
+paragraph on printed p. 41 (`morganTian2007`). -/
+noncomputable def geodesicSolution_zero_velocity
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) : GeodesicSolution (I := I) g p (0 : TangentSpace I p) := by
+  let gamma : ℝ → M := fun _ ↦ p
+  have hconst : HasDerivAt (chartReading (I := I) p gamma) 0 0 := by
+    change HasDerivAt (fun _ : ℝ ↦ extChartAt I p p) 0 0
+    exact hasDerivAt_const (x := (0 : ℝ)) (c := extChartAt I p p)
+  have hcurve : IsGeodesicCurveOn (I := I) g gamma (Set.univ : Set ℝ) := by
+    exact (isGeodesic_iff_isGeodesicOn_univ (I := I) g gamma).mp
+      (isGeodesic_const (I := I) g p)
+  refine ⟨Set.univ, isOpen_univ, isPreconnected_univ, Set.mem_univ 0,
+    gamma, rfl, ?_, ?_, hcurve⟩
+  · have hvzero : chartVelocityAt (I := I) p
+        (0 : TangentSpace I p) = 0 := by
+      unfold chartVelocityAt
+      rw [TangentBundle.trivializationAt_apply]
+      exact map_zero _
+    simpa [gamma, hvzero] using hconst
+  · change ContDiffOn ℝ ∞ (fun _ : ℝ ↦ extChartAt I p p) (Set.univ : Set ℝ)
+    exact contDiffOn_const
+
+/-- A nonempty global solution witness for zero initial velocity. -/
+theorem nonempty_geodesicSolution_zero_velocity
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) :
+    Nonempty (GeodesicSolution (I := I) g p (0 : TangentSpace I p)) :=
+  ⟨geodesicSolution_zero_velocity (I := I) g p⟩
+
+@[simp] theorem geodesicSolution_zero_velocity_domain
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) :
+    (geodesicSolution_zero_velocity (I := I) g p).domain = (Set.univ : Set ℝ) := rfl
+
+/-- The maximal domain is all of time for the zero-velocity regression. -/
+theorem maximalGeodesicDomain_zero_velocity
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) :
+    maximalGeodesicDomain (I := I) (g := g) (p := p)
+      (v := (0 : TangentSpace I p)) = (Set.univ : Set ℝ) := by
+  apply Set.Subset.antisymm
+  · exact Set.subset_univ _
+  · intro t ht
+    let S := geodesicSolution_zero_velocity (I := I) g p
+    apply subset_maximalGeodesicDomain (I := I) (g := g) (p := p)
+      (v := (0 : TangentSpace I p)) S
+    rw [geodesicSolution_zero_velocity_domain (I := I) g p]
+    exact ht
+
+/-- The zero-velocity maximal-domain regression has an unbounded lifetime. -/
+theorem maximalGeodesicDomain_zero_velocity_hasUnboundedLifetime
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) :
+    HasUnboundedLifetime
+      (maximalGeodesicDomain (I := I) (g := g) (p := p)
+        (v := (0 : TangentSpace I p))) := by
+  rw [maximalGeodesicDomain_zero_velocity (I := I) g p]
+  exact hasUnboundedLifetime_univ
 
 /-- The local geodesic contract is equivalent to the Morgan--Tian coordinate
 equation in the chart centred at the foot.  This is an unfolding in the same
