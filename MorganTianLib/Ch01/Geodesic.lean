@@ -22,7 +22,8 @@ smoothness and local uniqueness, but no joint smooth-flow theorem.
 The overlap kinematics include the second-order chain rule for the moving
 transition derivative.  This is the calculus input for the Christoffel
 transformation law; that metric-dependent identity and the resulting gluing
-remain separate S18 work.
+remain separate S18 work.  The Euclidean model regression at the end of the
+module checks the coefficient and affine straight-line branches concretely.
 
 In a chart `alpha`, the equation is
 
@@ -2042,6 +2043,153 @@ theorem isGeodesic_const_riemannianMetricVectorSpace
     { riemannianMetricVectorSpace F with
         contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }
   exact isGeodesic_const (I := 𝓘(ℝ, F)) g p
+
+/-! ### Euclidean straight-line coefficient regression
+
+The following calculation is intentionally concrete.  It unfolds the
+canonical Euclidean metric through `Connection.christoffel_formula`, rather
+than postulating a flat connection, and checks the flat branch of the chart
+equation against the bundled connection.  A nonconstant metric is still
+needed to distinguish sign and lower-slot conventions. -/
+
+/-- The canonical Euclidean metric has zero Christoffel coefficients in every
+model-space chart.  The proof keeps the bundled metric and
+`Connection.leviCivitaConnection` as the only geometric data.
+
+This is the coordinate probe corresponding to Morgan--Tian's equation (1.1)
+and Definition 1.17 (`morganTian2007`).  Since all coefficients vanish in
+the flat model, this regression does not by itself distinguish a reversed
+Christoffel sign or swapped lower slots. -/
+theorem chartConnectionCoeff_riemannianMetricVectorSpace_zero
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F]
+    (alpha q : F) (i j k : Fin (Module.finrank ℝ F)) :
+    chartConnectionCoeff (I := 𝓘(ℝ, F))
+      ({ riemannianMetricVectorSpace F with
+          contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top })
+      alpha q i j k = 0 := by
+  let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, F) ∞ F
+      (TangentSpace 𝓘(ℝ, F)) :=
+    { riemannianMetricVectorSpace F with
+        contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }
+  let t := trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha
+  let b := Module.finBasis ℝ F
+  have hq : q ∈ (chartAt F alpha).source := by simp
+  have hi : (𝓘(ℝ, F)).IsInteriorPoint q :=
+    BoundarylessManifold.isInteriorPoint
+  have hderiv' (a c r : Fin (Module.finrank ℝ F)) :
+      fderiv ℝ
+          (fun y : F =>
+            g.inner ((extChartAt 𝓘(ℝ, F) alpha).symm y)
+              ((trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha).localFrame
+                (Module.finBasis ℝ F) a ((extChartAt 𝓘(ℝ, F) alpha).symm y))
+              ((trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha).localFrame
+                (Module.finBasis ℝ F) c ((extChartAt 𝓘(ℝ, F) alpha).symm y)))
+          ((extChartAt 𝓘(ℝ, F) alpha) q) (Module.finBasis ℝ F r) = 0 := by
+    have hh : (fun y : F =>
+        g.inner ((extChartAt 𝓘(ℝ, F) alpha).symm y)
+          ((trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha).localFrame
+            (Module.finBasis ℝ F) a ((extChartAt 𝓘(ℝ, F) alpha).symm y))
+          ((trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha).localFrame
+            (Module.finBasis ℝ F) c ((extChartAt 𝓘(ℝ, F) alpha).symm y))) =
+      (fun _ : F => inner ℝ ((Module.finBasis ℝ F) a)
+        ((Module.finBasis ℝ F) c)) := by
+      funext y
+      have hfa : (trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha).localFrame
+            (Module.finBasis ℝ F) a ((extChartAt 𝓘(ℝ, F) alpha).symm y) =
+            (Module.finBasis ℝ F) a := by
+        have hx : ((extChartAt 𝓘(ℝ, F) alpha).symm y) ∈
+            (trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha).baseSet := by simp
+        rw [Bundle.Trivialization.localFrame_apply_of_mem_baseSet _ _ hx]
+        simp only [Bundle.Trivialization.basisAt, Module.Basis.map_apply]
+        rw [Bundle.Trivialization.linearEquivAt_symm_apply]
+        rw [← Bundle.Trivialization.symmL_apply (R := ℝ) _ hx]
+        rw [TangentBundle.symmL_model_space]
+        unfold TangentSpace
+        rfl
+      have hfc : (trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha).localFrame
+            (Module.finBasis ℝ F) c ((extChartAt 𝓘(ℝ, F) alpha).symm y) =
+            (Module.finBasis ℝ F) c := by
+        have hx : ((extChartAt 𝓘(ℝ, F) alpha).symm y) ∈
+            (trivializationAt F (TangentSpace 𝓘(ℝ, F)) alpha).baseSet := by simp
+        rw [Bundle.Trivialization.localFrame_apply_of_mem_baseSet _ _ hx]
+        simp only [Bundle.Trivialization.basisAt, Module.Basis.map_apply]
+        rw [Bundle.Trivialization.linearEquivAt_symm_apply]
+        rw [← Bundle.Trivialization.symmL_apply (R := ℝ) _ hx]
+        rw [TangentBundle.symmL_model_space]
+        unfold TangentSpace
+        rfl
+      rw [hfa, hfc]
+      rfl
+    rw [hh]
+    simp
+  have hf := Connection.christoffel_formula
+    (I := 𝓘(ℝ, F)) g (alpha := alpha) (p := q) hq hi i j k
+  dsimp only at hf
+  simp only [hderiv'] at hf
+  have hleft :
+      (t.basisAt b (by simp [t])).repr
+          (Connection.leviCivitaConnection g
+            (t.localFrame b j) q (t.localFrame b i q)) k = 0 := by
+    simpa only [t, b, zero_add, add_zero, sub_zero, mul_zero,
+      Finset.sum_const_zero] using hf
+  rw [chartConnectionCoeff]
+  have hbase : q ∈ t.baseSet := by simp [t]
+  rw [Bundle.Trivialization.localFrame_coeff_apply_of_mem_baseSet
+    (I := 𝓘(ℝ, F)) t b hbase
+    (fun x => Connection.leviCivitaConnection g
+      (t.localFrame b j) x (t.localFrame b i x)) k]
+  exact hleft
+
+/-- The Euclidean Christoffel contraction is zero for arbitrary two
+velocities, not only for the repeated zero velocity. -/
+theorem chartChristoffelContraction_riemannianMetricVectorSpace_zero
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (alpha y v w : F) :
+    chartChristoffelContraction (I := 𝓘(ℝ, F))
+      ({ riemannianMetricVectorSpace F with
+          contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top })
+      alpha y v w = 0 := by
+  let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, F) ∞ F
+      (TangentSpace 𝓘(ℝ, F)) :=
+    { riemannianMetricVectorSpace F with
+        contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }
+  let b := Module.finBasis ℝ F
+  let q := (extChartAt (𝓘(ℝ, F)) alpha).symm y
+  let t := trivializationAt F (TangentSpace (𝓘(ℝ, F))) alpha
+  change ∑ k, (∑ i, ∑ j,
+      chartConnectionCoeff (I := 𝓘(ℝ, F)) g alpha q i j k *
+        b.repr v i * b.repr w j) • b k = 0
+  have hcoeff (i j k : Fin (Module.finrank ℝ F)) :
+      chartConnectionCoeff (I := 𝓘(ℝ, F)) g alpha q i j k = 0 := by
+    exact chartConnectionCoeff_riemannianMetricVectorSpace_zero
+      (alpha := alpha) (q := q) i j k
+  simp_rw [hcoeff]
+  simp
+
+/-- An affine Euclidean chart path has zero coordinate acceleration.  In
+particular, the theorem covers nonzero velocities and is a concrete
+straight-line regression for the flat branch of the Morgan--Tian equation. -/
+theorem chartAcceleration_affine_riemannianMetricVectorSpace_zero
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (alpha a v : F) :
+    ∀ t : ℝ,
+    chartAcceleration (I := 𝓘(ℝ, F))
+      ({ riemannianMetricVectorSpace F with
+          contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top })
+      alpha (fun s : ℝ => a + s • v) t = 0 := by
+  intro t
+  apply chartAcceleration_affine_of_zero_contraction
+    (I := 𝓘(ℝ, F))
+    (g := ({ riemannianMetricVectorSpace F with
+      contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }))
+    (alpha := alpha) (gamma := fun s : ℝ => a + s • v)
+    (a := a) (b := v)
+  · intro s
+    simp [chartReading]
+  · intro s
+    exact chartChristoffelContraction_riemannianMetricVectorSpace_zero
+      (alpha := alpha) (y := a + s • v) (v := v) (w := v)
 
 /-! ### Global zero-velocity solution regression
 
