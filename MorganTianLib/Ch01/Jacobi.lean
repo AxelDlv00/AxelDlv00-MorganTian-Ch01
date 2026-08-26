@@ -8,8 +8,10 @@ This module fixes the Chapter 1 Jacobi contract.  A field along a geodesic is
 represented by a dependent tangent-valued function; its two covariant
 derivatives are read in the canonical chart at the current foot and then
 transported back to that tangent fibre.  The chart expression is an
-implementation detail of the derivative predicate, while the exported field,
-curvature, and conjugacy declarations are intrinsic.
+implementation detail of the derivative predicate; the few coordinate
+expressions needed to construct certificates are available under the stable
+`Jacobi.Internal` namespace, while the exported field, curvature, and
+conjugacy declarations are intrinsic.
 
 The curvature slots follow Morgan--Tian's convention
 `R X Y Z = nabla_X (nabla_Y Z) - nabla_Y (nabla_X Z) - nabla_[X,Y] Z`.
@@ -41,6 +43,14 @@ open scoped Bundle ContDiff Manifold Topology
 namespace MorganTianLib
 namespace Ch01
 namespace Jacobi
+
+/-! ### Stable coordinate certificate adapters
+
+The moving-foot formulas below are intentionally exposed through this small
+`Internal` namespace.  The source-facing predicates quantify over the chart,
+but their elaborated types must still name stable declarations so downstream
+proofs can construct and rewrite certificates without depending on generated
+`private` names. -/
 
 variable
   {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
@@ -84,11 +94,21 @@ private noncomputable def curvature
 
 /-! ## Covariant derivatives along a curve -/
 
-private def fieldCoord (α : M) (γ : ℝ → M)
+namespace Internal
+
+/-- Read a tangent field in the chart at `α`, after expressing it in the
+current-foot trivialization.  This is the stable coordinate function used by
+the public derivative certificates; chart choice remains existential in those
+certificates. -/
+def fieldCoord (α : M) (γ : ℝ → M)
     (J : FieldAlong (I := I) γ) : ℝ → E :=
   fun t =>
     tangentCoordChange I (γ t) α (γ t)
       (selfCoord (I := I) γ J t)
+
+end Internal
+
+open Internal
 
 omit [FiniteDimensional ℝ E] in
 private lemma selfCoord_zero (γ : ℝ → M) (t : ℝ) :
@@ -201,7 +221,11 @@ private lemma chartConnectionContraction_smul_right
   simp only [Finsupp.smul_apply]
   ring
 
-private def covariantDerivativeCoord
+/-- Stable coordinate expression for the first covariant derivative along a
+curve.  This declaration is public only as an implementation-facing
+certificate adapter; the chart itself remains an existential witness in
+`HasCovariantDerivativeAlongAt`. -/
+def Internal.covariantDerivativeCoord
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (α : M) (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ) (t : ℝ) : E :=
   fieldCoord (I := I) α γ DJ t -
@@ -210,7 +234,9 @@ private def covariantDerivativeCoord
       (deriv (Geodesic.chartReading (I := I) α γ) t)
       (fieldCoord (I := I) α γ J t)
 
-private def curvatureCoord
+/-- Stable coordinate expression for the source-ordered curvature term in the
+second covariant derivative certificate. -/
+def Internal.curvatureCoord
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (α : M) (γ : ℝ → M) (J V W : FieldAlong (I := I) γ) (t : ℝ) : E :=
   fieldCoord (I := I) α γ
@@ -286,8 +312,8 @@ def HasCovariantDerivativeAlongAt
   (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ)
     (a b t : ℝ) : Prop :=
   ∃ α : M,
-    HasDerivWithinAt (fieldCoord (I := I) α γ J)
-      (covariantDerivativeCoord (I := I) g α γ J DJ t) (Icc a b) t
+    HasDerivWithinAt (Internal.fieldCoord (I := I) α γ J)
+      (Internal.covariantDerivativeCoord (I := I) g α γ J DJ t) (Icc a b) t
 
 /-- The Jacobi-equation second-derivative certificate in a local chart.
 
@@ -299,13 +325,13 @@ def HasSecondCovariantDerivativeAlongAt
   (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ)
     (a b t : ℝ) : Prop :=
   ∃ α : M,
-    HasDerivWithinAt (fieldCoord (I := I) α γ DJ)
-      (-curvatureCoord (I := I) g α γ J
+    HasDerivWithinAt (Internal.fieldCoord (I := I) α γ DJ)
+      (-Internal.curvatureCoord (I := I) g α γ J
         (velocity (I := I) γ) (velocity (I := I) γ) t -
         Geodesic.chartConnectionContraction (I := I) g α
           (Geodesic.chartReading (I := I) α γ t)
           (deriv (Geodesic.chartReading (I := I) α γ) t)
-          (fieldCoord (I := I) α γ DJ t)) (Icc a b) t
+          (Internal.fieldCoord (I := I) α γ DJ t)) (Icc a b) t
 
 /-- The local Jacobi-equation certificate on `[a,b]`.  The two derivative
 clauses make the order `D_t(D_t J)` explicit and keep endpoint hypotheses
@@ -323,18 +349,18 @@ derivative clauses refer to the same `alpha`, so a local window cannot be
 witnessed by unrelated totalized coordinate choices. -/
 def IsJacobiFieldOnAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (α : M) (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ) (a b : ℝ) : Prop :=
+  (α : M) (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ) (a b : ℝ) : Prop :=
   (∀ t ∈ Icc a b,
-      HasDerivWithinAt (fieldCoord (I := I) α γ J)
-        (covariantDerivativeCoord (I := I) g α γ J DJ t) (Icc a b) t) ∧
+      HasDerivWithinAt (Internal.fieldCoord (I := I) α γ J)
+        (Internal.covariantDerivativeCoord (I := I) g α γ J DJ t) (Icc a b) t) ∧
     (∀ t ∈ Icc a b,
-      HasDerivWithinAt (fieldCoord (I := I) α γ DJ)
-        (-curvatureCoord (I := I) g α γ J
+      HasDerivWithinAt (Internal.fieldCoord (I := I) α γ DJ)
+        (-Internal.curvatureCoord (I := I) g α γ J
           (velocity (I := I) γ) (velocity (I := I) γ) t -
           Geodesic.chartConnectionContraction (I := I) g α
             (Geodesic.chartReading (I := I) α γ t)
             (deriv (Geodesic.chartReading (I := I) α γ) t)
-            (fieldCoord (I := I) α γ DJ t)) (Icc a b) t)
+            (Internal.fieldCoord (I := I) α γ DJ t)) (Icc a b) t)
 
 /-- Restrict a fixed-chart certificate to a smaller interval. -/
 theorem IsJacobiFieldOnAt.mono
@@ -736,18 +762,27 @@ theorem initialData_smul
 
 /-- A local intrinsic Jacobi certificate around every time in an interval.
 
-The chart, the nondegenerate subinterval, its relative-neighborhood property,
-and the chart-source confinement are all witnesses.  This is the local
+The outer `a < b` conjunct is part of the source-facing segment contract, so
+reversed or degenerate endpoints cannot be certified vacuously.  The chart,
+the nondegenerate subinterval, its relative-neighborhood property, and the
+chart-source confinement are all witnesses.  This is the local
 (`sheaf`-style) form used when a geodesic crosses charts; the derivative
 equation itself is supplied by `IsJacobiFieldOnAt` in that same chart. -/
 def IsJacobiFieldAlongOn
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ) (a b : ℝ) : Prop :=
-  ∀ t ∈ Icc a b, ∃ (α : M) (c d : ℝ),
-    c < d ∧ t ∈ Icc c d ∧ Icc c d ⊆ Icc a b ∧
-    Icc c d ∈ 𝓝[Icc a b] t ∧
-      (∀ s ∈ Icc c d, γ s ∈ (chartAt H α).source) ∧
-      IsJacobiFieldOnAt (I := I) g α γ J DJ c d
+  a < b ∧
+    ∀ t ∈ Icc a b, ∃ (α : M) (c d : ℝ),
+      c < d ∧ t ∈ Icc c d ∧ Icc c d ⊆ Icc a b ∧
+      Icc c d ∈ 𝓝[Icc a b] t ∧
+        (∀ s ∈ Icc c d, γ s ∈ (chartAt H α).source) ∧
+        IsJacobiFieldOnAt (I := I) g α γ J DJ c d
+
+/-- Extract the nondegeneracy invariant from a source-facing Jacobi segment. -/
+theorem IsJacobiFieldAlongOn.interval_nonempty
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {γ : ℝ → M} {J DJ : FieldAlong (I := I) γ} {a b : ℝ}
+    (h : IsJacobiFieldAlongOn (I := I) g γ J DJ a b) : a < b := h.1
 
 /-- A fixed-chart certificate on the whole interval gives the intrinsic local
 certificate.  The source hypothesis is explicit because the coordinate
@@ -759,6 +794,7 @@ theorem isJacobiFieldAlongOn_of_fixed_chart
     (hsource : ∀ s ∈ Icc a b, γ s ∈ (chartAt H α).source)
     (h : IsJacobiFieldOnAt (I := I) g α γ J DJ a b) :
     IsJacobiFieldAlongOn (I := I) g γ J DJ a b := by
+  refine ⟨hab, ?_⟩
   intro t ht
   refine ⟨α, a, b, hab, ht, subset_rfl, ?_, hsource, h⟩
   exact self_mem_nhdsWithin
@@ -808,6 +844,14 @@ theorem IsGeodesicJacobiFieldOn.jacobiAlongOn
     (h : IsGeodesicJacobiFieldOn (I := I) g γ J DJ a b) :
     IsJacobiFieldAlongOn (I := I) g γ J DJ a b := h.2.2
 
+/-- Extract the nondegenerate interval invariant from a geodesic Jacobi
+certificate without unfolding its source-facing conjunction. -/
+theorem IsGeodesicJacobiFieldOn.interval_nonempty
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {γ : ℝ → M} {J DJ : FieldAlong (I := I) γ} {a b : ℝ}
+    (h : IsGeodesicJacobiFieldOn (I := I) g γ J DJ a b) : a < b :=
+  h.jacobiAlongOn.interval_nonempty
+
 /-- Build the geodesic Jacobi contract from a source-safe fixed-chart witness. -/
 theorem isGeodesicJacobiFieldOn_of_fixed_chart
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
@@ -829,6 +873,8 @@ Lean infer that calculation. -/
 structure GeodesicVariation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (a b : ℝ) where
+  /-- The declared time segment is nondegenerate. -/
+  interval_nonempty : a < b
   /-- The total two-parameter family, with the first parameter varying the
   geodesic and the second parameter varying time. -/
   family : ℝ → ℝ → M
@@ -906,6 +952,15 @@ def IsConjugatePointAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (γ : ℝ → M) (t₁ : ℝ) : Prop :=
   IsConjugate (I := I) g γ 0 t₁
+
+/-- Conjugacy carries the same nondegenerate segment invariant as its Jacobi
+field witness. -/
+theorem IsConjugate.interval_nonempty
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {γ : ℝ → M} {a b : ℝ}
+    (h : IsConjugate (I := I) g γ a b) : a < b := by
+  rcases h with ⟨J, DJ, hJ, _, _, _⟩
+  exact hJ.interval_nonempty
 
 /-- The fixed-start notation is definitionally the zero-time instance. -/
 theorem isConjugatePointAt_iff

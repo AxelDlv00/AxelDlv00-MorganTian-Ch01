@@ -1,5 +1,6 @@
 import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Geodesic
+import Mathlib.Order.Interval.Set.OrdConnected
 
 /-!
 # Hopf--Rinow interfaces
@@ -16,10 +17,15 @@ keeps three inputs separate:
   IVP.
 
 The continuation and compactness producers below are the exact interfaces
-still to be supplied by the maximal-domain and variation slices.  The proved
-theorems are the set-theoretic maximal-interval argument and the reusable
-distance/length adapters.  Thus no theorem here treats metric completeness as
-an ODE premise, and every existence claim names its required producer.
+still to be supplied by the maximal-domain and variation slices.  Continuation
+domains and maximal lifetimes are explicitly open and order-connected, so a
+disconnected island cannot masquerade as an extension through a finite
+endpoint.  Public distance and length fields use Mathlib's
+`Manifold.riemannianEDist` and `Manifold.pathELength` directly under a local
+metric instance.  The proved theorems are the set-theoretic maximal-interval
+argument and the reusable distance/length adapters.  Thus no theorem here
+treats metric completeness as an ODE premise, and every existence claim names
+its required producer.
 
 The source-facing target is the paragraph preceding Morgan--Tian, Theorem
 1.18, pp. 41--42 (`morganTian2007`); see also do Carmo, Chapter 7, Section 2,
@@ -43,57 +49,7 @@ variable
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ E]
 
-/-! ## Canonical metric projections -/
-
-/-- The extended distance selected by an explicit smooth Riemannian metric.
-
-The bundle instance is local to this definition.  In particular, this does
-not install a competing project-owned metric structure. -/
-noncomputable def canonicalRiemannianEDist
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (x y : M) : ℝ≥0∞ :=
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  Manifold.riemannianEDist I x y
-
-/-- The canonical path length selected by `g`, with no ambient metric instance
-required from a caller. -/
-noncomputable def canonicalPathELength
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (γ : ℝ → M) (a b : ℝ) : ℝ≥0∞ :=
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  Manifold.pathELength I γ a b
-
-omit [FiniteDimensional ℝ E] in
-/-- The selected extended distance vanishes on the diagonal. -/
-@[simp]
-theorem canonicalRiemannianEDist_self
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (x : M) : canonicalRiemannianEDist (I := I) g x x = 0 := by
-  change (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-      ⟨g.toRiemannianMetric⟩
-    Manifold.riemannianEDist I x x) = 0
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  exact Manifold.riemannianEDist_self
-
-omit [FiniteDimensional ℝ E] in
-/-- A constant path has zero selected Riemannian length. -/
-@[simp]
-theorem canonicalPathELength_const
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (x : M) (a b : ℝ) :
-    canonicalPathELength (I := I) g (fun _ : ℝ => x) a b = 0 := by
-  change (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-      ⟨g.toRiemannianMetric⟩
-    Manifold.pathELength I (fun _ : ℝ => x) a b) = 0
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  rw [Manifold.pathELength_eq_lintegral_mfderiv_Icc]
-  simp [mfderiv_const]
-
-/-! ### Completeness of the selected distance -/
+/-! ## Completeness of the selected distance -/
 
 /-- Metric completeness for the *canonical selected Riemannian distance*.
 
@@ -110,36 +66,6 @@ def RiemannianMetricComplete
     continuousRiemannianBundle g
   letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
   @CompleteSpace M inferInstance
-
-omit [FiniteDimensional ℝ E] in
-/-- On a preconnected manifold the selected extended distance is finite. -/
-theorem canonicalRiemannianEDist_lt_top
-    [PreconnectedSpace M]
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (x y : M) : canonicalRiemannianEDist (I := I) g x y < ⊤ := by
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  exact riemannianEDist_lt_top g x y
-
-omit [FiniteDimensional ℝ E] in
-/-- Under the selected Mathlib extended metric, ambient `edist` is exactly the
-canonical Riemannian distance used by the completeness predicate. -/
-theorem edist_eq_canonicalRiemannianEDist
-    [T3Space M]
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (x y : M) :
-    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-      ⟨g.toRiemannianMetric⟩
-    letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
-      continuousRiemannianBundle g
-    letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
-    edist x y = canonicalRiemannianEDist (I := I) g x y := by
-  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
-    continuousRiemannianBundle g
-  letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
-  exact edist_eq_riemannianEDist g x y
 
 /-- A lifetime is unbounded above, expressed without choosing an endpoint
 convention for open intervals. -/
@@ -179,9 +105,14 @@ structure MaximalGeodesic
   /-- The lifetime is interval-convex. -/
   interval :
     ∀ ⦃a b t : ℝ⦄, a ∈ lifetime → b ∈ lifetime → a ≤ t → t ≤ b → t ∈ lifetime
-  /-- No certified geodesic extension has a strictly larger lifetime. -/
+  /-- The maximal-domain producer supplies an open lifetime. -/
+  lifetime_open : IsOpen lifetime
+  /-- No certified geodesic extension exists on an open order-connected
+  superdomain.  The explicit interval guards rule out disconnected islands
+  outside a finite endpoint. -/
   maximal :
     ∀ (s : Set ℝ) (γ : ℝ → M), lifetime ⊆ s →
+      (0 : ℝ) ∈ s → IsOpen s → s.OrdConnected →
       isGeodesicOn (I := I) g γ s → ContinuousOn γ s →
       (∀ t ∈ lifetime, γ t = curve t) → s ⊆ lifetime
 
@@ -211,8 +142,9 @@ def MaximalGeodesic.refl
   interval := by
     intro a b t ha hb hat htb
     exact Set.mem_univ t
+  lifetime_open := isOpen_univ
   maximal := by
-    intro s γ hs hgeo hcont heq
+    intro s γ hs hzero hopen hinterval hgeo hcont heq
     exact fun t ht => Set.mem_univ t
 
 /-- The constant maximal geodesic has the displayed lifetime. -/
@@ -220,6 +152,19 @@ def MaximalGeodesic.refl
 theorem MaximalGeodesic.refl_lifetime
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) : (MaximalGeodesic.refl (I := I) g p).lifetime = Set.univ := rfl
+
+/-- The certified lifetime is order-connected in the real-time order.
+
+The explicit `interval` field is retained for compatibility with the S18
+maximal-domain producer; this theorem exposes the corresponding Mathlib
+`Set.OrdConnected` invariant required by the extension contract. -/
+theorem MaximalGeodesic.lifetime_ordConnected
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p)
+    (G : MaximalGeodesic (I := I) g p v) : G.lifetime.OrdConnected := by
+  rw [Set.ordConnected_iff]
+  intro a ha b hb _hab t ht
+  exact G.interval ha hb ht.1 ht.2
 
 /-- The constant regression has an unbounded forward lifetime without any
 completeness premise. -/
@@ -253,16 +198,26 @@ structure MaximalGeodesicContinuation
       ∀ b : ℝ, (∀ t ∈ G.lifetime, t ≤ b) →
         ∃ (s : Set ℝ) (γ : ℝ → M),
           G.lifetime ⊆ s ∧
+          (0 : ℝ) ∈ s ∧
+          IsOpen s ∧ s.OrdConnected ∧
           (∃ t ∈ s, b < t) ∧
           isGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
+          γ 0 = G.curve 0 ∧
+          HasDerivAt (chartReading (I := I) p γ)
+            (chartVelocityAt (I := I) p v) 0 ∧
           (∀ t ∈ G.lifetime, γ t = G.curve t)
   left :
     RiemannianMetricComplete (I := I) g →
       ∀ b : ℝ, (∀ t ∈ G.lifetime, b ≤ t) →
         ∃ (s : Set ℝ) (γ : ℝ → M),
           G.lifetime ⊆ s ∧
+          (0 : ℝ) ∈ s ∧
+          IsOpen s ∧ s.OrdConnected ∧
           (∃ t ∈ s, t < b) ∧
           isGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
+          γ 0 = G.curve 0 ∧
+          HasDerivAt (chartReading (I := I) p γ)
+            (chartVelocityAt (I := I) p v) 0 ∧
           (∀ t ∈ G.lifetime, γ t = G.curve t)
 
 /-! ### The unbounded-lifetime argument -/
@@ -284,9 +239,10 @@ theorem maximalGeodesic_lifetime_unboundedAbove
   have hupper : ∀ t ∈ G.lifetime, t ≤ b := by
     intro t ht
     exact le_of_not_gt (fun htb => hbound ⟨t, ht, htb⟩)
-  obtain ⟨s, γ, hs, hmore, hgeo, hcont, heq⟩ :=
+  obtain ⟨s, γ, hs, hzero, hopen, hinterval, hmore, hgeo, hcont, _hγzero,
+    _hγderiv, heq⟩ :=
     hcontinue.right hcomplete b hupper
-  have hsubset : s ⊆ G.lifetime := G.maximal s γ hs hgeo hcont heq
+  have hsubset : s ⊆ G.lifetime := G.maximal s γ hs hzero hopen hinterval hgeo hcont heq
   rcases hmore with ⟨t, ht, hbt⟩
   exact (not_lt_of_ge (hupper t (hsubset ht))) hbt
 
@@ -306,9 +262,10 @@ theorem maximalGeodesic_lifetime_unboundedBelow
   have hlower : ∀ t ∈ G.lifetime, b ≤ t := by
     intro t ht
     exact le_of_not_gt (fun htb => hbound ⟨t, ht, htb⟩)
-  obtain ⟨s, γ, hs, hmore, hgeo, hcont, heq⟩ :=
+  obtain ⟨s, γ, hs, hzero, hopen, hinterval, hmore, hgeo, hcont, _hγzero,
+    _hγderiv, heq⟩ :=
     hcontinue.left hcomplete b hlower
-  have hsubset : s ⊆ G.lifetime := G.maximal s γ hs hgeo hcont heq
+  have hsubset : s ⊆ G.lifetime := G.maximal s γ hs hzero hopen hinterval hgeo hcont heq
   rcases hmore with ⟨t, ht, htb⟩
   exact (not_lt_of_ge (hlower t (hsubset ht))) htb
 
@@ -468,13 +425,17 @@ structure MinimizingGeodesic
   continuous_on : ContinuousOn (path : ℝ → M) (Set.Icc 0 1)
   /-- Constant-speed normalization in the canonical extended distance. -/
   constant_speed :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
     ∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
-      canonicalRiemannianEDist (I := I) g (path s) (path t) =
-        ENNReal.ofReal |s - t| * canonicalRiemannianEDist (I := I) g x y
+      Manifold.riemannianEDist I (path s) (path t) =
+        ENNReal.ofReal |s - t| * Manifold.riemannianEDist I x y
   /-- The path length is exactly the canonical Riemannian distance. -/
   length_eq_distance :
-    canonicalPathELength (I := I) g (path : ℝ → M) 0 1 =
-      canonicalRiemannianEDist (I := I) g x y
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    Manifold.pathELength I (path : ℝ → M) 0 1 =
+      Manifold.riemannianEDist I x y
   /-- Affine restriction has a geodesic certificate. -/
   restriction_geodesic :
     ∀ {a b : ℝ}, a ∈ Set.Icc (0 : ℝ) 1 → b ∈ Set.Icc (0 : ℝ) 1 → a ≤ b →
@@ -512,14 +473,20 @@ def MinimizingGeodesic.refl
     exact isGeodesic_const (I := I) g x t
   continuous_on := continuousOn_const
   constant_speed := by
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
     intro s hs t ht
-    change canonicalRiemannianEDist (I := I) g x x =
-      ENNReal.ofReal |s - t| * canonicalRiemannianEDist (I := I) g x x
-    simp
+    change Manifold.riemannianEDist I x x =
+      ENNReal.ofReal |s - t| * Manifold.riemannianEDist I x x
+    rw [Manifold.riemannianEDist_self, mul_zero]
   length_eq_distance := by
-    change canonicalPathELength (I := I) g (fun _ : ℝ => x) 0 1 =
-      canonicalRiemannianEDist (I := I) g x x
-    simp
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    change Manifold.pathELength I (fun _ : ℝ => x) 0 1 =
+      Manifold.riemannianEDist I x x
+    rw [Manifold.riemannianEDist_self,
+      Manifold.pathELength_eq_lintegral_mfderiv_Icc]
+    simp [mfderiv_const]
   restriction_geodesic := by
     intro a b ha hb hab t ht
     change IsGeodesicAt (I := I) g (fun _ : ℝ => x) t
@@ -580,7 +547,10 @@ structure MinimizingGeodesicData
     [BoundarylessManifold I M] where
   exists_segment :
     RiemannianMetricComplete (I := I) g →
-      ∀ x y : M, canonicalRiemannianEDist (I := I) g x y < ⊤ →
+      ∀ x y : M,
+        letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+          ⟨g.toRiemannianMetric⟩
+        Manifold.riemannianEDist I x y < ⊤ →
         Nonempty (MinimizingGeodesic (I := I) g x y)
 
 /-- A finite-distance component is enough for the compactness producer.  This
@@ -590,7 +560,10 @@ theorem exists_minimizingGeodesic_of_finite
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
     (data : MinimizingGeodesicData (I := I) g) (x y : M)
-    (hfinite : canonicalRiemannianEDist (I := I) g x y < ⊤) :
+    (hfinite :
+      letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+        ⟨g.toRiemannianMetric⟩
+      Manifold.riemannianEDist I x y < ⊤) :
     Nonempty (MinimizingGeodesic (I := I) g x y) :=
   data.exists_segment hcomplete x y hfinite
 
@@ -603,7 +576,7 @@ theorem exists_minimizingGeodesic_segment
     (data : MinimizingGeodesicData (I := I) g) (x y : M) :
     Nonempty (MinimizingGeodesic (I := I) g x y) :=
   exists_minimizingGeodesic_of_finite g hcomplete data x y
-    (canonicalRiemannianEDist_lt_top g x y)
+    (riemannianEDist_lt_top g x y)
 
 /-- Source-facing existence statement for a minimizing geodesic on a connected
 component.  The length equality is stated against the canonical
@@ -615,14 +588,17 @@ theorem exists_minimizingGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
     (data : MinimizingGeodesicData (I := I) g) (x y : M) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
     ∃ γ : ℝ → M,
       γ 0 = x ∧ γ 1 = y ∧
       isGeodesicOn (I := I) g γ (Set.Icc (0 : ℝ) 1) ∧
       (∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
-        canonicalRiemannianEDist (I := I) g (γ s) (γ t) =
-          ENNReal.ofReal |s - t| * canonicalRiemannianEDist (I := I) g x y) ∧
-      canonicalPathELength (I := I) g γ 0 1 =
-        canonicalRiemannianEDist (I := I) g x y := by
+        Manifold.riemannianEDist I (γ s) (γ t) =
+          ENNReal.ofReal |s - t| * Manifold.riemannianEDist I x y) ∧
+      Manifold.pathELength I γ 0 1 = Manifold.riemannianEDist I x y := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
   rcases exists_minimizingGeodesic_segment g hcomplete data x y with ⟨G⟩
   refine ⟨G.path, G.path.source, G.path.target, G.geodesic_on,
     G.constant_speed, G.length_eq_distance⟩
@@ -642,6 +618,8 @@ theorem hopfRinow
     (hcomplete : RiemannianMetricComplete (I := I) g)
     (geodesics : CompleteMaximalGeodesicData (I := I) g)
     (minimizers : MinimizingGeodesicData (I := I) g) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
     (∀ (p : M) (v : TangentSpace I p),
       ∃ γ : ℝ → M,
         γ 0 = p ∧
@@ -653,10 +631,11 @@ theorem hopfRinow
         γ 0 = x ∧ γ 1 = y ∧
         isGeodesicOn (I := I) g γ (Set.Icc (0 : ℝ) 1) ∧
         (∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
-          canonicalRiemannianEDist (I := I) g (γ s) (γ t) =
-            ENNReal.ofReal |s - t| * canonicalRiemannianEDist (I := I) g x y) ∧
-        canonicalPathELength (I := I) g γ 0 1 =
-          canonicalRiemannianEDist (I := I) g x y) := by
+          Manifold.riemannianEDist I (γ s) (γ t) =
+            ENNReal.ofReal |s - t| * Manifold.riemannianEDist I x y) ∧
+        Manifold.pathELength I γ 0 1 = Manifold.riemannianEDist I x y) := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
   constructor
   · intro p v
     exact exists_globalGeodesic_of_complete_all g hcomplete geodesics p v

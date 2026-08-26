@@ -19,7 +19,7 @@ theorems below are sign regressions for the future manifold curvature API.  They
 do not assert that a manifold has constant curvature or define geometric
 sectional or Ricci curvature.
 
-Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
+Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture* (`morganTian2007`), Chapter 1,
 Definition 1.4 and the constant-sectional-curvature formula on pp. 37--39,
 the Jacobi and second-variation formulas on pp. 43--44, and Definition 1.8 on
 p. 39.

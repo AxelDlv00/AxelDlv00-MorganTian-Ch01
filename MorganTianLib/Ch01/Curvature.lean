@@ -255,8 +255,6 @@ lemma curvatureField_congr_second
       _ = VectorField.mlieBracket I X Y' p := by
         rw [mlieBracket_swap_apply]
         simp only [neg_neg]
-  have hinner : covariantField cov Y W p = covariantField cov Y' W p :=
-    covariantField_congr_direction cov hYp
   unfold curvatureField
   rw [covariantField_congr_argument cov hYW hYW' hYW_eq,
     covariantField_congr_direction cov hYp,

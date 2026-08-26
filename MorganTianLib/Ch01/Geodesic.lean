@@ -691,7 +691,7 @@ theorem isGeodesicAt_iff_coordinate_formula
       ContinuousAt gamma t ∧
       HasChartGeodesicRegularityAt (I := I) (gamma t) gamma t ∧
       deriv (deriv (chartReading (I := I) (gamma t) gamma)) t +
-        chartChristoffelContraction (I := I) g (gamma t)
+        chartConnectionContraction (I := I) g (gamma t)
           (chartReading (I := I) (gamma t) gamma t)
           (deriv (chartReading (I := I) (gamma t) gamma) t)
           (deriv (chartReading (I := I) (gamma t) gamma) t) = 0 := by
