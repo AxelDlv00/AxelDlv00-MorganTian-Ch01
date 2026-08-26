@@ -26,8 +26,14 @@ standalone scalar, vector/operator, Riccati, and normalized determinant/density
 comparison layers.  The Jacobi variation interface records its
 torsion-free/curvature commutation certificate explicitly, while the full
 chart-transfer and ODE existence/uniqueness producers remain named roadmap
-continuations.  The A2 chart-density substrate uses Mathlib's
-`LinearMap.normDet` directly and does not install a competing global measure.
+continuations.  The A2 chart-density and normalized change-of-variables
+substrate remains a direct provisional leaf until its named N1 cut-locus
+consumer fixes its stable boundary; it uses Mathlib's `LinearMap.normDet` and
+`μHE[finrank ℝ E]` directly and does not install a competing global measure.
+The provisional
+`Connection.TensorLaplacian` evaluation layer is likewise direct-only until
+its bundled, extension-independent producer is available for S13's Bochner
+consumer.
 -/
 
 namespace MorganTianLib
