@@ -22,10 +22,13 @@ vector/operator,
 traced Riccati, normalized determinant/density comparison, and the S19
 Hopf--Rinow continuation/minimizer interfaces.  The latter keeps metric
 completeness, model-space ODE completeness, and boundarylessness independent;
-its selected-distance completeness bridge, open maximal-lifetime contract,
-and bounded-lifetime/model-completion regressions make those distinctions
+its selected-distance completeness bridge, open/order-connected maximal-lifetime
+contract, source-facing geodesic-completeness wrapper, and
+bounded-lifetime/model-completion regressions make those distinctions
 checkable.  Its maximal-domain and compactness producers are explicit inputs
-for the remaining S19 proof.  Later milestones add maximal geodesic/exponential,
+for the remaining S19 proof; the geodesic-completeness wrapper is an existence
+form and does not assert uniqueness of maximal witnesses.  Later milestones
+add maximal geodesic/exponential,
 Jacobi, normal-coordinate, and manifold-comparison modules.  The A2
 chart-density and normalized change-of-variables substrate remains a direct
 provisional leaf until the named N1 cut-locus consumer fixes its stable

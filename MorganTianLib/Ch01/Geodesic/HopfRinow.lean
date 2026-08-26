@@ -16,9 +16,12 @@ keeps three inputs separate:
   IVP.
 
 The continuation and compactness producers below are the exact interfaces
-still to be supplied by the maximal-domain and variation slices.  The proved
-theorems are the set-theoretic maximal-interval argument and the reusable
-distance/length adapters.  The selected-distance completeness bridge reinstalls
+still to be supplied by the maximal-domain and variation slices.  Continuation
+domains are required to be open and order-connected, hence interval-shaped;
+this prevents a disconnected relative-continuity witness from counting as an
+extension through a finite endpoint.  The proved theorems are the
+set-theoretic maximal-interval argument and the reusable distance/length
+adapters.  The selected-distance completeness bridge reinstalls
 the exact `EMetricSpace`/`CompleteSpace M` pair used by the predicate, while
 the model-space completion remains a separate premise.  Thus no theorem here
 treats metric completeness as an ODE premise, and every existence claim names
@@ -26,8 +29,9 @@ its required producer.  The maximal-lifetime contract also records openness,
 and bounded-lifetime/model-completion probes guard the incomplete signatures.
 
 The source-facing target is the paragraph preceding Morgan--Tian, Theorem
-1.18, pp. 41--42 (`morganTian2007`); see also do Carmo, Chapter 7, Section 2,
-and Lee, Theorem 6.19.  The minimizing-segment interface is intentionally
+1.18, pp. 41--42 (`morganTian2007`); see also do Carmo (`doCarmo1992`),
+Chapter 7, Section 2, and Lee (`lee2018`), Theorem 6.19.  The
+minimizing-segment interface is intentionally
 weaker than uniqueness or the no-conjugate-subsegment result, which belong to
 later S24/V1 work.
 -/
@@ -104,7 +108,10 @@ theorem canonicalPathELength_const
 `EMetricSpace.ofRiemannianMetric` is installed only in the body of this
 predicate.  The proposition is therefore independent of any unrelated
 `MetricSpace M` instance, while the local ODE premise `[CompleteSpace E]`
-remains a separate typeclass argument. -/
+remains a separate typeclass argument.  It is the metric-completeness input
+for the complete-manifold paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
+and Lee (`lee2018`), Theorem 6.19. -/
 def RiemannianMetricComplete
     [T3Space M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) : Prop :=
@@ -123,7 +130,8 @@ uniformity supplied by `EMetricSpace.ofRiemannianMetric`, so a bare hypothesis
 about the selected Riemannian distance must not be mistaken for an arbitrary
 ambient completeness instance.  It is the metric-completeness input used in
 the complete-manifold paragraph before Morgan--Tian, Theorem 1.18; compare
-do Carmo, Chapter 7, and Lee, Theorem 6.19. -/
+do Carmo (`doCarmo1992`), Chapter 7, Section 2, and Lee (`lee2018`),
+Theorem 6.19. -/
 theorem completeSpace_of_RiemannianMetricComplete
     [T3Space M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
@@ -168,7 +176,12 @@ theorem edist_eq_canonicalRiemannianEDist
 
 /-! ## Intrinsic predicates on a lifetime -/
 
-/-- The moving-foot geodesic predicate restricted to a set of times. -/
+/-- The moving-foot geodesic predicate restricted to a set of times.
+
+`IsGeodesicAt` is the S18 predicate built from the exact
+`Connection.leviCivitaConnection g`; its coordinate contraction is exposed by
+`chartChristoffelContraction_eq_leviCivita`.  This wrapper therefore introduces
+no second connection vocabulary. -/
 def isGeodesicOn
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (γ : ℝ → M) (s : Set ℝ) : Prop :=
@@ -202,7 +215,10 @@ def LifetimeUnboundedBelow (s : Set ℝ) : Prop :=
 
 The curve is total as a Lean function, but `lifetime` records the times at
 which its geodesic and continuity certificates are valid.  Values outside the
-lifetime are deliberately not used. -/
+lifetime are deliberately not used.  This is the maximal-geodesic side of the
+complete-manifold paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
+and Lee (`lee2018`), Theorem 6.19. -/
 structure MaximalGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) where
@@ -227,9 +243,14 @@ structure MaximalGeodesic
     ∀ ⦃a b t : ℝ⦄, a ∈ lifetime → b ∈ lifetime → a ≤ t → t ≤ b → t ∈ lifetime
   /-- The maximal-domain producer supplies an open lifetime. -/
   lifetime_open : IsOpen lifetime
-  /-- No certified geodesic extension has a strictly larger lifetime. -/
+  /-- No certified geodesic extension exists on an open order-connected
+  superdomain.  Strict enlargement is supplied separately by the continuation
+  contract; requiring interval-shaped superdomains prevents a relative
+  continuity witness on a disconnected set from masquerading as continuation
+  through a finite endpoint. -/
   maximal :
     ∀ (s : Set ℝ) (γ : ℝ → M), lifetime ⊆ s →
+      IsOpen s → s.OrdConnected →
       isGeodesicOn (I := I) g γ s → ContinuousOn γ s →
       (∀ t ∈ lifetime, γ t = curve t) → s ⊆ lifetime
 
@@ -261,8 +282,21 @@ def MaximalGeodesic.refl
     exact Set.mem_univ t
   lifetime_open := isOpen_univ
   maximal := by
-    intro s γ hs hgeo hcont heq
+    intro s γ hs hopen hinterval hgeo hcont heq
     exact fun t ht => Set.mem_univ t
+
+/-! The custom convexity field is retained for compatibility with the S18
+maximal-domain producer, while the continuation boundary uses Mathlib's
+order-connected interval predicate. -/
+
+/-- The certified lifetime is order-connected in the real-time order. -/
+theorem MaximalGeodesic.lifetime_ordConnected
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p)
+    (G : MaximalGeodesic (I := I) g p v) : G.lifetime.OrdConnected := by
+  rw [Set.ordConnected_iff]
+  intro a ha b hb _hab t ht
+  exact G.interval ha hb ht.1 ht.2
 
 /-- The constant maximal geodesic has the displayed lifetime. -/
 @[simp]
@@ -298,11 +332,25 @@ theorem incompleteLifetime_probe :
   obtain ⟨t, ht, hmore⟩ := h 1
   exact (lt_irrefl (1 : ℝ)) (hmore.trans ht.2)
 
+/-- A disconnected set cannot be used as an interval-shaped continuation
+domain.  This negative regression protects the open/order-connected guard in
+`MaximalGeodesic.maximal` from being weakened back to arbitrary supersets. -/
+theorem disconnectedLifetime_not_ordConnected :
+    ¬ ({0, 2} : Set ℝ).OrdConnected := by
+  intro h
+  have hm := h.out (show (0 : ℝ) ∈ ({0, 2} : Set ℝ) by simp)
+    (show (2 : ℝ) ∈ ({0, 2} : Set ℝ) by simp)
+  have hmid := hm (show (3 / 2 : ℝ) ∈ Set.Icc 0 2 by norm_num)
+  norm_num at hmid
+
 /-- The continuation output required from the completed S18 maximal solution.
 
 The hypothesis is parameterized by `RiemannianMetricComplete`; this keeps the
 metric-completeness route visible and prevents it from being silently reused
-as the `[CompleteSpace E]` premise of the local ODE. -/
+as the `[CompleteSpace E]` premise of the local ODE.  It is the continuation
+input for the complete-manifold paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
+and Lee (`lee2018`), Theorem 6.19. -/
 structure MaximalGeodesicContinuation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) (G : MaximalGeodesic (I := I) g p v)
@@ -312,6 +360,7 @@ structure MaximalGeodesicContinuation
       ∀ b : ℝ, (∀ t ∈ G.lifetime, t ≤ b) →
         ∃ (s : Set ℝ) (γ : ℝ → M),
           G.lifetime ⊆ s ∧
+          IsOpen s ∧ s.OrdConnected ∧
           (∃ t ∈ s, b < t) ∧
           isGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
           (∀ t ∈ G.lifetime, γ t = G.curve t)
@@ -320,6 +369,7 @@ structure MaximalGeodesicContinuation
       ∀ b : ℝ, (∀ t ∈ G.lifetime, b ≤ t) →
         ∃ (s : Set ℝ) (γ : ℝ → M),
           G.lifetime ⊆ s ∧
+          IsOpen s ∧ s.OrdConnected ∧
           (∃ t ∈ s, t < b) ∧
           isGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
           (∀ t ∈ G.lifetime, γ t = G.curve t)
@@ -342,9 +392,9 @@ theorem maximalGeodesic_lifetime_unboundedAbove
   have hupper : ∀ t ∈ G.lifetime, t ≤ b := by
     intro t ht
     exact le_of_not_gt (fun htb => hbound ⟨t, ht, htb⟩)
-  obtain ⟨s, γ, hs, hmore, hgeo, hcont, heq⟩ :=
+  obtain ⟨s, γ, hs, hopen, hinterval, hmore, hgeo, hcont, heq⟩ :=
     hcontinue.right hcomplete b hupper
-  have hsubset : s ⊆ G.lifetime := G.maximal s γ hs hgeo hcont heq
+  have hsubset : s ⊆ G.lifetime := G.maximal s γ hs hopen hinterval hgeo hcont heq
   rcases hmore with ⟨t, ht, hbt⟩
   exact (not_lt_of_ge (hupper t (hsubset ht))) hbt
 
@@ -363,9 +413,9 @@ theorem maximalGeodesic_lifetime_unboundedBelow
   have hlower : ∀ t ∈ G.lifetime, b ≤ t := by
     intro t ht
     exact le_of_not_gt (fun htb => hbound ⟨t, ht, htb⟩)
-  obtain ⟨s, γ, hs, hmore, hgeo, hcont, heq⟩ :=
+  obtain ⟨s, γ, hs, hopen, hinterval, hmore, hgeo, hcont, heq⟩ :=
     hcontinue.left hcomplete b hlower
-  have hsubset : s ⊆ G.lifetime := G.maximal s γ hs hgeo hcont heq
+  have hsubset : s ⊆ G.lifetime := G.maximal s γ hs hopen hinterval hgeo hcont heq
   rcases hmore with ⟨t, ht, htb⟩
   exact (not_lt_of_ge (hlower t (hsubset ht))) htb
 
@@ -414,7 +464,10 @@ theorem exists_globalGeodesic_of_complete
 
 /-- The all-initial-data maximal-domain producer expected by the global
 extension theorem.  It records the boundaryless/model-space contract in its
-type rather than hiding it in a finite-interval facade. -/
+type rather than hiding it in a finite-interval facade.  This unresolved
+producer input belongs to the complete-manifold paragraph preceding
+Morgan--Tian, Theorem 1.18 (`morganTian2007`); compare do Carmo (`doCarmo1992`),
+Chapter 7, Section 2, and Lee (`lee2018`), Theorem 6.19. -/
 structure CompleteMaximalGeodesicData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     [T3Space M] [CompleteSpace E] [BoundarylessManifold I M] where
@@ -438,6 +491,36 @@ theorem exists_globalGeodesic_of_complete_all
       Continuous γ ∧ isGeodesic (I := I) g γ := by
   exact exists_globalGeodesic_of_complete g hcomplete (data.solution p v)
     (data.continuation p v)
+
+/-- The source-facing geodesic-completeness predicate used by later exponential
+and variation modules.  This is a producer-consuming wrapper: the actual S18
+maximal-domain and continuation construction is supplied by `data`.  Its source
+anchor is the complete-manifold paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
+and Lee (`lee2018`), Theorem 6.19.  This is the existence form; the preceding
+per-witness lifetime theorem is the contract for each supplied maximal
+geodesic, and no uniqueness/equivalence claim is made here. -/
+def IsGeodesicallyComplete
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) : Prop :=
+  ∀ (p : M) (v : TangentSpace I p),
+    ∃ γ : ℝ → M,
+      γ 0 = p ∧
+      HasDerivAt (chartReading (I := I) p γ)
+        (chartVelocityAt (I := I) p v) 0 ∧
+      Continuous γ ∧ isGeodesic (I := I) g γ
+
+/-- Metric completeness and a completed S18 producer imply the source-facing
+geodesic-completeness predicate.  This is the forward producer implication at
+Morgan--Tian, Theorem 1.18 (`morganTian2007`); compare do Carmo (`doCarmo1992`),
+Chapter 7, Section 2, and Lee (`lee2018`), Theorem 6.19. -/
+theorem isGeodesicallyComplete_of_complete
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (hcomplete : RiemannianMetricComplete (I := I) g)
+    (data : CompleteMaximalGeodesicData (I := I) g) :
+    IsGeodesicallyComplete (I := I) g := by
+  intro p v
+  exact exists_globalGeodesic_of_complete_all g hcomplete data p v
 
 /-! ## Minimizing segments -/
 
@@ -521,7 +604,9 @@ constant-speed certificates.
 The `restriction_geodesic` and `translation_geodesic` fields are explicit
 equation-transfer outputs.  They prevent this S19 interface from silently
 asserting affine invariance that has not yet been proved in the local S18
-connection API. -/
+connection API.  Its source boundary is Morgan--Tian, Theorem 1.18
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
+and Lee (`lee2018`), Theorem 6.19. -/
 structure MinimizingGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (x y : M) where
@@ -638,7 +723,10 @@ theorem MinimizingGeodesic.dist_eq_constSpeed
 
 /-- The compactness/variation producer expected by the complete-manifold part
 of S19.  Its finite-distance premise is explicit, so disconnected components
-cannot accidentally be treated as joined by a finite minimizer. -/
+cannot accidentally be treated as joined by a finite minimizer.  This remains
+an unresolved producer input for Morgan--Tian, Theorem 1.18 (`morganTian2007`);
+compare do Carmo (`doCarmo1992`), Chapter 7, Section 2, and Lee (`lee2018`),
+Theorem 6.19. -/
 structure MinimizingGeodesicData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     [T3Space M] [CompleteSpace E]
@@ -699,7 +787,10 @@ and the compactness/minimizer producer are supplied, metric completeness gives
 the global geodesic and minimizing-segment consequences together.
 
 This is intentionally an implication from those named producers, rather than
-an opaque postulate asserting either existence result. -/
+an opaque postulate asserting either existence result.  The source target is
+Morgan--Tian, Theorem 1.18 and its preceding complete-manifold paragraph
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
+and Lee (`lee2018`), Theorem 6.19. -/
 theorem hopfRinow
     [T3Space M] [PreconnectedSpace M] [CompleteSpace E]
     [BoundarylessManifold I M]
@@ -757,6 +848,37 @@ theorem disconnected_component_probe
     canonicalRiemannianEDist (I := I) g x y < ⊤ →
       Nonempty (MinimizingGeodesic (I := I) g x y) :=
   exists_minimizingGeodesic_of_finite g hcomplete data x y
+
+omit [FiniteDimensional ℝ E] in
+/-- Points separated by a clopen subset have no path between them, hence their
+canonical Riemannian extended distance is infinite.  This is the genuine
+disconnected-component negative regression used to guard the finite-distance
+minimizer branch. -/
+theorem canonicalRiemannianEDist_top_of_clopen
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    {s : Set M} (hs : IsClopen s) {x y : M}
+    (hx : x ∈ s) (hy : y ∉ s) :
+    canonicalRiemannianEDist (I := I) g x y = ⊤ := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  have hno : IsEmpty (Path x y) := by
+    constructor
+    intro γ
+    have hrange : IsPreconnected (Set.range (γ : unitInterval → M)) :=
+      isPreconnected_range γ.continuous
+    have hxrange : x ∈ Set.range (γ : unitInterval → M) := by
+      refine ⟨0, ?_⟩
+      exact γ.source
+    have hsub : Set.range (γ : unitInterval → M) ⊆ s :=
+      hrange.subset_isClopen hs ⟨x, hxrange, hx⟩
+    have hyrange : y ∈ Set.range (γ : unitInterval → M) := by
+      refine ⟨1, ?_⟩
+      exact γ.target
+    exact hy (hsub hyrange)
+  letI : IsEmpty (Path x y) := hno
+  change Manifold.riemannianEDist I x y = ⊤
+  rw [Manifold.riemannianEDist]
+  simp
 
 /-!
 The global theorem above still requires `[CompleteSpace E]`, while its metric
