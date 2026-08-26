@@ -181,6 +181,7 @@ retained only where the first-variation boundary formula needs them. -/
 noncomputable def velocityWithin (gamma : ℝ → M) (a b t : ℝ) : TangentSpace I (gamma t) :=
   (mfderiv[Icc a b] gamma t) 1
 
+omit [IsManifold I ∞ M] in
 /-- Away from the endpoints, the boundary-aware accessor agrees with the
 canonical unrestricted velocity density. -/
 theorem velocityWithin_eq_velocity_of_mem_Ioo
@@ -221,7 +222,8 @@ omit [IsManifold I ∞ M] in
 @[simp]
 theorem velocityWithin_const (x : M) (a b t : ℝ) :
     velocityWithin (I := I) (fun _ : ℝ => x) a b t = 0 := by
-  simp [velocityWithin]
+  rw [velocityWithin, mfderivWithin_const]
+  simp
 
 /-- The squared speed of a constant curve is zero.  This is the concrete
 zero-velocity regression for the canonical metric energy. -/
@@ -340,7 +342,7 @@ theorem ofReal_curveLength_eq_pathELength
 /-- Energy is additive across adjacent intervals for the canonical
 unrestricted density. Endpoint values of the separate `velocityWithin`
 accessor are null for this integral and do not enter the API. -/
-theorem energy_add (gamma : ℝ → M) {a b c : ℝ} (hab : a ≤ b) (hbc : b ≤ c)
+theorem energy_add (gamma : ℝ → M) {a b c : ℝ}
     (h₁ : IntervalIntegrable (speedSq (I := I) g gamma) volume a b)
     (h₂ : IntervalIntegrable (speedSq (I := I) g gamma) volume b c) :
     energy (I := I) g gamma a c =
@@ -790,12 +792,11 @@ private theorem euclidean_straightLine_velocity_unrestricted (p v t : ℝ) :
   change (fderiv ℝ (fun s : ℝ => p + s * v) t) 1 = v
   have hd : HasDerivAt (fun s : ℝ => p + s * v) v t := by
     simpa using ((hasDerivAt_id t).mul_const v).const_add p
-  rw [hd.fderiv]
+  rw [hd.hasFDerivAt.fderiv]
   simp
 
 /-- The affine real line has the expected Euclidean squared speed. -/
-private theorem euclidean_straightLine_speedSq (p v : ℝ) {a b t : ℝ}
-    (hab : a < b) (ht : t ∈ Icc a b) :
+private theorem euclidean_straightLine_speedSq (p v : ℝ) (t : ℝ) :
     let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, ℝ) ∞ ℝ
         (fun x : ℝ => TangentSpace 𝓘(ℝ, ℝ) x) :=
       { riemannianMetricVectorSpace ℝ with
@@ -825,7 +826,7 @@ private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (hab : a <
       (fun _ : ℝ => v ^ 2) (uIcc a b) := by
     intro t ht
     rw [uIcc_of_le hab.le] at ht
-    exact euclidean_straightLine_speedSq p v hab ht
+    exact euclidean_straightLine_speedSq p v t
   rw [intervalIntegral.integral_congr hEq, intervalIntegral.integral_const]
   simp [smul_eq_mul]
   ring
@@ -850,7 +851,7 @@ constant one: positive definiteness, not metric constancy, controls every
 energy density. -/
 private theorem nonconstant_metric_sign_probe
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) (a b t : ℝ) :
+    (gamma : ℝ → M) (t : ℝ) :
     0 ≤ g.inner (gamma t) (velocity (I := I) gamma t)
       (velocity (I := I) gamma t) :=
   speedSq_nonneg (I := I) g gamma t
@@ -859,7 +860,7 @@ private theorem nonconstant_metric_sign_probe
 with the base point as well as for a constant Euclidean metric. -/
 private theorem metric_sign_probe_of_nonzero_velocity
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (gamma : ℝ → M) (a b t : ℝ)
+    (gamma : ℝ → M) (t : ℝ)
     (hv : velocity (I := I) gamma t ≠ 0) :
     0 < g.inner (gamma t) (velocity (I := I) gamma t)
       (velocity (I := I) gamma t) :=
@@ -1055,7 +1056,8 @@ theorem variationEnergy_zero_eq_energy
     exact V.zero_slice x hx
   change speedSq (I := I) g (baseCurve V) t =
     speedSq (I := I) g gamma t
-  rw [speedSq, hlocal.mfderiv_eq, hlocal.self_of_nhds]
+  simp only [speedSq, velocity]
+  rw [hlocal.mfderiv_eq, hlocal.self_of_nhds]
 
 /-- The metric pairing of the variational field and base velocity. -/
 noncomputable def variationPairing
