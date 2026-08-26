@@ -35,6 +35,9 @@ chart-density and normalized change-of-variables substrate remains a direct
 provisional leaf until the named N1 cut-locus consumer fixes its stable
 boundary; it uses Mathlib's `LinearMap.normDet` and `μHE[finrank ℝ E]`
 directly and does not install a competing global measure.
+The provisional `Connection.TensorLaplacian` evaluation layer is likewise
+direct-only until its bundled, extension-independent producer is available for
+S13's Bochner consumer.
 -/
 
 namespace MorganTianLib
