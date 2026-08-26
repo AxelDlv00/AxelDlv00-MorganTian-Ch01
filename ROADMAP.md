@@ -547,10 +547,15 @@ Node contracts:
   delete the compatibility wrappers.  The slice does not yet identify
   `riemannianVolume` with the chart-density integral: the pinned Mathlib API
   has no Hausdorff-volume/chart-density bridge, and no assumption-backed
-  replacement or second global measure is introduced.  That bridge and the
-  sphere/radial and ratio-of-integrals toolkit remain open A2 work.  A2
-  supplies S28 nullity but owns no post-N1 polar-density equality; that work is
-  N2.
+  replacement or second global measure is introduced.  The manifold-free
+  `Volume.PolarIntegral` layer now supplies the independent additive-Haar
+  sphere/radial decomposition, ball and radial formulas, and a canonical
+  `μHE[finrank ℝ E]` corollary, with explicit dimension-one and dimension-zero
+  boundary regressions.  It is exported by `Ch01.lean` because it introduces no
+  manifold producer or alternate measure.  The chart-density bridge to
+  `riemannianVolume` and the ratio-of-integrals toolkit remain open A2 work.
+  A2 supplies S28 nullity but owns no post-N1 polar-density equality; that work
+  is N2.
 - **J1** (`F1`, `F2`): intrinsic Jacobi equation, existence/uniqueness/linearity, chart and
   frame reductions, geodesic variations, and `d exp`.
 - **V1** (`J1`): exact regularity for arbitrary-family first/second variation,
@@ -775,6 +780,7 @@ revision established.  The audit history is:
 | `issue-41-public-boundary-review-response` / `c4f6fb8191c82bcdaa7872a699ab205b9550e803` | Removed the provisional tensor-derivative/Laplacian leaf from the stable `Ch01.lean` umbrella, documented the direct-import boundary beside the raw evaluator, and added an S12 provisional-debt row with an objective S13 consumer trigger | Accepted canonical-representation and provisional-debt policy in this roadmap; current Chapter 1 import graph; Morgan--Tian pp. 39--40 (`morganTian2007`); pinned Mathlib connection, tensoriality, and trace APIs; focused direct-leaf and stable-root elaboration against the pinned artifacts, plus source/import scans | Keep the raw evaluation layer direct-only. Before S13's `Curvature.bochnerFormula` is accepted, prove a smooth bundled, extension-independent producer and migrate that consumer; otherwise do not umbrella-export a canonical connection Laplacian. Preserve the exact `leviCivitaConnection` and conditional trace bridge |
 
 | `A2-chart-density-null-transport` / `e960f338ac43b3d79f76f8aac8db8aafa91b9174` | Added the exact-source density-weighted chart-overlap `lintegral` transport law, using the pinned injective Jacobian API and the Gram-density transition identity; added countable-Lipschitz transport of `μHE[finrank ℝ E]`-null images and a scoped canonical `riemannianVolume` wrapper with explicit metric/Borel instances | Morgan--Tian Chapter 1 volume and cut-locus discussion, pp. 45--50 (`morganTian2007`); pinned Mathlib `MeasureTheory.Function.Jacobian`, Hausdorff-measure, Lipschitz-image, and `Geometry.Euclidean.Volume.Measure` APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; canonical normalization declarations in `MorganTianLib/Ch01/Volume.lean`; fresh direct leaf elaboration, exported signatures, and `#print axioms` probes | Mark this focused pre-N1 A2 subset implemented.  Keep the Riemannian path-metric/chart-density identification, sphere/radial integration, ratio-of-integrals estimates, and N1/N2 consumers open; retain `ChangeOfVariables` as a direct provisional leaf under the existing umbrella boundary, and add no competing global measure, metric instance, or Jacobian vocabulary |
+| `A2-polar-haar-integration` / `f3306b0ecc3f025680d1b20a57501bc44fdf386f` | Added the manifold-free additive-Haar polar decomposition for measurable `ℝ≥0∞`-valued integrands, the exact metric-ball restriction and radial specialization, the canonical `μHE[finrank ℝ E]` corollary, and explicit dimension-one and dimension-zero boundary regressions; exported `MorganTianLib.Ch01.Volume.PolarIntegral` through the Chapter 1 umbrella | Morgan--Tian Chapter 1 volume discussion, pp. 45--50 (`morganTian2007`); pinned Mathlib `Measure.measurePreserving_homeomorphUnitSphereProd`, `Measure.toSphere`, `Measure.volumeIoiPow`, `lintegral_prod`, and Euclidean Hausdorff normalization APIs at `520045ab14e26149ee970e2e617ca04b09bde5d6`; focused pinned-artifact leaf and umbrella elaboration, exported signatures, `#print axioms`, radius edge checks, and source/import scans | Mark only the independent sphere/radial A2 subset implemented.  Keep the chart-density/`riemannianVolume` identification, ratio-of-integrals engine, manifold polar/Jacobian equality, metric-ball volume, Bishop--Gromov, and all N1/N2 conclusions open; retain Mathlib `μHE[finrank ℝ E]` and additive-Haar APIs as the only measure choices |
 ## Review and completion checklist
 
 Before Z1, reviewers require:
