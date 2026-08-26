@@ -632,7 +632,7 @@ the derivative order and endpoint orientation visible. -/
 theorem speedSq_eq_of_zero_acceleration
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {a b : ℝ} (hacc : CovariantAccelerationData g gamma a b)
-    (hab : a ≤ b) (hzero : ∀ t ∈ Ioo a b, hacc.acceleration t = 0) :
+    (_hab : a ≤ b) (hzero : ∀ t ∈ Ioo a b, hacc.acceleration t = 0) :
     ∀ t₁ t₂, t₁ ∈ Icc a b → t₂ ∈ Icc a b →
       speedSq (I := I) g gamma t₁ = speedSq (I := I) g gamma t₂ := by
   intro t₁ t₂ ht₁ ht₂
@@ -809,7 +809,7 @@ private theorem euclidean_straightLine_speedSq (p v : ℝ) (t : ℝ) :
 
 /-- The concrete Euclidean straight line has the normalized energy
 `(1/2) * (b-a) * v^2`. -/
-private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (hab : a < b) :
+private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (_hab : a < b) :
     let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, ℝ) ∞ ℝ
         (fun x : ℝ => TangentSpace 𝓘(ℝ, ℝ) x) :=
       { riemannianMetricVectorSpace ℝ with
@@ -825,7 +825,7 @@ private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (hab : a <
         (fun s : ℝ => p + s * v))
       (fun _ : ℝ => v ^ 2) (uIcc a b) := by
     intro t ht
-    rw [uIcc_of_le hab.le] at ht
+    rw [uIcc_of_le _hab.le] at ht
     exact euclidean_straightLine_speedSq p v t
   rw [intervalIntegral.integral_congr hEq, intervalIntegral.integral_const]
   simp [smul_eq_mul]
