@@ -289,7 +289,7 @@ def chartReading (alpha : M) (gamma : ℝ → M) : ℝ → E :=
 /-- The second-order regularity needed by the coordinate geodesic equation.
 
 The eventual first-derivative clause is intentional: Mathlib's `deriv` is
-totalized, so differentiability only at the base time would admit spurious
+totalized, so differentiability only at the base time could allow spurious
 second derivatives. -/
 def HasChartGeodesicRegularityAt (alpha : M) (gamma : ℝ → M) (t : ℝ) : Prop :=
   (∀ᶠ s in 𝓝 t, gamma s ∈ (chartAt H alpha).source) ∧
