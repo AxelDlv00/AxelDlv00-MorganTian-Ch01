@@ -350,11 +350,13 @@ theorem christoffel_formula [IsManifold I ∞ M]
   intro l _
   ring
 
-/-! The next two declarations are the narrow chart-data bridges consumed by
+/-! The next two declarations are narrow internal chart-data bridges consumed by
 the geometric curvature layer.  Their statements mention only the canonical
 trivialization frame and the interior/differentiability hypotheses needed by
 the derivative calculation; the chart-frame implementation remains private.
 -/
+
+namespace Internal
 
 /-- The canonical chart frame has zero Lie bracket on the chart source. -/
 theorem mlieBracket_localFrame_eq_zero [IsManifold I ∞ M]
@@ -416,6 +418,8 @@ theorem fderiv_chartScalar_eq_mvfderiv [IsManifold I ∞ M]
           (Module.finBasis ℝ E) r p)) = _
   rw [← mfderiv_extChartAt_chartFrame (I := I) alpha r hp, mfderiv_eq_fderiv]
   rfl
+
+end Internal
 
 end Connection
 end Ch01

@@ -5,7 +5,7 @@ import MorganTianLib.Ch01.Curvature
 
 This module supplies the first pointwise consumer of the canonical commutator
 from `MorganTianLib.Ch01.Curvature`.  Morgan--Tian Definition 1.4 and Claim
-1.5 treat the curvature as a tensor at a point.  Mathlib's bundled
+1.5 (`morganTian2007`) treat the curvature as a tensor at a point.  Mathlib's bundled
 `CovariantDerivative` exposes the commutator first on differentiable sections,
 so the proofs below make the local smooth extension used at the evaluation
 point explicit.  The resulting additivity and scalar laws are then packaged
@@ -26,8 +26,7 @@ noncomputable section
 namespace MorganTianLib
 namespace Ch01
 namespace Curvature
-
-section Tensoriality
+namespace Tensoriality
 
 variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
@@ -37,6 +36,7 @@ variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
 private abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
   ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
 
+omit [FiniteDimensional ℝ EM] in
 private lemma smoothAt_eventually_mdifferentiableAt
     {X : (x : M) → TangentSpace I x} {p : M} (hX : SmoothAt X p) :
     ∀ᶠ q in 𝓝 p, MDiffAt (T% X) q := by
@@ -52,6 +52,7 @@ private lemma covariantField_mdifferentiableAt_lc
   exact (Connection.contMDiffAt_leviCivitaConnection_apply g hX hY).mdifferentiableAt
     (by simp)
 
+omit [FiniteDimensional ℝ EM] in
 private lemma extend_add_eventuallyEq {p : M} (X Y : TangentSpace I p) :
     FiberBundle.extend (E := (TangentSpace I : M → Type _)) EM (X + Y) =ᶠ[𝓝 p]
       FiberBundle.extend (E := (TangentSpace I : M → Type _)) EM X +
@@ -78,6 +79,7 @@ private lemma extend_add_eventuallyEq {p : M} (X Y : TangentSpace I p) :
     ← t.continuousLinearMapAt_apply_of_mem ℝ hp,
     ← t.continuousLinearMapAt_apply_of_mem ℝ hp, map_add]
 
+omit [FiniteDimensional ℝ EM] in
 private lemma extend_smul_eventuallyEq {p : M} (c : ℝ) (X : TangentSpace I p) :
     FiberBundle.extend (E := (TangentSpace I : M → Type _)) EM (c • X) =ᶠ[𝓝 p]
       (fun _ : M => c) • FiberBundle.extend (E := (TangentSpace I : M → Type _)) EM X := by
@@ -108,6 +110,7 @@ private lemma covariantField_add_eventually_at
     smoothAt_eventually_mdifferentiableAt hW] with q hZq hWq
   exact covariantField_add_argument cov hZq hWq
 
+omit [FiniteDimensional ℝ EM] in
 private lemma covariantField_congr_eventually_at
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Y' : (x : M) → TangentSpace I x} {p : M}

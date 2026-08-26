@@ -1,5 +1,4 @@
 import MorganTianLib.Ch01.Geodesic
-import MorganTianLib.Ch01.Geodesic.HopfRinow
 import MorganTianLib.Ch01.Curvature.Tensoriality
 
 /-!
@@ -82,24 +81,6 @@ private noncomputable def curvature
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (X Y Z : TangentSpace I p) : TangentSpace I p :=
   Curvature.curvature g p X Y Z
-
-/-- The curvature slots used by the Jacobi equation are source ordered. -/
-private theorem curvature_swap
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (p : M) (X Y Z : TangentSpace I p) :
-    curvature (I := I) g p Y X Z = -curvature (I := I) g p X Y Z := by
-  exact Curvature.curvature_swap g p X Y Z
-
-/-- Constant-curvature sign regression for the Jacobi operator.  On a unit
-vector perpendicular to the velocity, the accepted model gives `R(J,V)V = K J`,
-so the source-ordered Jacobi equation has the spherical oscillation sign for
-positive `K`. -/
-theorem model_jacobi_sign
-    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
-    (K : ℝ) (J V : F) (hV : ‖V‖ = 1)
-    (hJV : inner ℝ J V = 0) :
-    Curvature.modelCurvature K J V V = K • J :=
-  Curvature.modelCurvature_apply_unit_orthogonal K J V hV hJV
 
 /-! ## Covariant derivatives along a curve -/
 
@@ -188,19 +169,6 @@ private lemma chartConnectionContraction_left_zero
   classical
   simp [Geodesic.chartConnectionContraction]
 
-private lemma chartConnectionContraction_add_left
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (α : M) (y v w z : E) :
-    Geodesic.chartConnectionContraction (I := I) g α y (v + w) z =
-      Geodesic.chartConnectionContraction (I := I) g α y v z +
-        Geodesic.chartConnectionContraction (I := I) g α y w z := by
-  classical
-  unfold Geodesic.chartConnectionContraction
-  simp_rw [(Module.finBasis ℝ E).repr.map_add]
-  simp only [Finsupp.add_apply]
-  ring_nf
-  simp only [Finset.sum_add_distrib, add_smul]
-
 private lemma chartConnectionContraction_add_right
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (α : M) (y v w z : E) :
@@ -274,7 +242,7 @@ private lemma curvatureCoord_add_left
         (fun s : ℝ => curvature (I := I) g (γ s) (J₁ s) (V s) (W s) +
           curvature (I := I) g (γ s) (J₂ s) (V s) (W s)) := by
     funext s
-    exact Curvature.curvature_add_first (g := g) (p := γ s)
+    exact Curvature.Tensoriality.curvature_add_first (g := g) (p := γ s)
       (X := J₁ s) (Y := J₂ s) (Z := V s) (W := W s)
   unfold curvatureCoord
   rw [hfield, fieldCoord_add]
@@ -291,7 +259,7 @@ private lemma curvatureCoord_smul_left
     funext s
     change Curvature.curvature (I := I) g (γ s) (c • J s) (V s) (W s) =
       c • Curvature.curvature (I := I) g (γ s) (J s) (V s) (W s)
-    exact Curvature.curvature_smul_first (g := g) (p := γ s)
+    exact Curvature.Tensoriality.curvature_smul_first (g := g) (p := γ s)
       (c := c) (X := J s) (Y := V s) (W := W s)
   unfold curvatureCoord
   rw [hfield, fieldCoord_smul]
@@ -512,7 +480,7 @@ theorem isJacobiFieldOnAt_zero
       intro s
       change Curvature.curvature (I := I) g (γ s) 0
         (velocity (I := I) γ s) (velocity (I := I) γ s) = 0
-      simpa using (Curvature.curvature_smul_first (g := g) (p := γ s)
+      simpa using (Curvature.Tensoriality.curvature_smul_first (g := g) (p := γ s)
         (c := (0 : ℝ)) (X := velocity (I := I) γ s)
         (Y := velocity (I := I) γ s) (W := velocity (I := I) γ s))
     have hcurv_field :
@@ -571,16 +539,6 @@ theorem isJacobiFieldOn_iff_hasJacobiEquationAt
     · intro t ht
       exact (h t ht).2
 
-/-- Compatibility spelling of the local Jacobi certificate.
-
-`IsGeodesicJacobiFieldOn` adds the geodesic, continuity, and source-constrained
-local-window hypotheses used by endpoint and conjugacy consumers; downstream
-geodesic statements should use that stronger predicate. -/
-abbrev JacobiField
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ) (a b : ℝ) : Prop :=
-  IsJacobiFieldOn (I := I) g γ J DJ a b
-
 /-- The first covariant derivative clause of a Jacobi field. -/
 theorem IsJacobiFieldOn.hasCovariantDerivative
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
@@ -617,7 +575,7 @@ theorem isJacobiFieldOn_zero
       intro s
       change Curvature.curvature (I := I) g (γ s) 0
         (velocity (I := I) γ s) (velocity (I := I) γ s) = 0
-      simpa using (Curvature.curvature_smul_first (g := g) (p := γ s)
+      simpa using (Curvature.Tensoriality.curvature_smul_first (g := g) (p := γ s)
         (c := (0 : ℝ)) (X := velocity (I := I) γ s)
         (Y := velocity (I := I) γ s) (W := velocity (I := I) γ s))
     have hcurv_field : (fun s : ℝ => curvature (I := I) g (γ s) 0
@@ -683,7 +641,7 @@ theorem isJacobiFieldOn_euclidean_affine
       intro x
       change Curvature.curvature (I := 𝓘(ℝ, E)) g p x 0 0 = 0
       simpa using
-        (Curvature.curvature_smul_second (g := g) (p := p)
+        (Curvature.Tensoriality.curvature_smul_second (g := g) (p := p)
           (c := (0 : ℝ)) (X := x) (Y := 0) (W := 0))
     have hcurv_field :
         (fun s : ℝ => curvature (I := 𝓘(ℝ, E)) g p
@@ -814,6 +772,20 @@ def IsGeodesicJacobiFieldOn
   Geodesic.isGeodesicOn (I := I) g γ (Icc a b) ∧
     ContinuousOn γ (Icc a b) ∧
     IsJacobiFieldAlongOn (I := I) g γ J DJ a b
+
+/-- The public Jacobi-field contract on a geodesic segment.
+
+This spelling deliberately points at the source-constrained geodesic contract,
+not the existential-chart differential certificate.  The latter remains
+available as `IsJacobiFieldOn` for local proof construction, while
+`IsJacobiFieldAlongOn` exposes the source-safe differential layer without
+requiring geodesicity.  Consequently every value certified by `JacobiField`
+has a geodesic base curve, continuity, a common source-safe local window, and
+the source-ordered equation. -/
+abbrev JacobiField
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ) (a b : ℝ) : Prop :=
+  IsGeodesicJacobiFieldOn (I := I) g γ J DJ a b
 
 /-- Extract the geodesic hypothesis from a geodesic Jacobi certificate. -/
 theorem IsGeodesicJacobiFieldOn.isGeodesic

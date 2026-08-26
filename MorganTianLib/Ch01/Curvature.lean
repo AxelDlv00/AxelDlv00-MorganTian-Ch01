@@ -1,138 +1,12 @@
 import MorganTianLib.Ch01.Connection.Christoffel
-import Mathlib.Analysis.InnerProductSpace.PiL2
-
-/-!
-# Chapter 1 curvature convention kernel
-
-This module fixes Morgan--Tian's curvature sign and argument order on a real
-inner-product space, independently of any connection or manifold construction.
-The model operator is
-
-`R_K(X,Y)W = K (inner Y W * X - inner X W * Y)`,
-
-and the associated four-tensor uses the third slot for metric pairing and the
-fourth slot as the operator input:
-
-`R4_K(X,Y,Z,W) = inner (R_K(X,Y)W) Z`.
-
-The component, Jacobi, index-form, sectional, and second/fourth-slot contraction
-theorems below are sign regressions for the future manifold curvature API.  They
-do not assert that a manifold has constant curvature or define geometric
-sectional or Ricci curvature.
-
-Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
-Definition 1.4 and the constant-sectional-curvature formula on pp. 37--39,
-the Jacobi and second-variation formulas on pp. 43--44, and Definition 1.8 on
-p. 39.
--/
-
-open Module
-open scoped RealInnerProductSpace
-
-namespace MorganTianLib
-namespace Ch01
-namespace Curvature
-
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-
-/-- The constant-curvature model operator in Morgan--Tian's sign convention:
-`modelCurvature K X Y W = R_K(X,Y)W`.  The last argument is the vector on
-which the curvature operator acts. -/
-def modelCurvature (K : ℝ) (X Y W : E) : E :=
-  K • (inner ℝ Y W • X - inner ℝ X W • Y)
-
-/-- The constant-curvature model four-tensor in Morgan--Tian's positional
-order.  Its third argument is the metric-pairing slot and its fourth argument
-is the input of `modelCurvature`. -/
-def modelCurvature4 (K : ℝ) (X Y Z W : E) : ℝ :=
-  K * (inner ℝ X Z * inner ℝ Y W - inner ℝ X W * inner ℝ Y Z)
-
-/-- Pairing the output of `modelCurvature K X Y W` with the third argument
-`Z` gives the model four-tensor.  This fixes the last-two-slot order of
-Morgan--Tian, Definition 1.4, pp. 37--38. -/
-theorem modelCurvature4_eq_inner_modelCurvature (K : ℝ) (X Y Z W : E) :
-    modelCurvature4 K X Y Z W = inner ℝ (modelCurvature K X Y W) Z := by
-  simp only [modelCurvature, modelCurvature4, real_inner_smul_left,
-    inner_sub_left]
-  ring
-
-/-- The exact component formula
-`R_ijkl = K (g_ik g_jl - g_il g_jk)`.  The family `e` need not be
-orthonormal: this is the model tensor evaluated on four indexed vectors. -/
-theorem modelCurvature4_component {ι : Type*} (e : ι → E)
-    (K : ℝ) (i j k l : ι) :
-    modelCurvature4 K (e i) (e j) (e k) (e l) =
-      K * (inner ℝ (e i) (e k) * inner ℝ (e j) (e l) -
-        inner ℝ (e i) (e l) * inner ℝ (e j) (e k)) :=
-  rfl
-
-/-- Jacobi-sign regression: if `V` is unit and `J` is perpendicular to
-`V`, then `R_K(J,V)V = K J`.  Thus the future equation
-`D^2 J + R(J,V)V = 0` has the spherical sign for positive `K`. -/
-theorem modelCurvature_apply_unit_orthogonal (K : ℝ) (J V : E)
-    (hV : ‖V‖ = 1) (hJV : inner ℝ J V = 0) :
-    modelCurvature K J V V = K • J := by
-  rw [modelCurvature, real_inner_self_eq_norm_sq, hV]
-  simp only [one_pow, one_smul, hJV, zero_smul, sub_zero]
-
-/-- Index-form sign regression for a unit `V` perpendicular to `J`:
-the curvature contribution is `-K * ‖J‖ ^ 2`. -/
-theorem neg_inner_modelCurvature_apply_unit_orthogonal (K : ℝ) (J V : E)
-    (hV : ‖V‖ = 1) (hJV : inner ℝ J V = 0) :
-    -inner ℝ (modelCurvature K J V V) J = -K * ‖J‖ ^ 2 := by
-  rw [modelCurvature_apply_unit_orthogonal K J V hV hJV,
-    real_inner_smul_left, real_inner_self_eq_norm_sq]
-  ring
-
-/-- Sectional-sign regression: on an orthonormal pair `X, Y`, the model
-four-tensor satisfies `R4_K(X,Y,X,Y) = K`. -/
-theorem modelCurvature4_apply_orthonormal (K : ℝ) (X Y : E)
-    (hX : ‖X‖ = 1) (hY : ‖Y‖ = 1) (hXY : inner ℝ X Y = 0) :
-    modelCurvature4 K X Y X Y = K := by
-  have hXX : inner ℝ X X = 1 := by
-    rw [real_inner_self_eq_norm_sq, hX]
-    norm_num
-  have hYY : inner ℝ Y Y = 1 := by
-    rw [real_inner_self_eq_norm_sq, hY]
-    norm_num
-  have hYX : inner ℝ Y X = 0 := by
-    rw [real_inner_comm, hXY]
-  rw [modelCurvature4, hXX, hYY, hXY, hYX]
-  ring
-
-/-- Ricci-slot regression: contraction of the second and fourth slots against
-a finite orthonormal basis is
-`(finrank Real E - 1) * K * inner X Y`.
-
-No nontriviality or lower dimension bound is needed.  In dimension zero the
-inner product on the right is zero; in dimension one the displayed coefficient
-is zero.  A finitely indexed `OrthonormalBasis` is the only finiteness input. -/
-theorem sum_modelCurvature4_orthonormalBasis {ι : Type*} [Fintype ι]
-    (b : OrthonormalBasis ι ℝ E) (K : ℝ) (X Y : E) :
-    ∑ i, modelCurvature4 K X (b i) Y (b i) =
-      ((finrank ℝ E : ℝ) - 1) * K * inner ℝ X Y := by
-  classical
-  simp_rw [modelCurvature4, b.inner_eq_one, mul_one]
-  calc
-    ∑ i, K * (inner ℝ X Y - inner ℝ X (b i) * inner ℝ (b i) Y) =
-        K * ((Fintype.card ι : ℝ) * inner ℝ X Y - inner ℝ X Y) := by
-      rw [← Finset.mul_sum, Finset.sum_sub_distrib,
-        b.sum_inner_mul_inner, Finset.sum_const, nsmul_eq_mul,
-        Finset.card_univ]
-    _ = ((finrank ℝ E : ℝ) - 1) * K * inner ℝ X Y := by
-      rw [← finrank_eq_card_basis b.toBasis]
-      ring
-
-end Curvature
-end Ch01
-end MorganTianLib
 
 /-!
 # The canonical manifold curvature commutator
 
-This second part of the module connects the sign/order kernel above to the
-bundled Levi--Civita connection from `Ch01.Connection`.  For vector fields the
-operator is exactly Morgan--Tian Definition 1.4,
+The connection-free algebraic sign/order kernel is owned by the adjacent
+`MorganTianLib.Ch01.Curvature.Model` leaf.  This module owns only the dependent
+manifold commutator built from the bundled Levi--Civita connection.  For vector fields the
+operator is exactly Morgan--Tian Definition 1.4 (`morganTian2007`),
 
 `R X Y W = ∇_X (∇_Y W) - ∇_Y (∇_X W) - ∇_[X,Y] W`,
 
@@ -149,7 +23,7 @@ This is the Definition 1.4 construction.  The companion
 additivity and scalar laws in the three `(1,3)` slots and packages them as
 `TensorialAt` witnesses, together with the first Bianchi identity in the
 extension-based API.  These are the proved part of the route toward
-Morgan--Tian Claim 1.5; the metric symmetries and differential Bianchi identity
+Morgan--Tian Claim 1.5 (`morganTian2007`); the metric symmetries and differential Bianchi identity
 are not claimed here.  The chart component below is a local-frame computational
 quantity: until a later bridge theorem is supplied, it must not be read as an
 identification with the `FiberBundle.extend`-based pointwise definition.
@@ -194,12 +68,19 @@ def curvatureField
     - covariantField cov Y (covariantField cov X W) x
     - covariantField cov (VectorField.mlieBracket I X Y) W x
 
-/-- Smoothness predicate for a tangent-bundle section. -/
+/-- Proposition-level smoothness predicate for a tangent-bundle section.
+
+This deliberately remains an unbundled predicate because the extension and
+tensoriality lemmas consume dependent functions directly.  It interoperates
+with Mathlib's bundled `ContMDiffSection`: package a proof as
+`ContMDiffSection.mk X hX`, and recover this proposition with
+`ContMDiffSection.contMDiff`. -/
 abbrev SmoothSection (X : (x : M) → TangentSpace I x) : Prop :=
   ContMDiff I (I.prod 𝓘(ℝ, EM)) ∞ (fun x =>
     Bundle.TotalSpace.mk' EM (E := fun x : M => TangentSpace I x) x (X x))
 
 /-- A smooth covariant derivative sends two smooth fields to a smooth field. -/
+omit [FiniteDimensional ℝ EM] in
 lemma covariantField_smooth
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
@@ -236,10 +117,14 @@ lemma curvatureField_smooth
   simpa [curvatureField] using
     (h1 q).sub_section (h2 q) |>.sub_section (h3 q)
 
+/-- A smooth section is differentiable at every point. -/
+omit [FiniteDimensional ℝ EM] in
 lemma smoothSection_mdifferentiableAt {X : (x : M) → TangentSpace I x}
     (hX : SmoothSection X) (p : M) : MDiffAt (T% X) p :=
   (hX p).mdifferentiableAt (by simp)
 
+/-- Additivity of the covariant derivative in its direction field. -/
+omit [FiniteDimensional ℝ EM] in
 lemma covariantField_add_direction
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Z : (x : M) → TangentSpace I x} {p : M}
@@ -250,6 +135,8 @@ lemma covariantField_add_direction
   simp only [Pi.add_apply]
   rw [map_add]
 
+/-- Additivity in the differentiated section, under pointwise regularity. -/
+omit [FiniteDimensional ℝ EM] in
 lemma covariantField_add_argument
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Z : (x : M) → TangentSpace I x} {p : M}
@@ -261,6 +148,8 @@ lemma covariantField_add_argument
   have h' := congrArg (fun A => A (X p)) h
   simpa [Pi.add_apply] using h'
 
+/-- Homogeneity in the direction field. -/
+omit [FiniteDimensional ℝ EM] in
 lemma covariantField_smul_direction
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {c : ℝ} {X Y : (x : M) → TangentSpace I x} {p : M}
@@ -270,6 +159,8 @@ lemma covariantField_smul_direction
   simp only [Pi.smul_apply]
   rw [map_smul]
 
+/-- Leibniz rule for scalar multiplication in the differentiated section. -/
+omit [FiniteDimensional ℝ EM] in
 lemma covariantField_smul_argument
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {f : M → ℝ} {X Y : (x : M) → TangentSpace I x} {p : M}
@@ -281,6 +172,8 @@ lemma covariantField_smul_argument
   have h' := congrArg (fun A => A (X p)) h
   simpa using h'
 
+/-- First-pair skew symmetry of the field curvature commutator. -/
+omit [FiniteDimensional ℝ EM] in
 lemma curvatureField_swap
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     (X Y W : (x : M) → TangentSpace I x) (p : M) :
@@ -290,6 +183,8 @@ lemma curvatureField_swap
   norm_num
   abel_nf
 
+/-- Locality of the covariant derivative in its direction value. -/
+omit [FiniteDimensional ℝ EM] in
 lemma covariantField_congr_direction
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X X' Y : (x : M) → TangentSpace I x} {p : M}
@@ -298,6 +193,8 @@ lemma covariantField_congr_direction
   unfold covariantField
   rw [h]
 
+/-- Locality of the covariant derivative in its differentiated section. -/
+omit [FiniteDimensional ℝ EM] in
 lemma covariantField_congr_argument
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Y' : (x : M) → TangentSpace I x} {p : M}
@@ -309,6 +206,7 @@ lemma covariantField_congr_argument
     hY hY' (univ_mem : (Set.univ : Set M) ∈ nhds p) h
   exact congrArg (fun A => A (X p)) hc
 
+/-- Extension locality of the curvature commutator in its first direction. -/
 lemma curvatureField_congr_first
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X X' Y W : (x : M) → TangentSpace I x} {p : M}
@@ -330,6 +228,7 @@ lemma curvatureField_congr_first
     covariantField_congr_argument cov hXW hXW' hXW_eq,
     covariantField_congr_direction cov hb]
 
+/-- Extension locality of the curvature commutator in its second direction. -/
 lemma curvatureField_congr_second
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Y' W : (x : M) → TangentSpace I x} {p : M}
@@ -363,6 +262,7 @@ lemma curvatureField_congr_second
     covariantField_congr_direction cov hYp,
     covariantField_congr_direction cov hb]
 
+/-- Extension locality of the curvature commutator in its vector argument. -/
 lemma curvatureField_congr_third
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y W W' : (x : M) → TangentSpace I x} {p : M}
@@ -384,9 +284,11 @@ lemma curvatureField_congr_third
   rw [covariantField_congr_argument cov hYW hYW' hYW_eq,
     covariantField_congr_argument cov hXW hXW' hXW_eq, hbr]
 
-/-! The following is the extension-independence contract for the pointwise
-definition.  It is stated with the exact local differentiability assumptions
-consumed by Mathlib's covariant-derivative locality theorem. -/
+/-- Extension-independence of the pointwise curvature value.
+
+The hypotheses are exactly the local differentiability assumptions consumed by
+Mathlib's covariant-derivative locality theorem.  This is the public bridge
+from the field-level commutator to the extension-based tangent-space value. -/
 theorem curvatureField_congr_of_eventuallyEq
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X X' Y Y' W W' : (x : M) → TangentSpace I x} {p : M}
@@ -417,6 +319,7 @@ theorem curvatureField_congr_of_eventuallyEq
     _ = curvatureField cov X' Y' W' p :=
       curvatureField_congr_first cov hXW' hX'W' hXW'_eq hX
 
+omit [FiniteDimensional ℝ EM] in
 private lemma covariant_sum_apply {ι : Type*} [Fintype ι]
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     (f : ι → M → ℝ) (Y : ι → (x : M) → TangentSpace I x)
@@ -470,6 +373,7 @@ private lemma covariant_sum_apply {ι : Type*} [Fintype ι]
   simpa [_root_.add_apply, _root_.smul_apply,
     ContinuousLinearMap.smulRight_apply] using hi''
 
+omit [FiniteDimensional ℝ EM] in
 private lemma covariant_frame_expansion {ι : Type*} [Fintype ι]
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {p : M} {U : Set M}
@@ -626,7 +530,7 @@ hypotheses. -/
 
 At points in the chart source this is the coefficient of
 `∇_(e_a) e_c` in the canonical local frame. -/
-noncomputable def chartChristoffel
+private noncomputable def chartChristoffel
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (alpha : M) (a c s : Fin (Module.finrank ℝ EM)) (q : M) : ℝ :=
   let t := trivializationAt EM (TangentSpace I) alpha
@@ -641,7 +545,7 @@ This is the chart-side computational quantity used by the coordinate formula.
 It is intentionally stated in terms of `curvatureField` on the displayed local
 frame; no theorem identifying it with the extension-based `curvature` value is
 asserted here. -/
-noncomputable def chartCurvatureComponent
+private noncomputable def chartCurvatureComponent
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (alpha : M) (p : M) (i j k l : Fin (Module.finrank ℝ EM)) : ℝ :=
   let t := trivializationAt EM (TangentSpace I) alpha
@@ -653,7 +557,7 @@ noncomputable def chartCurvatureComponent
 
 /-- The canonical chart Christoffel coefficients are differentiable on the
 chart source. -/
-theorem chartChristoffel_mdifferentiableAt
+private theorem chartChristoffel_mdifferentiableAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {alpha p : M} (hp : p ∈ (chartAt H alpha).source)
     (a c s : Fin (Module.finrank ℝ EM)) :
@@ -675,7 +579,7 @@ theorem chartChristoffel_mdifferentiableAt
 
 /-- Pointwise, `chartChristoffel` is the inverse-Gram Christoffel formula from
 `Connection.christoffel_formula`. -/
-theorem chartChristoffel_eq_christoffel_formula
+private theorem chartChristoffel_eq_christoffel_formula
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {alpha p : M} (hp : p ∈ (chartAt H alpha).source)
     (hinterior : I.IsInteriorPoint p)
@@ -713,7 +617,7 @@ derivatives of the Christoffel coefficients.
 The formula is the chart calculation for `chartCurvatureComponent`; the
 local-frame/`FiberBundle.extend` identification for the public pointwise
 `curvature` remains a separate bridge obligation. -/
-theorem chartCurvatureComponent_formula_d
+private theorem chartCurvatureComponent_formula_d
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {alpha p : M} (hp : p ∈ (chartAt H alpha).source)
     (i j k l : Fin (Module.finrank ℝ EM)) :
@@ -764,7 +668,7 @@ theorem chartCurvatureComponent_formula_d
       (fun q => Connection.leviCivitaConnection g (e c) q (e a q)) hq
   have hU : t.baseSet ∈ 𝓝 p := t.open_baseSet.mem_nhds hbase
   have hbr : mlieBracket I (e i) (e j) p = 0 := by
-    exact Connection.mlieBracket_localFrame_eq_zero hp i j
+    exact Connection.Internal.mlieBracket_localFrame_eq_zero hp i j
   have hvec := curvature_frame_component
     (cov := Connection.leviCivitaConnection g)
     (p := p) (U := t.baseSet) e gamma i j k he (hgamma j k) (hgamma i k)
@@ -798,7 +702,7 @@ theorem chartCurvatureComponent_formula_d
 This is the coordinate formula for the local-frame component; the
 extension-based pointwise curvature bridge is intentionally not folded into
 this declaration. -/
-theorem chartCurvatureComponent_formula
+private theorem chartCurvatureComponent_formula
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {alpha p : M} (hp : p ∈ (chartAt H alpha).source)
     (hinterior : I.IsInteriorPoint p)
@@ -815,13 +719,14 @@ theorem chartCurvatureComponent_formula
         chartChristoffel (I := I) g alpha i k s p *
           chartChristoffel (I := I) g alpha j s l p) := by
   rw [chartCurvatureComponent_formula_d (I := I) g hp i j k l]
-  rw [Connection.fderiv_chartScalar_eq_mvfderiv
+  rw [Connection.Internal.fderiv_chartScalar_eq_mvfderiv
       (I := I) (phi := chartChristoffel (I := I) g alpha j k l)
       hp hinterior (chartChristoffel_mdifferentiableAt (I := I) g hp j k l) i]
-  rw [Connection.fderiv_chartScalar_eq_mvfderiv
+  rw [Connection.Internal.fderiv_chartScalar_eq_mvfderiv
       (I := I) (phi := chartChristoffel (I := I) g alpha i k l)
       hp hinterior (chartChristoffel_mdifferentiableAt (I := I) g hp i k l) j]
 
+/-- Additivity of the field curvature in its third vector slot. -/
 lemma curvatureField_add_right
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
@@ -867,6 +772,7 @@ lemma curvatureField_add_right
   simp only [Pi.add_apply]
   abel
 
+/-- Additivity of the field curvature in its first vector slot. -/
 lemma curvatureField_add_left
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
@@ -906,6 +812,7 @@ lemma curvatureField_add_left
     covariantField_add_direction cov]
   abel
 
+/-- Additivity of the field curvature in its second vector slot. -/
 lemma curvatureField_add_middle
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]

@@ -5,6 +5,7 @@ import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Geodesic
 import MorganTianLib.Ch01.Geodesic.HopfRinow
+import MorganTianLib.Ch01.Curvature.Model
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Jacobi

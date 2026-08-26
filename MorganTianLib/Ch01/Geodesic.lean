@@ -45,15 +45,11 @@ section Coordinates
 
 variable [IsManifold I ∞ M] [FiniteDimensional ℝ E]
 
-private def chartFrame (alpha : M) (i : Fin (Module.finrank ℝ E)) (q : M) :
-    TangentSpace I q :=
-  (trivializationAt E (TangentSpace I) alpha).localFrame (Module.finBasis ℝ E) i q
-
 /-- The coordinate coefficient extracted from Mathlib's bundled
 Levi--Civita connection.  The first lower slot is the direction field and
 the second is the differentiated field, so this is `Gamma^k_ij` in the
 Morgan--Tian convention. -/
-noncomputable def chartConnectionCoeff
+private noncomputable def chartConnectionCoeff
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha q : M) (i j k : Fin (Module.finrank ℝ E)) : ℝ :=
   let t := trivializationAt E (TangentSpace I) alpha
@@ -90,20 +86,20 @@ private theorem chartConnectionCoeff_contMDiffAt
 The first lower slot is the coordinate direction and the second is the
 differentiated vector field, matching the argument order of Mathlib's
 `CovariantDerivative` and Morgan--Tian's `Gamma^k_ij`. -/
-def chartChristoffel
+private def chartChristoffel
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) (i j k : Fin (Module.finrank ℝ E)) : ℝ :=
   chartConnectionCoeff (I := I) g alpha ((extChartAt I alpha).symm y) i j k
 
 /-- Unfolding rule for the chart coefficient. -/
-@[simp] theorem chartChristoffel_apply
+@[simp] private theorem chartChristoffel_apply
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) (i j k : Fin (Module.finrank ℝ E)) :
     chartChristoffel (I := I) g alpha y i j k =
       chartConnectionCoeff (I := I) g alpha ((extChartAt I alpha).symm y) i j k := rfl
 
 /-- Unfolded connection bridge for the public coefficient. -/
-theorem chartChristoffel_eq_leviCivita
+private theorem chartChristoffel_eq_leviCivita
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) (i j k : Fin (Module.finrank ℝ E)) :
     chartChristoffel (I := I) g alpha y i j k =
@@ -138,10 +134,14 @@ private def chartSpraySecond
       ∑ j : Fin (Module.finrank ℝ E),
         chartChristoffel (I := I) g alpha y i j k * b.repr v i * b.repr v j) • b k
 
-/-- The Christoffel contraction `Gamma(v,w)` in the chart centred at `alpha`.
+/-- The canonical-connection contraction `Gamma(v,w)` in the chart centred at
+`alpha`.
 
 The first velocity supplies the direction (the first lower Christoffel slot),
-and the second supplies the differentiated vector field. -/
+and the second supplies the differentiated vector field.  This is the one
+coordinate adapter intentionally shared with the local geodesic and Jacobi
+certificates; the frame/coefficient implementation and compatibility aliases
+above remain private. -/
 def chartConnectionContraction
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y v w : E) : E :=
@@ -155,15 +155,15 @@ def chartConnectionContraction
           (Connection.leviCivitaConnection g (t.localFrame b j) q
             (t.localFrame b i q)) * b.repr v i * b.repr w j) • b k
 
-/-- The public contraction notation for the Christoffel coefficients. -/
-def chartChristoffelContraction
+/-- Internal alias retained only for the chart-spray proof. -/
+private def chartChristoffelContraction
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y v w : E) : E :=
   chartConnectionContraction (I := I) g alpha y v w
 
 /-- The public Christoffel contraction is the canonical connection contraction.
 -/
-theorem chartChristoffelContraction_eq_connection
+private theorem chartChristoffelContraction_eq_connection
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y v w : E) :
     chartChristoffelContraction (I := I) g alpha y v w =
@@ -172,7 +172,7 @@ theorem chartChristoffelContraction_eq_connection
 /-- The contraction used by the coordinate equation, expanded to the
 canonical bundled connection.  This is the declaration-level bridge behind
 the coordinate realization of `D_t (gamma')`. -/
-theorem chartChristoffelContraction_eq_leviCivita
+private theorem chartChristoffelContraction_eq_leviCivita
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y v w : E) :
     chartChristoffelContraction (I := I) g alpha y v w =
@@ -525,7 +525,7 @@ theorem localChartGeodesic_eventuallyEq_of_initial_data
   simpa only [chartReading] using hs
 
 /-- The Christoffel contraction vanishes on two zero velocities. -/
-@[simp] theorem chartChristoffelContraction_zero
+@[simp] private theorem chartChristoffelContraction_zero
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) :
     chartChristoffelContraction (I := I) g alpha y 0 0 = 0 := by
@@ -583,6 +583,42 @@ def isGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) : Prop :=
   ∀ t, IsGeodesicAt (I := I) g gamma t
+
+/-! ## Interval-level intrinsic predicate -/
+
+/-- The moving-foot geodesic predicate restricted to a set of times.
+
+This small interval contract belongs to the local geodesic layer.  The
+Hopf--Rinow module consumes it, but does not own it: keeping the predicate here
+lets lower-level Jacobi and variation consumers depend on `Geodesic` without
+pulling in completeness or minimizer interfaces. -/
+def isGeodesicOn
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) (s : Set ℝ) : Prop :=
+  ∀ t ∈ s, IsGeodesicAt (I := I) g gamma t
+
+/-- Restricting an interval geodesic certificate to a smaller time set. -/
+omit [FiniteDimensional ℝ E] in
+theorem isGeodesicOn_mono
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) {s s' : Set ℝ} (hs : s' ⊆ s)
+    (hgamma : isGeodesicOn (I := I) g gamma s) :
+    isGeodesicOn (I := I) g gamma s' := by
+  intro t ht
+  exact hgamma t (hs ht)
+
+/-- Restriction to `Set.univ` recovers the global geodesic predicate. -/
+@[simp]
+theorem isGeodesicOn_univ_iff
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (gamma : ℝ → M) :
+    isGeodesicOn (I := I) g gamma (Set.univ : Set ℝ) ↔
+      isGeodesic (I := I) g gamma := by
+  constructor
+  · intro h t
+    exact h t (Set.mem_univ t)
+  · intro h t _
+    exact h t
 
 /-- Constant curves are geodesics; this is the zero-velocity regression for
 the canonical coordinate equation. -/

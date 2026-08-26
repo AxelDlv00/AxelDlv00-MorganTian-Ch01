@@ -141,27 +141,6 @@ theorem edist_eq_canonicalRiemannianEDist
   letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
   exact edist_eq_riemannianEDist g x y
 
-/-! ## Intrinsic predicates on a lifetime -/
-
-/-- The moving-foot geodesic predicate restricted to a set of times. -/
-def isGeodesicOn
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (γ : ℝ → M) (s : Set ℝ) : Prop :=
-  ∀ t ∈ s, IsGeodesicAt (I := I) g γ t
-
-/-- Restricting the lifetime to `Set.univ` is equivalent to the global
-geodesic predicate. -/
-@[simp]
-theorem isGeodesicOn_univ_iff
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (γ : ℝ → M) :
-    isGeodesicOn (I := I) g γ (Set.univ : Set ℝ) ↔ isGeodesic (I := I) g γ := by
-  constructor
-  · intro h t
-    exact h t (Set.mem_univ t)
-  · intro h t _
-    exact h t
-
 /-- A lifetime is unbounded above, expressed without choosing an endpoint
 convention for open intervals. -/
 def LifetimeUnboundedAbove (s : Set ℝ) : Prop :=
@@ -352,11 +331,12 @@ theorem maximalGeodesic_lifetime_eq_univ_of_complete
 
 /-- The source-facing global extension consequence for one initial datum.
 
-The exact `[BoundarylessManifold I M]` and `[CompleteSpace E]` assumptions are
-kept in the signature.  The former supplies all point-local interior facts to
-the S18 producer; the latter is the checked local ODE premise. -/
+The maximal-geodesic and continuation records already carry the producer
+boundary conditions needed by this projection.  In particular, this wrapper
+does not reintroduce `[CompleteSpace E]` or `[BoundarylessManifold I M]` merely
+to project a supplied all-time continuation certificate. -/
 theorem exists_globalGeodesic_of_complete
-    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    [T3Space M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (hcomplete : RiemannianMetricComplete (I := I) g)
     {p : M} {v : TangentSpace I p}
@@ -422,17 +402,6 @@ omit [TopologicalSpace M] in
 theorem affineReparam_one (γ : ℝ → M) (a b : ℝ) :
     affineReparam γ a b 1 = γ b := by
   simp [affineReparam]
-
-/-- Restricting a geodesic certificate to a smaller time set is always valid.
-The affine reparameterized equation itself is kept as a producer field below,
-since its proof belongs to the S18 equation-transfer API. -/
-theorem isGeodesicOn_mono
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (γ : ℝ → M) {s s' : Set ℝ} (hs : s' ⊆ s)
-    (hγ : isGeodesicOn (I := I) g γ s) :
-    isGeodesicOn (I := I) g γ s' := by
-  intro t ht
-  exact hγ t (hs ht)
 
 omit [TopologicalSpace M] in
 /-- Constant-speed distance data is stable under translation of the parameter.
@@ -702,42 +671,6 @@ theorem exists_refl_minimizingGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (x : M) : Nonempty (MinimizingGeodesic (I := I) g x x) :=
   ⟨MinimizingGeodesic.refl g x⟩
-
-omit [FiniteDimensional ℝ E] in
-/-- Finiteness is deliberately a component hypothesis: this probe exposes the
-`[PreconnectedSpace M]` premise used by the canonical distance bridge. -/
-theorem finite_distance_component_probe
-    [PreconnectedSpace M]
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (x y : M) : canonicalRiemannianEDist (I := I) g x y < ⊤ :=
-  canonicalRiemannianEDist_lt_top g x y
-
-/-- Disconnected manifolds use the finite-distance branch explicitly: a pair
-in different extended-distance components is not silently fed to the
-minimizer producer. -/
-theorem disconnected_component_probe
-    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (hcomplete : RiemannianMetricComplete (I := I) g)
-    (data : MinimizingGeodesicData (I := I) g) (x y : M) :
-    canonicalRiemannianEDist (I := I) g x y < ⊤ →
-      Nonempty (MinimizingGeodesic (I := I) g x y) :=
-  exists_minimizingGeodesic_of_finite g hcomplete data x y
-
-/-!
-The global theorem above still requires `[CompleteSpace E]`, while its metric
-argument is the proposition `RiemannianMetricComplete g`.  This declaration is
-kept as a small signature regression: adding metric completeness cannot make
-the local ODE's model-space instance implicit. -/
-theorem metric_completeness_probe
-    {E0 H0 M0 : Type*} [NormedAddCommGroup E0] [NormedSpace ℝ E0]
-    [TopologicalSpace H0] [TopologicalSpace M0]
-    {I0 : ModelWithCorners ℝ E0 H0} [ChartedSpace H0 M0]
-    [IsManifold I0 ∞ M0] [T3Space M0]
-    (g : Bundle.ContMDiffRiemannianMetric I0 ∞ E0
-      (TangentSpace I0 : M0 → Type _))
-    (hcomplete : RiemannianMetricComplete (I := I0) g) :
-    RiemannianMetricComplete (I := I0) g := hcomplete
 
 /-! ### Euclidean regression -/
 
