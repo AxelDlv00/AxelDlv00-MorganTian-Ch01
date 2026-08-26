@@ -79,8 +79,8 @@ abbrev SmoothSection (X : (x : M) → TangentSpace I x) : Prop :=
   ContMDiff I (I.prod 𝓘(ℝ, EM)) ∞ (fun x =>
     Bundle.TotalSpace.mk' EM (E := fun x : M => TangentSpace I x) x (X x))
 
-/-- A smooth covariant derivative sends two smooth fields to a smooth field. -/
 omit [FiniteDimensional ℝ EM] in
+/-- A smooth covariant derivative sends two smooth fields to a smooth field. -/
 lemma covariantField_smooth
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     [cov.ContMDiffCovariantDerivative ∞]
@@ -117,14 +117,14 @@ lemma curvatureField_smooth
   simpa [curvatureField] using
     (h1 q).sub_section (h2 q) |>.sub_section (h3 q)
 
-/-- A smooth section is differentiable at every point. -/
 omit [FiniteDimensional ℝ EM] in
+/-- A smooth section is differentiable at every point. -/
 lemma smoothSection_mdifferentiableAt {X : (x : M) → TangentSpace I x}
     (hX : SmoothSection X) (p : M) : MDiffAt (T% X) p :=
   (hX p).mdifferentiableAt (by simp)
 
-/-- Additivity of the covariant derivative in its direction field. -/
 omit [FiniteDimensional ℝ EM] in
+/-- Additivity of the covariant derivative in its direction field. -/
 lemma covariantField_add_direction
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Z : (x : M) → TangentSpace I x} {p : M}
@@ -135,8 +135,8 @@ lemma covariantField_add_direction
   simp only [Pi.add_apply]
   rw [map_add]
 
-/-- Additivity in the differentiated section, under pointwise regularity. -/
 omit [FiniteDimensional ℝ EM] in
+/-- Additivity in the differentiated section, under pointwise regularity. -/
 lemma covariantField_add_argument
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Z : (x : M) → TangentSpace I x} {p : M}
@@ -148,8 +148,8 @@ lemma covariantField_add_argument
   have h' := congrArg (fun A => A (X p)) h
   simpa [Pi.add_apply] using h'
 
-/-- Homogeneity in the direction field. -/
 omit [FiniteDimensional ℝ EM] in
+/-- Homogeneity in the direction field. -/
 lemma covariantField_smul_direction
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {c : ℝ} {X Y : (x : M) → TangentSpace I x} {p : M}
@@ -159,8 +159,8 @@ lemma covariantField_smul_direction
   simp only [Pi.smul_apply]
   rw [map_smul]
 
-/-- Leibniz rule for scalar multiplication in the differentiated section. -/
 omit [FiniteDimensional ℝ EM] in
+/-- Leibniz rule for scalar multiplication in the differentiated section. -/
 lemma covariantField_smul_argument
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {f : M → ℝ} {X Y : (x : M) → TangentSpace I x} {p : M}
@@ -172,8 +172,8 @@ lemma covariantField_smul_argument
   have h' := congrArg (fun A => A (X p)) h
   simpa using h'
 
-/-- First-pair skew symmetry of the field curvature commutator. -/
 omit [FiniteDimensional ℝ EM] in
+/-- First-pair skew symmetry of the field curvature commutator. -/
 lemma curvatureField_swap
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     (X Y W : (x : M) → TangentSpace I x) (p : M) :
@@ -183,8 +183,8 @@ lemma curvatureField_swap
   norm_num
   abel_nf
 
-/-- Locality of the covariant derivative in its direction value. -/
 omit [FiniteDimensional ℝ EM] in
+/-- Locality of the covariant derivative in its direction value. -/
 lemma covariantField_congr_direction
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X X' Y : (x : M) → TangentSpace I x} {p : M}
@@ -193,8 +193,8 @@ lemma covariantField_congr_direction
   unfold covariantField
   rw [h]
 
-/-- Locality of the covariant derivative in its differentiated section. -/
 omit [FiniteDimensional ℝ EM] in
+/-- Locality of the covariant derivative in its differentiated section. -/
 lemma covariantField_congr_argument
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Y' : (x : M) → TangentSpace I x} {p : M}

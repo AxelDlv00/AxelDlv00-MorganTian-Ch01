@@ -598,7 +598,6 @@ def isGeodesicOn
   ∀ t ∈ s, IsGeodesicAt (I := I) g gamma t
 
 /-- Restricting an interval geodesic certificate to a smaller time set. -/
-omit [FiniteDimensional ℝ E] in
 theorem isGeodesicOn_mono
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {s s' : Set ℝ} (hs : s' ⊆ s)
