@@ -28,7 +28,10 @@ The proof uses Mathlib's
 or polar Jacobian is introduced.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
-the volume discussion on pp. 45--50 (bibliography key `morganTian2007`).
+the Gaussian polar-coordinate volume-form paragraph following Gauss's lemma,
+p. 47 (bibliography key `morganTian2007`).  The present module formalizes its
+measure-theoretic model-space part before any exponential-map or metric-density
+producer is available.
 -/
 
 open MeasureTheory Measure Metric Set Module Filter
@@ -69,11 +72,15 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   [BorelSpace E] [FiniteDimensional ℝ E] [Nontrivial E]
   (μ : Measure E) [μ.IsAddHaarMeasure]
 
-/-- Polar decomposition of a measurable nonnegative integral for an additive Haar measure.
+/-- **Polar decomposition for a Haar integral.**
 
 The radial factor is `t ^ (finrank ℝ E - 1)` and the angular measure is
 Mathlib's `μ.toSphere`.  The source space is required to be nontrivial because
-the polar homeomorphism is defined on the complement of the origin. -/
+the polar homeomorphism is defined on the complement of the origin.  This is
+the model-space measure statement underlying the Gaussian polar volume-form
+paragraph in Morgan--Tian Chapter 1, p. 47 (`morganTian2007`); its proof uses
+`Measure.measurePreserving_homeomorphUnitSphereProd` followed by
+`Measure.volumeIoiPow` and `lintegral_prod`. -/
 theorem lintegral_eq_polar {f : E → ℝ≥0∞} (hf : Measurable f) :
     ∫⁻ x, f x ∂μ
       = ∫⁻ ω : sphere (0 : E) 1,
@@ -101,7 +108,11 @@ theorem lintegral_eq_polar {f : E → ℝ≥0∞} (hf : Measurable f) :
   exact lintegral_subtype_comap measurableSet_Ioi
     (fun t : ℝ => ENNReal.ofReal (t ^ (finrank ℝ E - 1)) * f (t • (ω : E)))
 
-/-- Polar decomposition of a measurable integral restricted to a metric ball. -/
+/-- **Polar decomposition over a metric ball.**
+
+This is the non-radial ball form of the Gaussian polar-coordinate volume
+formula in Morgan--Tian Chapter 1, p. 47 (`morganTian2007`).  The radius is
+left unrestricted, so empty balls and empty radial intervals are included. -/
 theorem setLIntegral_ball_eq_polar {f : E → ℝ≥0∞} (hf : Measurable f) (r : ℝ) :
     ∫⁻ x in ball (0 : E) r, f x ∂μ
       = ∫⁻ ω : sphere (0 : E) 1,
@@ -129,7 +140,11 @@ theorem setLIntegral_ball_eq_polar {f : E → ℝ≥0∞} (hf : Measurable f) (r
   · have hnot : t ∉ Ioo (0 : ℝ) r := fun h => ht h.1
     simp [indicator_of_notMem, ht, hnot]
 
-/-- Radial specialization of the ball formula. -/
+/-- **Radial specialization of the ball formula.**
+
+The angular factor is `μ.toSphere univ`, the model counterpart of the sphere
+volume factor in the Gaussian polar-coordinate paragraph of Morgan--Tian
+Chapter 1, p. 47 (`morganTian2007`). -/
 theorem setLIntegral_ball_radial {φ : ℝ → ℝ≥0∞} (hφ : Measurable φ) (r : ℝ) :
     ∫⁻ x in ball (0 : E) r, φ ‖x‖ ∂μ
       = μ.toSphere univ
