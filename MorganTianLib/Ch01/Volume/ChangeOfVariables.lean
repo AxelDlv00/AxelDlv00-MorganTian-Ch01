@@ -30,6 +30,13 @@ and `MeasureTheory.addHaar_image_eq_zero_of_det_fderivWithin_eq_zero` to
 `μHE[finrank ℝ E]`, with the same Hausdorff normalization convention used by
 `riemannianVolume`.
 
+The `chartVolumeDensity_lintegral_transition` theorem below packages the
+overlap law with Mathlib's injective change-of-variables theorem on the exact
+chart source sets.  It is a density-weighted coordinate compatibility result;
+it does not identify the Riemannian path-metric Hausdorff measure with a chart
+integral.  The countable-Lipschitz null-transport theorem makes the separate
+measure-theoretic hypothesis needed by later charted-map consumers explicit.
+
 The tangent-space `riemannianJacobian` and its `chartCoordinateJacobian` adapter
 are provisional pre-N1 declarations in this direct leaf.  The first intended
 downstream consumer is the N1 `Normal.cutLocus`/`exp_on_regularDomain` nullity
@@ -1211,6 +1218,209 @@ theorem euclideanHausdorffMeasure_image_eq_lintegral_normDet
       μHE[Module.finrank ℝ E] hs hf' hf
 
 end NormDetChangeOfVariables
+
+/-! ## Density-weighted chart overlap -/
+
+section ChartDensityLIntegral
+
+open MeasureTheory Set
+open scoped ENNReal MeasureTheory
+
+variable
+  {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+  {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
+  {M : Type*} [TopologicalSpace M] [ChartedSpace H M] [IsManifold I ∞ M]
+
+/-- On an exact chart overlap, the Gram-density-weighted integral is independent
+of the chart.  The source is required only to be measurable in the first
+coordinates; the chart transition is injective there by the two source
+hypotheses.  This is the pinned Mathlib
+`lintegral_image_eq_lintegral_abs_det_fderiv_mul` theorem specialized to the
+canonical `μHE[finrank ℝ E]` measure.  It is not the unavailable identification
+of `riemannianVolume` with a chart-density integral. -/
+theorem chartVolumeDensity_lintegral_transition
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (alpha beta : M) {s : Set M}
+    (hsalpha : s ⊆ (extChartAt I alpha).source)
+    (hsbeta : s ⊆ (extChartAt I beta).source)
+    (hsmeas : MeasurableSet (chartPreimage (I := I) alpha s))
+    (q : E → ℝ≥0∞) :
+    ∫⁻ y in chartPreimage (I := I) alpha s,
+        ENNReal.ofReal (chartVolumeDensity (I := I) g alpha y) *
+          q (chartTransition (I := I) alpha beta y)
+        ∂μHE[Module.finrank ℝ E] =
+      ∫⁻ z in chartPreimage (I := I) beta s,
+        ENNReal.ofReal (chartVolumeDensity (I := I) g beta z) * q z
+        ∂μHE[Module.finrank ℝ E] := by
+  let A := chartPreimage (I := I) alpha s
+  let F := chartTransition (I := I) alpha beta
+  let D : E → E →L[ℝ] E := fun y =>
+    tangentCoordChange I alpha beta ((extChartAt I alpha).symm y)
+  have hderiv : ∀ y ∈ A, HasFDerivWithinAt F (D y) A y := by
+    intro y hy
+    exact hasFDerivWithinAt_chartTransition (I := I) alpha beta hsalpha hsbeta hy
+  have hinj : Set.InjOn F A := by
+    intro y₁ hy₁ y₂ hy₂ hyy
+    obtain ⟨h₁s, h₁t⟩ := hy₁
+    obtain ⟨h₂s, h₂t⟩ := hy₂
+    have hp₁ : (extChartAt I alpha).symm y₁ ∈
+        (extChartAt I beta).source := hsbeta h₁s
+    have hp₂ : (extChartAt I alpha).symm y₂ ∈
+        (extChartAt I beta).source := hsbeta h₂s
+    have hp : (extChartAt I alpha).symm y₁ =
+        (extChartAt I alpha).symm y₂ := by
+      calc
+        (extChartAt I alpha).symm y₁ =
+            (extChartAt I beta).symm (F y₁) :=
+          ((extChartAt I beta).left_inv hp₁).symm
+        _ = (extChartAt I beta).symm (F y₂) := congrArg _ hyy
+        _ = (extChartAt I alpha).symm y₂ :=
+          (extChartAt I beta).left_inv hp₂
+    exact (extChartAt I alpha).symm.injOn h₁t h₂t hp
+  have hchange :=
+    euclideanHausdorffMeasure_lintegral_image_eq_lintegral_abs_det_mul
+      hsmeas hderiv hinj
+      (fun z => ENNReal.ofReal (chartVolumeDensity (I := I) g beta z) * q z)
+  have himage : F '' A = chartPreimage (I := I) beta s :=
+    chartTransition_image_chartPreimage (I := I) alpha beta hsalpha hsbeta
+  rw [himage] at hchange
+  calc
+    ∫⁻ y in chartPreimage (I := I) alpha s,
+        ENNReal.ofReal (chartVolumeDensity (I := I) g alpha y) *
+          q (chartTransition (I := I) alpha beta y)
+        ∂μHE[Module.finrank ℝ E] =
+      ∫⁻ y in A, ENNReal.ofReal |(D y : E →ₗ[ℝ] E).det| *
+        (ENNReal.ofReal (chartVolumeDensity (I := I) g beta (F y)) * q (F y))
+        ∂μHE[Module.finrank ℝ E] := by
+      apply lintegral_congr_ae
+      filter_upwards [ae_restrict_mem hsmeas] with y hy
+      obtain ⟨hys, hyt⟩ := hy
+      have hpalpha : (extChartAt I alpha).symm y ∈
+          (chartAt H alpha).source := by
+        simpa only [extChartAt_source] using
+          (extChartAt I alpha).map_target hyt
+      have hpbeta : (extChartAt I alpha).symm y ∈
+          (chartAt H beta).source := by
+        simpa only [extChartAt_source] using hsbeta hys
+      have hpbeta' : (extChartAt I alpha).symm y ∈
+          (extChartAt I beta).source := by
+        simpa only [extChartAt_source] using hpbeta
+      have hF : (extChartAt I beta).symm (F y) =
+          (extChartAt I alpha).symm y := by
+        exact (extChartAt I beta).left_inv hpbeta'
+      have hdens :=
+        chartDensityAt_transition_abs_det (I := I) g alpha beta hpalpha hpbeta
+      have hdens' : chartVolumeDensity (I := I) g alpha y =
+          chartVolumeDensity (I := I) g beta (F y) *
+            |LinearMap.det (D y : E →ₗ[ℝ] E)| := by
+        unfold chartVolumeDensity
+        rw [hF]
+        simpa [F, D, chartTransition,
+          (extChartAt I alpha).right_inv hyt] using hdens
+      rw [hdens']
+      simp only [F, chartTransition, Function.comp_apply]
+      rw [ENNReal.ofReal_mul
+        (le_of_lt (chartVolumeDensity_pos (I := I) g beta
+          ((extChartAt I beta).map_source hpbeta')))]
+      ring
+    _ = ∫⁻ z in chartPreimage (I := I) beta s,
+        ENNReal.ofReal (chartVolumeDensity (I := I) g beta z) * q z
+        ∂μHE[Module.finrank ℝ E] := hchange.symm
+
+end ChartDensityLIntegral
+
+/-! ## Countable Lipschitz null transport -/
+
+section CountableLipschitzNullTransport
+
+open MeasureTheory Measure Set
+open scoped ENNReal MeasureTheory
+
+variable
+  {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+
+omit [FiniteDimensional ℝ E] in
+/-- A `μHE[finrank ℝ E]`-null source has a null image under a map covered by
+countably many Lipschitz pieces.  No measurability of the image is assumed:
+the conclusion is a measure-zero statement, while image measurability remains
+the separate Mathlib `MeasureTheory.measurable_image_of_fderivWithin` API.
+The explicit countable cover is the hypothesis used by later charted-map
+arguments to pass from local Lipschitz estimates to a global nullity result. -/
+theorem euclideanHausdorffMeasure_image_eq_zero_of_countable_lipschitzOn
+    {Y : Type*} [EMetricSpace Y] [MeasurableSpace Y] [BorelSpace Y]
+    {s : Set E} {f : E → Y} {ι : Type*} [Countable ι]
+    (u : ι → Set E) (K : ι → NNReal)
+    (hs : μHE[Module.finrank ℝ E] s = 0)
+    (hcover : s ⊆ ⋃ i, u i)
+    (hL : ∀ i, LipschitzOnWith (K i) f (u i)) :
+    μHE[Module.finrank ℝ E] (f '' s) = 0 := by
+  have hsH : μH[(Module.finrank ℝ E : ℕ)] s = 0 := by
+    rw [Measure.euclideanHausdorffMeasure_def (Module.finrank ℝ E)] at hs
+    rw [Measure.smul_apply, ENNReal.smul_def] at hs
+    exact (mul_eq_zero.mp hs).resolve_left
+      (by
+        have hne :=
+          Measure.addHaarScalarFactor_volume_hausdorffMeasure_ne_zero
+            (d := Module.finrank ℝ E)
+        exact_mod_cast hne)
+  have hpiece : ∀ i, μH[(Module.finrank ℝ E : ℕ)] (f '' (s ∩ u i)) = 0 := by
+    intro i
+    apply le_antisymm ?_ bot_le
+    calc
+      μH[(Module.finrank ℝ E : ℕ)] (f '' (s ∩ u i)) ≤
+          (K i : ℝ≥0∞) ^ (Module.finrank ℝ E : ℝ) *
+            μH[(Module.finrank ℝ E : ℕ)] (s ∩ u i) := by
+        exact (hL i).mono inter_subset_right |>.hausdorffMeasure_image_le
+          (by positivity)
+      _ ≤ 0 := by simp [measure_mono_null inter_subset_left hsH]
+  have himageH : μH[(Module.finrank ℝ E : ℕ)] (f '' s) = 0 := by
+    apply measure_mono_null ?_ (measure_iUnion_null hpiece)
+    intro y hy
+    obtain ⟨x, hxs, rfl⟩ := hy
+    obtain ⟨i, hi⟩ := mem_iUnion.1 (hcover hxs)
+    exact mem_iUnion.2 ⟨i, ⟨x, ⟨hxs, hi⟩, rfl⟩⟩
+  rw [Measure.euclideanHausdorffMeasure_def, Measure.smul_apply, ENNReal.smul_def,
+    himageH]
+  simp
+
+/-- The preceding null-transport theorem specialized to the canonical
+`riemannianVolume g`.  The metric, measurable-space, and Borel instances are
+scoped in the result exactly as in `riemannianVolume`; they are not installed
+globally.  The theorem deliberately asks for a countable Lipschitz cover and
+does not conflate nullity with measurability of the image. -/
+theorem riemannianVolume_image_eq_zero_of_countable_lipschitzOn
+    {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
+    {M : Type*} [TopologicalSpace M] [ChartedSpace H M] [IsManifold I ∞ M]
+    [T3Space M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    {s : Set E} {f : E → M} {ι : Type*} [Countable ι]
+    (u : ι → Set E) (K : ι → NNReal)
+    (hs : μHE[Module.finrank ℝ E] s = 0)
+    (hcover : s ⊆ ⋃ i, u i) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
+      continuousRiemannianBundle g
+    letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
+    letI : MeasurableSpace M := borel M
+    letI : BorelSpace M := ⟨rfl⟩
+    (∀ (_hL : ∀ i, LipschitzOnWith (K i) f (u i)),
+      riemannianVolume g (f '' s) = 0) := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
+    continuousRiemannianBundle g
+  letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
+  letI : MeasurableSpace M := borel M
+  letI : BorelSpace M := ⟨rfl⟩
+  intro _hL
+  change μHE[Module.finrank ℝ E] (f '' s) = 0
+  exact euclideanHausdorffMeasure_image_eq_zero_of_countable_lipschitzOn
+    u K hs hcover _hL
+
+end CountableLipschitzNullTransport
 
 /-! ## Chart transition in the canonical Jacobian language -/
 
