@@ -26,6 +26,9 @@ transition derivative.  This is the calculus input for the Christoffel
 transformation law; that metric-dependent identity and the resulting gluing
 remain separate S18 work.  The Euclidean model regression at the end of the
 module checks the coefficient and affine straight-line branches concretely.
+The same regression section contains a private one-dimensional nonconstant
+metric probe, so the derivative terms and the sign of the Christoffel term are
+checked independently of the flat model.
 The local equation also has affine parameter-transport and set-relative
 restriction lemmas (including translation and time reversal); these are
 algebraic reparameterization facts and do not assert the pending global
@@ -2242,7 +2245,281 @@ theorem chartAcceleration_affine_riemannianMetricVectorSpace_zero
     exact chartChristoffelContraction_riemannianMetricVectorSpace_zero
       (alpha := alpha) (y := a + s • v) (v := v) (w := v)
 
-/-! ### Global zero-velocity solution regression
+/-! ### Nonconstant metric sign regression
+
+The flat Euclidean calculation above cannot distinguish the sign of the
+Christoffel term because every coefficient vanishes.  The private fixture
+below rescales the one-dimensional Euclidean metric by `1 + x^2`; its
+Christoffel contraction at `x = 1` and unit coordinate velocity is `1 / 2`.
+Thus the regression exercises the derivative terms in Mathlib's bundled
+`Connection.christoffel_formula`, rather than a postulated flat connection.
+-/
+
+private def nonconstantMetricScalar (x : ℝ) : ℝ := 1 + x ^ 2
+
+set_option synthInstance.maxHeartbeats 400000 in
+set_option maxHeartbeats 1000000 in
+private noncomputable def nonconstantMetric :
+    Bundle.ContMDiffRiemannianMetric (𝓘(ℝ, ℝ)) ∞ ℝ
+      (TangentSpace (𝓘(ℝ, ℝ)) : ℝ → Type _) := by
+  let base := riemannianMetricVectorSpace ℝ
+  letI : Bundle.RiemannianBundle
+      (TangentSpace (𝓘(ℝ, ℝ)) : ℝ → Type _) :=
+    ⟨base.toRiemannianMetric⟩
+  refine
+    { inner := fun x => nonconstantMetricScalar x • base.inner x
+      symm := ?_
+      pos := ?_
+      isVonNBounded := ?_
+      contMDiff := ?_ }
+  · intro x v w
+    simp only [smul_apply, smul_eq_mul]
+    rw [base.symm x v w]
+  · intro x v hv
+    simp only [smul_apply, smul_eq_mul]
+    have hs : 0 < nonconstantMetricScalar x := by
+      dsimp [nonconstantMetricScalar]
+      nlinarith [sq_nonneg x]
+    exact mul_pos hs (base.pos x v hv)
+  · intro x
+    refine (base.isVonNBounded x).subset ?_
+    intro v hv
+    simp only [Set.mem_setOf_eq] at hv ⊢
+    simp only [smul_apply, smul_eq_mul] at hv
+    have hs : 1 ≤ nonconstantMetricScalar x := by
+      dsimp [nonconstantMetricScalar]
+      nlinarith [sq_nonneg x]
+    have hinner : 0 ≤ base.inner x v v := by
+      by_cases hv0 : v = 0
+      · subst v
+        simp
+      · exact (base.pos x v hv0).le
+    exact lt_of_le_of_lt (by nlinarith) hv
+  · have hscalar : ContMDiff (𝓘(ℝ, ℝ)) (𝓘(ℝ, ℝ)) ∞
+        nonconstantMetricScalar :=
+      (by unfold nonconstantMetricScalar; fun_prop :
+        ContDiff ℝ ∞ nonconstantMetricScalar).contMDiff
+    have hbase : ContMDiff (𝓘(ℝ, ℝ))
+        ((𝓘(ℝ, ℝ)).prod 𝓘(ℝ, ℝ →L[ℝ] ℝ →L[ℝ] ℝ)) ∞
+        (fun b => TotalSpace.mk' (ℝ →L[ℝ] ℝ →L[ℝ] ℝ) b (base.inner b)) :=
+      base.contMDiff.of_le (by simp)
+    change ContMDiff (𝓘(ℝ, ℝ))
+      ((𝓘(ℝ, ℝ)).prod 𝓘(ℝ, ℝ →L[ℝ] ℝ →L[ℝ] ℝ)) ∞
+      (fun b => TotalSpace.mk' (ℝ →L[ℝ] ℝ →L[ℝ] ℝ) b
+        ((nonconstantMetricScalar • base.inner) b))
+    exact hscalar.smul_section hbase
+
+set_option backward.isDefEq.respectTransparency false in
+private lemma nonconstantMetric_inner_apply (x : ℝ)
+    (v w : TangentSpace (𝓘(ℝ, ℝ)) x) :
+    nonconstantMetric.inner x v w =
+      nonconstantMetricScalar x *
+        (let V : ℝ := v; let W : ℝ := w; V * W) := by
+  unfold nonconstantMetric
+  dsimp
+  rw [smul_apply]
+  letI V : ℝ := v
+  letI W : ℝ := w
+  change nonconstantMetricScalar x * inner ℝ V W =
+    nonconstantMetricScalar x * (V * W)
+  rw [Real.inner_apply]
+
+set_option backward.isDefEq.respectTransparency false in
+private lemma chartConnectionCoeff_nonconstantMetric :
+    chartConnectionCoeff (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+      (0 : ℝ) (1 : ℝ) (⟨0, by simp⟩ : Fin (Module.finrank ℝ ℝ))
+      (⟨0, by simp⟩ : Fin (Module.finrank ℝ ℝ))
+      (⟨0, by simp⟩ : Fin (Module.finrank ℝ ℝ)) =
+        (Module.finBasis ℝ ℝ) (⟨0, by simp⟩ : Fin (Module.finrank ℝ ℝ)) / 2 := by
+  let z : Fin (Module.finrank ℝ ℝ) := ⟨0, by simp⟩
+  have hfin : Module.finrank ℝ ℝ = 1 := Module.finrank_self ℝ
+  letI : Subsingleton (Fin (Module.finrank ℝ ℝ)) := by
+    rw [hfin]
+    infer_instance
+  letI : Unique (Fin (Module.finrank ℝ ℝ)) := uniqueOfSubsingleton z
+  have hq : (1 : ℝ) ∈ (chartAt ℝ (0 : ℝ)).source := by simp
+  have hi : (𝓘(ℝ, ℝ)).IsInteriorPoint (1 : ℝ) :=
+    BoundarylessManifold.isInteriorPoint
+  have hf := Connection.christoffel_formula
+    (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+      (alpha := (0 : ℝ)) (p := (1 : ℝ)) hq hi z z z
+  dsimp only at hf
+  rw [chartConnectionCoeff]
+  let t := trivializationAt ℝ (TangentSpace (𝓘(ℝ, ℝ))) (0 : ℝ)
+  let b := Module.finBasis ℝ ℝ
+  let c : ℝ := b z
+  have hc : c ≠ 0 := by
+    dsimp [c]
+    exact b.ne_zero z
+  have hbase : (1 : ℝ) ∈ t.baseSet := by simp [t]
+  rw [Bundle.Trivialization.localFrame_coeff_apply_of_mem_baseSet
+    (I := 𝓘(ℝ, ℝ)) t b hbase
+      (fun x => Connection.leviCivitaConnection nonconstantMetric
+        (t.localFrame b z) x (t.localFrame b z x)) z]
+  have hframe (a : Fin (Module.finrank ℝ ℝ)) (q : ℝ) :
+      t.localFrame b a q = b a := by
+    have hq : q ∈ t.baseSet := by simp [t]
+    rw [Bundle.Trivialization.localFrame_apply_of_mem_baseSet _ _ hq]
+    simp only [Bundle.Trivialization.basisAt, Module.Basis.map_apply]
+    rw [Bundle.Trivialization.linearEquivAt_symm_apply]
+    rw [← Bundle.Trivialization.symmL_apply (R := ℝ) _ hq]
+    rw [TangentBundle.symmL_model_space]
+    unfold TangentSpace
+    rfl
+  have hmetric (a d : Fin (Module.finrank ℝ ℝ)) :
+      nonconstantMetric.inner (1 : ℝ) (t.localFrame b a 1)
+          (t.localFrame b d 1) = 2 * (c * c) := by
+    have ha : a = z := Subsingleton.elim _ _
+    have hd : d = z := Subsingleton.elim _ _
+    subst a
+    subst d
+    rw [nonconstantMetric_inner_apply]
+    simp only [hframe]
+    change nonconstantMetricScalar 1 * (b z * b z) = 2 * (c * c)
+    norm_num [nonconstantMetricScalar, c]
+  have hfun (a d : Fin (Module.finrank ℝ ℝ)) :
+      (fun y : ℝ =>
+        nonconstantMetric.inner ((extChartAt 𝓘(ℝ, ℝ) 0).symm y)
+          (t.localFrame b a ((extChartAt 𝓘(ℝ, ℝ) 0).symm y))
+          (t.localFrame b d ((extChartAt 𝓘(ℝ, ℝ) 0).symm y))) =
+      (fun y : ℝ => nonconstantMetricScalar y * (c * c)) := by
+    have ha : a = z := Subsingleton.elim _ _
+    have hd : d = z := Subsingleton.elim _ _
+    subst a
+    subst d
+    funext y
+    rw [nonconstantMetric_inner_apply]
+    simp only [extChartAt_model_space_eq_id]
+    simp only [hframe]
+    change nonconstantMetricScalar y * (b z * b z) =
+      nonconstantMetricScalar y * (c * c)
+    rfl
+  have hscalar : HasDerivAt nonconstantMetricScalar 2 (1 : ℝ) := by
+    have h := (hasDerivAt_const (x := (1 : ℝ)) (c := (1 : ℝ))).add
+      ((hasDerivAt_id (x := (1 : ℝ))).pow 2)
+    unfold nonconstantMetricScalar
+    convert h using 1
+    all_goals first | rfl | norm_num
+  have hderiv (a d r : Fin (Module.finrank ℝ ℝ)) :
+      fderiv ℝ
+          (fun y : ℝ =>
+            nonconstantMetric.inner ((extChartAt 𝓘(ℝ, ℝ) 0).symm y)
+              (t.localFrame b a ((extChartAt 𝓘(ℝ, ℝ) 0).symm y))
+              (t.localFrame b d ((extChartAt 𝓘(ℝ, ℝ) 0).symm y)))
+          ((extChartAt 𝓘(ℝ, ℝ) (0 : ℝ)) 1) (b r) =
+        2 * (c * c) * c := by
+    have ha : a = z := Subsingleton.elim _ _
+    have hd : d = z := Subsingleton.elim _ _
+    have hr : r = z := Subsingleton.elim _ _
+    subst a
+    subst d
+    subst r
+    rw [hfun z z]
+    simp only [extChartAt_model_space_eq_id]
+    change (fderiv ℝ (nonconstantMetricScalar *
+      (fun _ : ℝ => c * c)) 1) c = _
+    have hp := hscalar.mul
+      (hasDerivAt_const (x := (1 : ℝ)) (c := c * c))
+    rw [hp.hasFDerivAt.fderiv]
+    simp [ContinuousLinearMap.toSpanSingleton_apply, mul_comm]
+  have hmetric' (a d : Fin (Module.finrank ℝ ℝ)) :
+      nonconstantMetric.inner (1 : ℝ)
+          ((trivializationAt ℝ (TangentSpace (𝓘(ℝ, ℝ))) (0 : ℝ)).localFrame
+            (Module.finBasis ℝ ℝ) a 1)
+          ((trivializationAt ℝ (TangentSpace (𝓘(ℝ, ℝ))) (0 : ℝ)).localFrame
+            (Module.finBasis ℝ ℝ) d 1) = 2 * (c * c) := by
+    simpa only [t, b] using hmetric a d
+  have hderiv' (a d r : Fin (Module.finrank ℝ ℝ)) :
+      fderiv ℝ
+          (fun y : ℝ =>
+            nonconstantMetric.inner ((extChartAt 𝓘(ℝ, ℝ) (0 : ℝ)).symm y)
+              ((trivializationAt ℝ (TangentSpace (𝓘(ℝ, ℝ))) (0 : ℝ)).localFrame
+                (Module.finBasis ℝ ℝ) a ((extChartAt 𝓘(ℝ, ℝ) (0 : ℝ)).symm y))
+              ((trivializationAt ℝ (TangentSpace (𝓘(ℝ, ℝ))) (0 : ℝ)).localFrame
+                (Module.finBasis ℝ ℝ) d ((extChartAt 𝓘(ℝ, ℝ) (0 : ℝ)).symm y)))
+          ((extChartAt 𝓘(ℝ, ℝ) (0 : ℝ)) 1)
+          ((Module.finBasis ℝ ℝ) r) = 2 * (c * c) * c := by
+    simpa only [t, b] using hderiv a d r
+  simp only [hmetric', hderiv', Matrix.inv_subsingleton] at hf
+  simp at hf
+  simp [Matrix.diagonal] at hf
+  have hzdefault : z = (default : Fin (Module.finrank ℝ ℝ)) :=
+    Subsingleton.elim _ _
+  simp [hzdefault] at hf
+  field_simp [hc] at hf
+  rw [← hzdefault] at hf
+  have hleft :
+      ((t.basisAt b hbase).repr
+        (Connection.leviCivitaConnection nonconstantMetric
+          (t.localFrame b z) 1 ((t.basisAt b hbase) z))) z = c / 2 := by
+    nlinarith [hf]
+  rw [t.localFrame_apply_of_mem_baseSet b hbase]
+  simpa [t, b, c, z] using hleft
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Concrete sign guard for the nonconstant one-dimensional metric above.
+The value is nonzero, so the plus sign in the Morgan--Tian coordinate
+equation cannot be replaced by a minus sign on this model. -/
+private theorem chartChristoffelContraction_nonconstantMetric :
+    chartChristoffelContraction (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+      (0 : ℝ) (1 : ℝ) (1 : ℝ) (1 : ℝ) = 1 / 2 := by
+  let z : Fin (Module.finrank ℝ ℝ) := ⟨0, by simp⟩
+  have hfin : Module.finrank ℝ ℝ = 1 := Module.finrank_self ℝ
+  letI : Subsingleton (Fin (Module.finrank ℝ ℝ)) := by
+    rw [hfin]
+    infer_instance
+  letI : Unique (Fin (Module.finrank ℝ ℝ)) := uniqueOfSubsingleton z
+  let b := Module.finBasis ℝ ℝ
+  let c : ℝ := b z
+  have hc : c ≠ 0 := by
+    dsimp [c]
+    exact b.ne_zero z
+  have hcoeff :
+      chartConnectionCoeff (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+        (0 : ℝ) (1 : ℝ) z z z = c / 2 := by
+    simpa only [b, c, z] using chartConnectionCoeff_nonconstantMetric
+  have hrepr : b.repr (1 : ℝ) z = c⁻¹ := by
+    have hbc : c⁻¹ • (b z) = (1 : ℝ) := by
+      dsimp [c]
+      field_simp [b.ne_zero z]
+    rw [← hbc, map_smul]
+    simp
+  have hcoeff_all (i j k : Fin (Module.finrank ℝ ℝ)) :
+      chartConnectionCoeff (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+        (0 : ℝ) (1 : ℝ) i j k = c / 2 := by
+    have hi : i = z := Subsingleton.elim _ _
+    have hj : j = z := Subsingleton.elim _ _
+    have hk : k = z := Subsingleton.elim _ _
+    simpa [hi, hj, hk] using hcoeff
+  have hrepr_all (i : Fin (Module.finrank ℝ ℝ)) :
+      b.repr (1 : ℝ) i = c⁻¹ := by
+    have hi : i = z := Subsingleton.elim _ _
+    simpa [hi] using hrepr
+  unfold chartChristoffelContraction chartConnectionContraction
+  change ∑ k, (∑ i, ∑ j,
+      chartConnectionCoeff (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+        (0 : ℝ) ((extChartAt 𝓘(ℝ, ℝ) 0).symm 1) i j k *
+        b.repr (1 : ℝ) i * b.repr (1 : ℝ) j) • b k = 1 / 2
+  simp only [extChartAt_model_space_eq_id]
+  simp
+  have hzdefault : (default : Fin (Module.finrank ℝ ℝ)) = z :=
+    Subsingleton.elim _ _
+  have hbd : b default = c := by
+    rw [hzdefault]
+  rw [hcoeff_all, hrepr_all, hbd]
+  field_simp [hc]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The concrete contraction is nonzero, so the generic
+`chartAcceleration_sign_regression` theorem rules out the reversed sign once
+the corresponding second-derivative equation is supplied. -/
+private theorem chartChristoffelContraction_nonconstantMetric_ne_zero :
+    chartChristoffelContraction (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+      (0 : ℝ) (1 : ℝ) (1 : ℝ) (1 : ℝ) ≠ 0 := by
+  rw [chartChristoffelContraction_nonconstantMetric]
+  norm_num
+
+ /-! ### Global zero-velocity solution regression
 
 The general nonempty maximal-domain witness still needs the fixed-to-moving
 Christoffel law.  The constant curve is independent of that law, however, and
