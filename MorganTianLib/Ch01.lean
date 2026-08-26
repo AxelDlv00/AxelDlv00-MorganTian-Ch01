@@ -29,17 +29,18 @@ second-exterior-power operator.  Their direct-only tangent adapters are exported
 by `Curvature.SectionalProvisional` and `Curvature.OperatorProvisional`; every
 plane or operator property retains an explicit algebraic-curvature witness
 until the S07 metric symmetry boundary is proved, and these adapters do not
-replace the producer.  Later milestones add geodesic,
-Jacobi, normal-coordinate, and manifold-comparison modules without exposing
-chart plumbing as public API.  It
-also exposes the algebraic curvature-convention kernel and the standalone
-scalar, vector/operator, traced Riccati, and normalized determinant/density
-comparison layers.  The
-provisional A2 chart-density and
-change-of-variables substrate is available through the direct
-`MorganTianLib.Ch01.Volume.ChangeOfVariables` import; it is not exported by
-this stable umbrella until a named downstream consumer establishes its public
-boundary.
+replace the producer.  It also exposes the algebraic curvature-convention
+kernel and the standalone scalar, vector/operator, traced Riccati, and
+normalized determinant/density comparison layers.  The A2 chart-density and
+normalized change-of-variables substrate is available only through the direct
+`MorganTianLib.Ch01.Volume.ChangeOfVariables` import until the named N1
+cut-locus consumer fixes its stable boundary; it uses Mathlib's
+`LinearMap.normDet` and `μHE[finrank ℝ E]` directly and does not install a
+competing global measure.  The provisional `Connection.TensorLaplacian`
+evaluation layer is likewise direct-only until its bundled,
+extension-independent producer is available for S13's Bochner consumer.
+Later milestones add geodesic, Jacobi, normal-coordinate, and
+manifold-comparison modules without exposing chart plumbing as public API.
 -/
 
 namespace MorganTianLib
