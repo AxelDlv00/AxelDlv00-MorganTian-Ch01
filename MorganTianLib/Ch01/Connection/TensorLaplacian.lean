@@ -43,14 +43,18 @@ interface. Until a bundled, extension-independent producer lands, this module
 is a provisional direct-import leaf and is deliberately absent from the stable
 `MorganTianLib.Ch01` umbrella. Before S13's Bochner consumer is accepted, that
 producer must be proved and the consumer migrated; otherwise this raw leaf
-remains direct-only.
+remains direct-only. The unconditional constant-scalar laws below use the
+totalized `mvfderiv`/`mfderiv` API and concern only the algebraic tensor
+argument; they do not discharge the producer-level smoothness obligations.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
 discussion preceding `lapformula`, pp. 39--40, bibliography key
 `morganTian2007`. Mathlib references:
 `Geometry.Manifold.VectorBundle.CovariantDerivative.Basic`,
 `Geometry.Manifold.VectorBundle.CovariantDerivative.Metric`,
-`Geometry.Manifold.VectorBundle.Tensoriality`, and
+`Geometry.Manifold.VectorBundle.Tensoriality`,
+`Geometry.Manifold.MFDeriv.NormedSpace`/`Basic` (`mvfderiv_smul`,
+`mfderiv_zero_of_not_mdifferentiableAt`), and
 `Analysis.InnerProductSpace.Trace` (`LinearMap.trace_eq_sum_inner`). The chart
 component bridge reuses
 `MorganTianLib.Ch01.Connection.christoffel_formula`.
@@ -1077,6 +1081,38 @@ omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
     (x : M) : directionalDerivative X (-f) x = -directionalDerivative X f x := by
   simp [directionalDerivative]
 
+omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
+/-- Constant-scalar linearity of a directional derivative, without a
+differentiability premise on the scalar section.  The non-differentiable case
+uses the totalized `mfderiv` convention: a nonzero constant multiple is
+non-differentiable exactly when the original section is, while the zero
+multiple is handled separately. -/
+theorem directionalDerivative_const_smul
+    (X : TangentSection (I := I) (M := M)) (c : ℝ)
+    (f : ScalarSection (M := M)) (x : M) :
+    directionalDerivative X (c • f) x =
+      c * directionalDerivative X f x := by
+  unfold directionalDerivative
+  by_cases hf : MDiffAt f x
+  · have h := mvfderiv_smul (a := fun _ : M => c) (g := f)
+      (mdifferentiableAt_const) hf
+    have h' := congrArg (fun L => L (X x)) h
+    have hfun : (fun _ : M => c) • f = c • f := by
+      funext y
+      simp [smul_eq_mul]
+    rw [hfun] at h'
+    simpa [smul_eq_mul, mvfderiv_const] using h'
+  · by_cases hc : c = 0
+    · subst c
+      simp
+    · have hcf : ¬ MDiffAt (c • f) x := by
+        intro h
+        apply hf
+        have hi := h.const_smul c⁻¹
+        simpa [smul_smul, hc] using hi
+      simp [mvfderiv, mfderiv_zero_of_not_mdifferentiableAt hcf,
+        mfderiv_zero_of_not_mdifferentiableAt hf]
+
 /-- Additivity of `∇_X Y` in the direction field at a point. -/
 theorem covariantVector_add_direction_at
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
@@ -1238,6 +1274,169 @@ theorem mixedCovariantDerivativeAlong_neg {p q : ℕ}
   funext x
   simp [mixedCovariantDerivativeAlong, directionalDerivative]
   ring
+
+/-- Constant-scalar linearity of the raw mixed derivative.  This law is
+unconditional: `directionalDerivative_const_smul` handles the only
+derivative-bearing term, and the connection-action corrections are algebraic
+in the tensor evaluation. -/
+theorem mixedCovariantDerivativeAlong_smul_tensor {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (c : ℝ) (X : TangentSection (I := I) (M := M))
+    (A : MixedTensorSection (I := I) (M := M) p q)
+    (θ : Fin p → CovectorSection (I := I) (M := M))
+    (Y : Fin q → TangentSection (I := I) (M := M)) (x : M) :
+    mixedCovariantDerivativeAlong g X (c • A) θ Y x =
+      c * mixedCovariantDerivativeAlong g X A θ Y x := by
+  have hdir' := directionalDerivative_const_smul X c (A θ Y) x
+  have hdir : directionalDerivative X ((c • A) θ Y) x =
+      c * directionalDerivative X (A θ Y) x := by
+    change directionalDerivative X (c • (A θ Y)) x = _
+    exact hdir'
+  simp only [mixedCovariantDerivativeAlong]
+  rw [hdir]
+  change c * directionalDerivative X (A θ Y) x -
+      ∑ i, c * A (Function.update θ i (dualCovariantVector g X (θ i))) Y x -
+      ∑ i, c * A θ (Function.update Y i (covariantVector g X (Y i))) x = _
+  rw [← Finset.mul_sum, ← Finset.mul_sum]
+  ring
+
+/-- Constant-scalar linearity of the source-ordered second derivative in its
+tensor argument.  In particular, this removes the differentiability premises
+from the constant-scalar law while retaining the guarded additivity theorem
+below, whose hypotheses are genuinely needed by `mvfderiv_add`. -/
+theorem secondCovariantDerivativeEval_smul_tensor {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (c : ℝ) (X Z : TangentSection (I := I) (M := M))
+    (A : MixedTensorSection (I := I) (M := M) p q)
+    (θ : Fin p → CovectorSection (I := I) (M := M))
+    (Y : Fin q → TangentSection (I := I) (M := M)) (x : M) :
+    secondCovariantDerivativeEval g (c • A) θ Y X Z x =
+      c * secondCovariantDerivativeEval g A θ Y X Z x := by
+  have hinner : mixedCovariantDerivativeAlong g Z (c • A) =
+      c • mixedCovariantDerivativeAlong g Z A := by
+    funext θ' Y' y
+    exact mixedCovariantDerivativeAlong_smul_tensor g c Z A θ' Y' y
+  have houter := mixedCovariantDerivativeAlong_smul_tensor g c X
+    (mixedCovariantDerivativeAlong g Z A) θ Y x
+  have hcorr := mixedCovariantDerivativeAlong_smul_tensor g c
+    (covariantVector g X Z) A θ Y x
+  unfold secondCovariantDerivativeEval
+  change (mixedCovariantDerivativeAlong g X
+      (mixedCovariantDerivativeAlong g Z (c • A)) θ Y x -
+      mixedCovariantDerivativeAlong g (covariantVector g X Z) (c • A) θ Y x) = _
+  rw [hinner, houter, hcorr]
+  simp only [Pi.sub_apply]
+  ring
+
+/-- The source-ordered second evaluator vanishes on the zero tensor
+argument, in every pair of direction extensions.  The high-priority simp
+attribute keeps this typed zero normal form ahead of the generic evaluator
+application rewrite. -/
+@[simp high] theorem secondCovariantDerivativeEval_zero {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (X Z : TangentSection (I := I) (M := M))
+    (θ : Fin p → CovectorSection (I := I) (M := M))
+    (Y : Fin q → TangentSection (I := I) (M := M)) (x : M) :
+    secondCovariantDerivativeEval g
+      (0 : MixedTensorSection (I := I) (M := M) p q) θ Y X Z x = 0 := by
+  have h := secondCovariantDerivativeEval_smul_tensor g (0 : ℝ) X Z
+    (0 : MixedTensorSection (I := I) (M := M) p q) θ Y x
+  simpa using h
+
+/-- Negation commutes with the source-ordered second evaluator.  The
+high-priority simp attribute keeps the normal form ahead of the generic
+evaluator application rewrite. -/
+@[simp high] theorem secondCovariantDerivativeEval_neg {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (X Z : TangentSection (I := I) (M := M))
+    (A : MixedTensorSection (I := I) (M := M) p q)
+    (θ : Fin p → CovectorSection (I := I) (M := M))
+    (Y : Fin q → TangentSection (I := I) (M := M)) (x : M) :
+    secondCovariantDerivativeEval g (-A) θ Y X Z x =
+      -secondCovariantDerivativeEval g A θ Y X Z x := by
+  have h := secondCovariantDerivativeEval_smul_tensor g (-1 : ℝ) X Z A θ Y x
+  simpa using h
+
+/-- The rank-preserving second-derivative section inherits constant-scalar
+linearity pointwise from `secondCovariantDerivativeEval_smul_tensor`. -/
+theorem secondCovariantDerivative_smul_tensor {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (c : ℝ) (A : MixedTensorSection (I := I) (M := M) p q) :
+    secondCovariantDerivative g (c • A) =
+      c • secondCovariantDerivative g A := by
+  funext θ Y x
+  change secondCovariantDerivativeEval g (c • A) θ
+      (fun i => Y (Fin.castSucc (Fin.castSucc i)))
+      (Y (Fin.castSucc (Fin.last q)))
+      (Y (Fin.last (q + 1))) x = _
+  rw [secondCovariantDerivativeEval_smul_tensor]
+  rfl
+
+/-- The raw metric-trace evaluator is constant-scalar linear in the tensor
+argument. The frame sum remains the provisional direct evaluator described in
+the module documentation; this theorem concerns only its algebraic tensor
+argument. -/
+theorem connectionLaplacianEval_smul {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (c : ℝ) (A : MixedTensorSection (I := I) (M := M) p q)
+    (θ : Fin p → CovectorSection (I := I) (M := M))
+    (Y : Fin q → TangentSection (I := I) (M := M)) (x : M) :
+    connectionLaplacianEval g (c • A) θ Y x =
+      c * connectionLaplacianEval g A θ Y x := by
+  classical
+  unfold connectionLaplacianEval
+  simp_rw [secondCovariantDerivativeEval_smul_tensor]
+  rw [← Finset.mul_sum]
+
+/-- The rank-preserving raw connection Laplacian inherits constant-scalar
+linearity from its metric-trace evaluator. -/
+theorem connectionLaplacian_smul {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (c : ℝ) (A : MixedTensorSection (I := I) (M := M) p q) :
+    connectionLaplacian g (c • A) =
+      c • connectionLaplacian g A := by
+  funext θ Y x
+  change connectionLaplacianEval g (c • A) θ Y x =
+    c * connectionLaplacianEval g A θ Y x
+  exact connectionLaplacianEval_smul g c A θ Y x
+
+/-- The direct metric-trace evaluator vanishes on the zero tensor argument. -/
+@[simp] theorem connectionLaplacianEval_zero {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (θ : Fin p → CovectorSection (I := I) (M := M))
+    (Y : Fin q → TangentSection (I := I) (M := M)) (x : M) :
+    connectionLaplacianEval g
+      (0 : MixedTensorSection (I := I) (M := M) p q) θ Y x = 0 := by
+  have h := connectionLaplacianEval_smul g (0 : ℝ)
+    (0 : MixedTensorSection (I := I) (M := M) p q) θ Y x
+  simpa using h
+
+/-- Negation commutes with the direct metric-trace evaluator. -/
+@[simp] theorem connectionLaplacianEval_neg {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (A : MixedTensorSection (I := I) (M := M) p q)
+    (θ : Fin p → CovectorSection (I := I) (M := M))
+    (Y : Fin q → TangentSection (I := I) (M := M)) (x : M) :
+    connectionLaplacianEval g (-A) θ Y x =
+      -connectionLaplacianEval g A θ Y x := by
+  have h := connectionLaplacianEval_smul g (-1 : ℝ) A θ Y x
+  simpa using h
+
+/-- The rank-preserving raw connection Laplacian vanishes on the zero
+tensor argument. -/
+@[simp] theorem connectionLaplacian_zero {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) :
+    connectionLaplacian g (0 : MixedTensorSection (I := I) (M := M) p q) = 0 := by
+  funext θ Y x
+  exact connectionLaplacianEval_zero g θ Y x
+
+/-- Negation commutes with the rank-preserving raw connection Laplacian. -/
+@[simp] theorem connectionLaplacian_neg {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (A : MixedTensorSection (I := I) (M := M) p q) :
+    connectionLaplacian g (-A) = -connectionLaplacian g A := by
+  funext θ Y x
+  exact connectionLaplacianEval_neg g A θ Y x
 
 omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
 /-- Directional derivatives are additive under the usual differentiability
