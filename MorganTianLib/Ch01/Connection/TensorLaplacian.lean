@@ -39,7 +39,11 @@ module. The raw evaluator definitions accept arbitrary evaluations; the
 producer-level regularity and extension-independence theorems below carry the
 corresponding hypotheses rather than asserting them by definition. The
 `TensorialAt`/`mkHom`/`mkHom₂` lemmas from Mathlib are the fibre-level
-interface.
+interface. Until a bundled, extension-independent producer lands, this module
+is a provisional direct-import leaf and is deliberately absent from the stable
+`MorganTianLib.Ch01` umbrella. Before S13's Bochner consumer is accepted, that
+producer must be proved and the consumer migrated; otherwise this raw leaf
+remains direct-only.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
 discussion preceding `lapformula`, pp. 39--40, bibliography key
@@ -617,7 +621,9 @@ noncomputable def connectionLaplacianEval {p q : ℕ}
 
 /-- Raw rank-preserving connection-Laplacian evaluator. It becomes a
 frame-independent tensor contraction only under the explicit regularity and
-direction-slot tensoriality hypotheses below. -/
+direction-slot tensoriality hypotheses below. Because arbitrary inputs need
+not be intrinsic, this declaration is intentionally available only through the
+direct provisional leaf, not the stable Chapter 1 umbrella. -/
 noncomputable def connectionLaplacian {p q : ℕ}
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (A : MixedTensorSection (I := I) (M := M) p q) :
