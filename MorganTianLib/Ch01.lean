@@ -27,7 +27,10 @@ geodesic-completeness wrapper, proved affine
 geodesic/restriction transport, affine path-length and translation
 compatibility, an explicit candidate-versus-competitor length inequality, and
 global-witness packaging adapters, together with bounded-lifetime/model-
-completion regressions, make those distinctions checkable.  Its
+completion regressions, make those distinctions checkable.  The public
+subsingleton producer adapters and the zero-dimensional Euclidean regression
+instantiate the selected metric, all-real-time lifetime, and finite-distance
+minimizer branches without weakening the general producer contracts.  Its
 maximal-domain and compactness producers are explicit inputs
 for the remaining S19 proof; the geodesic-completeness wrapper is an existence
 form and does not assert uniqueness of maximal witnesses.  Later milestones

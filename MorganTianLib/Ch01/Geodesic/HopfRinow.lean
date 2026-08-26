@@ -600,6 +600,29 @@ structure CompleteMaximalGeodesicData
   continuation : ∀ (p : M) (v : TangentSpace I p),
     MaximalGeodesicContinuation (I := I) g p v (solution p v)
 
+/-- A one-point/subsingleton manifold supplies the maximal-domain producer
+without an analytic continuation argument: every tangent datum is zero, so
+the constant geodesic has lifetime `univ`.  This is a proof-backed
+zero-dimensional regression for the producer boundary, not a replacement for
+the general S18 construction.  The complete-manifold source target is the
+paragraph preceding Morgan--Tian, Theorem 1.18 (`morganTian2007`); compare do
+Carmo (`doCarmo1992`), Chapter 7, and Lee (`lee2018`), Theorem 6.19. -/
+noncomputable def CompleteMaximalGeodesicData.of_subsingleton
+    [Subsingleton M] [∀ p : M, Subsingleton (TangentSpace I p)]
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) :
+    CompleteMaximalGeodesicData (I := I) g := by
+  refine { solution := ?_, continuation := ?_ }
+  · intro p v
+    have hv : v = (0 : TangentSpace I p) := Subsingleton.elim _ _
+    subst v
+    exact MaximalGeodesic.refl g p
+  · intro p v
+    have hv : v = (0 : TangentSpace I p) := Subsingleton.elim _ _
+    subst v
+    exact MaximalGeodesicContinuation.of_univ g p 0
+      (MaximalGeodesic.refl g p) rfl
+
 /-- Every initial datum has a canonical all-real-time solution once the
 completed S18 producer supplies maximality and continuation. -/
 theorem exists_globalGeodesic_of_complete_all
@@ -1246,6 +1269,23 @@ structure MinimizingGeodesicData
       ∀ x y : M, canonicalRiemannianEDist (I := I) g x y < ⊤ →
         Nonempty (MinimizingGeodesic (I := I) g x y)
 
+/-- The minimizing-segment producer for a subsingleton manifold.  The only
+pair of endpoints is the diagonal, where `MinimizingGeodesic.refl` supplies
+the constant segment.  Finite distance is still consumed explicitly so this
+adapter cannot blur the disconnected-component branch of S19.  The source
+anchor is Morgan--Tian, Theorem 1.18 (`morganTian2007`), with do Carmo
+(`doCarmo1992`), Chapter 7, and Lee (`lee2018`), Theorem 6.19 as cross-checks. -/
+theorem MinimizingGeodesicData.of_subsingleton
+    [Subsingleton M]
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) :
+    MinimizingGeodesicData (I := I) g := by
+  refine { exists_segment := ?_ }
+  intro _hcomplete x y _hfinite
+  have hxy : y = x := Subsingleton.elim _ _
+  subst y
+  exact ⟨MinimizingGeodesic.refl g x⟩
+
 /-- A finite-distance component is enough for the compactness producer.  This
 form intentionally has no global `[PreconnectedSpace M]` assumption. -/
 theorem exists_minimizingGeodesic_of_finite
@@ -1440,6 +1480,104 @@ noncomputable def euclideanSmoothMetric :
       (TangentSpace 𝓘(ℝ, F) : F → Type _) := by
   let g := riemannianMetricVectorSpace F
   exact { g with contMDiff := g.contMDiff.of_le (by simp) }
+
+/-- The selected zero-dimensional Euclidean Riemannian distance is complete.
+The `EMetricSpace` installed in this proof is exactly the one used by
+`RiemannianMetricComplete`; completeness here is the subsingleton regression,
+not an assumption about the model-space ODE.  This records the degenerate
+complete-manifold case of the paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`), with do Carmo (`doCarmo1992`), Chapter 7, and Lee
+(`lee2018`), Theorem 6.19, as cross-checks. -/
+theorem euclidean_zero_dimensional_metric_complete :
+    RiemannianMetricComplete (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+      (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))) := by
+  unfold RiemannianMetricComplete
+  letI : Bundle.RiemannianBundle
+      (TangentSpace 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)) :
+        EuclideanSpace ℝ (Fin 0) → Type _) :=
+    ⟨(euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))).toRiemannianMetric⟩
+  letI : IsContinuousRiemannianBundle (EuclideanSpace ℝ (Fin 0))
+      (TangentSpace 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)) :
+        EuclideanSpace ℝ (Fin 0) → Type _) :=
+    continuousRiemannianBundle (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+  letI : EMetricSpace (EuclideanSpace ℝ (Fin 0)) :=
+    EMetricSpace.ofRiemannianMetric 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)) _
+  infer_instance
+
+/-- The zero-dimensional Euclidean model supplies the all-initial-data
+maximal-geodesic producer.  Tangent fibers are definitionally the zero model
+space only after the explicit local conversion below, so the dependent
+`Subsingleton` instance is kept visible in this regression. -/
+noncomputable def euclidean_zero_dimensional_complete_maximal_data :
+    CompleteMaximalGeodesicData (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+      (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))) := by
+  letI : ∀ p : EuclideanSpace ℝ (Fin 0),
+      Subsingleton (TangentSpace 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)) p) := fun p => by
+    change Subsingleton (EuclideanSpace ℝ (Fin 0))
+    infer_instance
+  exact CompleteMaximalGeodesicData.of_subsingleton
+    (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+
+/-- The corresponding zero-dimensional compactness/minimizer producer uses
+the diagonal constant segment and keeps the finite-distance premise explicit. -/
+theorem euclidean_zero_dimensional_minimizing_data :
+    MinimizingGeodesicData (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+      (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))) :=
+  MinimizingGeodesicData.of_subsingleton
+    (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+
+/-- In the zero-dimensional complete model, every supplied maximal lifetime is
+all of `ℝ`; the two unboundedness conjuncts make the lifetime contract
+explicit for later exponential-map consumers. -/
+theorem euclidean_zero_dimensional_maximal_lifetime
+    (p : EuclideanSpace ℝ (Fin 0))
+    (v : TangentSpace 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)) p) :
+    let G :=
+      (euclidean_zero_dimensional_complete_maximal_data).solution p v
+    G.lifetime = (Set.univ : Set ℝ) ∧
+      LifetimeUnboundedAbove G.lifetime ∧ LifetimeUnboundedBelow G.lifetime := by
+  dsimp
+  have hlife := maximalGeodesic_lifetime_eq_univ_of_complete
+    (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+    euclidean_zero_dimensional_metric_complete
+    (euclidean_zero_dimensional_complete_maximal_data.solution p v)
+    (euclidean_zero_dimensional_complete_maximal_data.continuation p v)
+  exact ⟨hlife,
+    maximalGeodesic_lifetime_unboundedAbove
+      (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+      euclidean_zero_dimensional_metric_complete
+      (euclidean_zero_dimensional_complete_maximal_data.solution p v)
+      (euclidean_zero_dimensional_complete_maximal_data.continuation p v),
+    maximalGeodesic_lifetime_unboundedBelow
+      (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+      euclidean_zero_dimensional_metric_complete
+      (euclidean_zero_dimensional_complete_maximal_data.solution p v)
+      (euclidean_zero_dimensional_complete_maximal_data.continuation p v)⟩
+
+/-- The maximal-domain producer and selected-metric completeness combine to
+give the source-facing all-real-time geodesic witness in the one-point model. -/
+theorem euclidean_zero_dimensional_isGeodesicallyComplete :
+    IsGeodesicallyComplete (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+      (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))) := by
+  exact isGeodesicallyComplete_of_complete
+    (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+    euclidean_zero_dimensional_metric_complete
+    euclidean_zero_dimensional_complete_maximal_data
+
+/-- Every zero-dimensional endpoint pair is fed through the explicit finite
+distance branch and receives the constant minimizing segment. -/
+theorem euclidean_zero_dimensional_minimizing_segment
+    (x y : EuclideanSpace ℝ (Fin 0)) :
+    Nonempty (MinimizingGeodesic
+      (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+      (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))) x y) := by
+  exact exists_minimizingGeodesic_of_finite
+    (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+    euclidean_zero_dimensional_metric_complete
+    euclidean_zero_dimensional_minimizing_data x y (by
+      have hxy : y = x := Subsingleton.elim _ _
+      subst y
+      simp)
 
 /-- The affine straight line in the standard Euclidean Riemannian manifold. -/
 def euclideanStraightLine (x y : F) :
