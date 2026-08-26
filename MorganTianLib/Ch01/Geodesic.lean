@@ -1862,6 +1862,79 @@ theorem restrict_domain_subset_maximalGeodesicDomain
   exact subset_maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)
     (S.restrict hs hpre h0 hsub)
 
+/-! ### Conditional canonical-union transfer
+
+The next lemmas isolate the analytic part of the maximal-interval
+construction.  They are conditional on the explicit overlap premise above:
+the missing metric Christoffel transformation theorem is still the producer
+that must establish that premise for arbitrary initial data. -/
+
+/-- The restriction operation preserves the data which identify a solution.
+
+This is a small API regression, but it is useful when a continuation proof
+shrinks a solution to an overlap interval. -/
+theorem GeodesicSolution.restrict_data
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p} (S : GeodesicSolution (I := I) g p v)
+    {s : Set ℝ} (hs : IsOpen s) (hpre : IsPreconnected s) (h0 : (0 : ℝ) ∈ s)
+    (hsub : s ⊆ S.domain) :
+    (S.restrict hs hpre h0 hsub).domain = s ∧
+      (S.restrict hs hpre h0 hsub).curve = S.curve ∧
+      (S.restrict hs hpre h0 hsub).initial_position = S.initial_position ∧
+      (S.restrict hs hpre h0 hsub).initial_velocity = S.initial_velocity := by
+  exact ⟨rfl, rfl, rfl, rfl⟩
+
+/-- The chosen representative is continuous on the union of compatible
+solution domains.  Openness of each witness domain upgrades pointwise
+agreement to the germ equality required by continuity. -/
+theorem maximalGeodesicCurve_continuousOn_of_compatible
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (hcompat : GeodesicSolutionsCompatible (I := I) (g := g) (p := p) (v := v)) :
+    ContinuousOn
+      (maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v))
+      (maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) := by
+  intro t ht
+  obtain ⟨S, htS⟩ :=
+    (mem_maximalGeodesicDomain_iff (I := I) (g := g) (p := p) (v := v)
+      (t := t)).mp ht
+  have hScont : ContinuousAt S.curve t :=
+    S.equation.1.continuousAt (S.isOpen_domain.mem_nhds htS)
+  have heq :
+      maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) =ᶠ[𝓝 t]
+        S.curve :=
+    maximalGeodesicCurve_eventuallyEq_of_mem hcompat S htS
+  exact (hScont.congr_of_eventuallyEq heq).continuousWithinAt
+
+/-- The chart reading of the chosen representative is smooth on the union of
+compatible solution domains. -/
+theorem maximalGeodesicCurve_chartSmoothOn_of_compatible
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (hcompat : GeodesicSolutionsCompatible (I := I) (g := g) (p := p) (v := v)) :
+    ContDiffOn ℝ ∞
+      (chartReading (I := I) p
+        (maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v)))
+      (maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) := by
+  intro t ht
+  obtain ⟨S, htS⟩ :=
+    (mem_maximalGeodesicDomain_iff (I := I) (g := g) (p := p) (v := v)
+      (t := t)).mp ht
+  have hSdiff : ContDiffAt ℝ ∞
+      (chartReading (I := I) p S.curve) t :=
+    S.chart_smooth.contDiffAt (S.isOpen_domain.mem_nhds htS)
+  have heqCurve :
+      maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) =ᶠ[𝓝 t]
+        S.curve :=
+    maximalGeodesicCurve_eventuallyEq_of_mem hcompat S htS
+  have heqRead :
+      chartReading (I := I) p
+          (maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v)) =ᶠ[𝓝 t]
+        chartReading (I := I) p S.curve := by
+    filter_upwards [heqCurve] with s hs
+    simpa only [chartReading] using congrArg (extChartAt I p) hs
+  exact (hSdiff.congr_of_eventuallyEq heqRead).contDiffWithinAt
+
 /-- A nonzero Christoffel contraction cannot be cancelled by the wrong sign.
 
 This reusable obstruction is the algebraic core of the nonconstant-metric sign
@@ -2148,6 +2221,155 @@ theorem isGeodesicAt_iff_coordinate_formula
           (deriv (chartReading (I := I) (gamma t) gamma) t) = 0 := by
   rw [isGeodesicAt_iff_chartEquation]
   rfl
+
+/-! ### Equation congruence and conditional maximal curve
+
+The next congruence lemmas are purely local calculus.  They deliberately do
+not assert that two coordinate representatives satisfy the same equation on
+an overlap: the metric Christoffel transformation law is the separate S18
+input which supplies the overlap compatibility premise. -/
+
+/-- An eventual equality of two curves transports the local geodesic contract.
+
+The proof keeps the totalized `deriv` regularity clauses explicit.  In
+particular, the eventual equality is lifted once more with
+`Filter.EventuallyEq.eventuallyEq_nhds` before transferring the eventual
+first-derivative clause. -/
+theorem isGeodesicAt_congr_of_eventuallyEq
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {gamma₁ gamma₂ : ℝ → M} {t : ℝ}
+    (hev : gamma₂ =ᶠ[𝓝 t] gamma₁)
+    (h : IsGeodesicAt (I := I) g gamma₁ t) :
+    IsGeodesicAt (I := I) g gamma₂ t := by
+  rw [isGeodesicAt_iff_chartEquation] at h ⊢
+  obtain ⟨hsource, hcont, hreg, hacc⟩ := h
+  have hpt : gamma₂ t = gamma₁ t := hev.self_of_nhds
+  rw [hpt]
+  have hloc :
+      chartReading (I := I) (gamma₁ t) gamma₁ =ᶠ[𝓝 t]
+        chartReading (I := I) (gamma₁ t) gamma₂ := by
+    filter_upwards [hev] with s hs
+    show extChartAt I (gamma₁ t) (gamma₁ s) =
+      extChartAt I (gamma₁ t) (gamma₂ s)
+    rw [hs]
+  have hderiv :
+      deriv (chartReading (I := I) (gamma₁ t) gamma₁) =ᶠ[𝓝 t]
+        deriv (chartReading (I := I) (gamma₁ t) gamma₂) := hloc.deriv
+  refine ⟨hsource, hcont.congr_of_eventuallyEq hev, ?_, ?_⟩
+  · refine ⟨?_, ?_, ?_, ?_⟩
+    · filter_upwards [hreg.1, hev] with s hs hγ
+      rwa [hγ]
+    · exact (hreg.2.1.congr_of_eventuallyEq hloc.symm).congr_deriv hloc.deriv_eq
+    · filter_upwards [hreg.2.2.1, hloc.eventuallyEq_nhds, hderiv]
+        with s hs hlocs hds
+      rw [← hds]
+      exact hs.congr_of_eventuallyEq hlocs.symm
+    · exact hreg.2.2.2.congr_of_eventuallyEq hderiv.symm
+  · have h0 := hloc.self_of_nhds
+    have h1 := hloc.deriv_eq
+    have h2 := hloc.deriv.deriv_eq
+    simpa [chartAcceleration, h0, h1, h2] using hacc
+
+/-- A geodesic equation on an open interval is invariant under an eventual
+equality supplied on that interval. -/
+theorem IsGeodesicOn.congr_of_eqOn
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {gamma₁ gamma₂ : ℝ → M} {s : Set ℝ} (hs : IsOpen s)
+    (heq : Set.EqOn gamma₁ gamma₂ s)
+    (h : IsGeodesicOn (I := I) g gamma₁ s) :
+    IsGeodesicOn (I := I) g gamma₂ s := by
+  refine ⟨h.1.congr heq.symm, ?_⟩
+  intro t ht
+  apply isGeodesicAt_congr_of_eventuallyEq (I := I) (g := g)
+    (t := t) ?_ (h.2 t ht)
+  exact (heq.eventuallyEq_of_mem (hs.mem_nhds ht)).symm
+
+/-- Under pairwise overlap compatibility, the canonical union representative
+satisfies the intrinsic equation on its union domain.  The theorem is
+conditional because proving `hcompat` is precisely the pending Christoffel
+transition/gluing argument. -/
+theorem maximalGeodesicCurve_isGeodesicOn_of_compatible
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (hcompat : GeodesicSolutionsCompatible (I := I) (g := g) (p := p) (v := v)) :
+    IsGeodesicOn (I := I) g
+      (maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v))
+      (maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) := by
+  refine ⟨maximalGeodesicCurve_continuousOn_of_compatible hcompat, ?_⟩
+  intro t ht
+  obtain ⟨S, htS⟩ :=
+    (mem_maximalGeodesicDomain_iff (I := I) (g := g) (p := p) (v := v)
+      (t := t)).mp ht
+  have heq : Set.EqOn
+      (maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v))
+      S.curve S.domain := by
+    intro s hs
+    exact maximalGeodesicCurve_agrees hcompat S hs
+  exact (IsGeodesicOn.congr_of_eqOn (I := I) (g := g)
+    S.isOpen_domain heq.symm S.equation).2 t htS
+
+/-- A compatible nonempty solution family has a bundled solution on the full
+union domain.  This packages the canonical curve, its initial data, and the
+conditional equation/smoothness transfer without claiming the still-missing
+arbitrary-data compatibility theorem. -/
+theorem exists_maximalGeodesicSolution_of_compatible
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (S₀ : GeodesicSolution (I := I) g p v)
+    (hcompat : GeodesicSolutionsCompatible (I := I) (g := g) (p := p) (v := v)) :
+    ∃ Smax : GeodesicSolution (I := I) g p v,
+      Smax.domain = maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) ∧
+      Smax.curve = maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) := by
+  let hS : Nonempty (GeodesicSolution (I := I) g p v) := ⟨S₀⟩
+  have hzero :
+      maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) 0 = p :=
+    maximalGeodesicCurve_zero hS hcompat
+  have hvel :
+      HasDerivAt
+        (chartReading (I := I) p
+          (maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v)))
+        (chartVelocityAt (I := I) p v) 0 := by
+    have heqCurve :
+        maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) =ᶠ[𝓝 (0 : ℝ)]
+          S₀.curve :=
+      maximalGeodesicCurve_eventuallyEq_of_mem hcompat S₀ S₀.zero_mem_domain
+    have heqRead :
+        chartReading (I := I) p
+            (maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v)) =ᶠ[𝓝 (0 : ℝ)]
+          chartReading (I := I) p S₀.curve := by
+      filter_upwards [heqCurve] with s hs
+      simpa only [chartReading] using congrArg (extChartAt I p) hs
+    exact S₀.initial_velocity.congr_of_eventuallyEq heqRead
+  have hsmooth := maximalGeodesicCurve_chartSmoothOn_of_compatible hcompat
+  have hequation := maximalGeodesicCurve_isGeodesicOn_of_compatible hcompat
+  refine ⟨{
+    domain := maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)
+    isOpen_domain := maximalGeodesicDomain_isOpen (I := I) (g := g) (p := p) (v := v)
+    isPreconnected_domain := maximalGeodesicDomain_isPreconnected
+      (I := I) (g := g) (p := p) (v := v) hS
+    zero_mem_domain := zero_mem_maximalGeodesicDomain
+      (I := I) (g := g) (p := p) (v := v) hS
+    curve := maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v)
+    initial_position := hzero
+    initial_velocity := hvel
+    chart_smooth := hsmooth
+    equation := hequation
+  }, rfl, rfl⟩
+
+/-- A bundled solution whose domain is the compatible union extends every
+other bundled solution with the same initial data.  This is the precise
+interval-maximality statement available from the union construction; the raw
+curve extension predicate `IsMaximalGeodesicSolution` additionally asks for
+regularity data on an arbitrary totalized curve and remains a later theorem. -/
+theorem GeodesicSolution.domain_subset_of_maximalDomain
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    {S : GeodesicSolution (I := I) g p v}
+    (hdom : S.domain = maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)) :
+    ∀ T : GeodesicSolution (I := I) g p v, T.domain ⊆ S.domain := by
+  intro T
+  rw [hdom]
+  exact subset_maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) T
 
 omit [FiniteDimensional ℝ E] in
 /-- The chart velocity of the zero tangent vector is zero.  This is the
