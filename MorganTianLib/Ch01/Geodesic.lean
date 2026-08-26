@@ -5,6 +5,7 @@ import Mathlib.Geometry.Manifold.VectorBundle.Tangent
 import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Analysis.Calculus.Deriv.Prod
+import Mathlib.Topology.Order.IntermediateValue
 
 /-!
 # Geodesics
@@ -1574,6 +1575,26 @@ theorem maximalGeodesicDomain_isPreconnected
   · intro S
     exact S.isPreconnected_domain
 
+/-- The maximal domain has the order-theoretic interval property.
+
+On `ℝ`, `OrdConnected` is the canonical order formulation of an interval.  We
+keep the topological `IsPreconnected` theorem above as the construction
+lemma, and expose this form for continuation and endpoint arguments. -/
+theorem maximalGeodesicDomain_ordConnected
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (hS : Nonempty (GeodesicSolution (I := I) g p v)) :
+    (maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v)).OrdConnected := by
+  exact (maximalGeodesicDomain_isPreconnected (I := I) (g := g) (p := p)
+    (v := v) hS).ordConnected
+
+/-- Every supplied solution domain is an order interval as well. -/
+theorem GeodesicSolution.domain_ordConnected
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (S : GeodesicSolution (I := I) g p v) : S.domain.OrdConnected := by
+  exact S.isPreconnected_domain.ordConnected
+
 theorem zero_mem_maximalGeodesicDomain
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
     {p : M} {v : TangentSpace I p}
@@ -1623,6 +1644,42 @@ def IsMaximalGeodesicSolution
     HasDerivAt (chartReading (I := I) p gamma) (chartVelocityAt (I := I) p v) 0 →
     IsGeodesicCurveOn (I := I) g gamma s →
     s ⊆ S.domain
+
+/-- The raw maximality contract contains every bundled solution domain.
+
+This adapter is intentionally proved from the existing extension predicate:
+the bundled solution fields supply all of its hypotheses.  It is the bridge
+that makes `IsMaximalGeodesicSolution` and `maximalGeodesicDomain` refer to the
+same family, while retaining the stronger raw-curve extension interface for
+future continuation arguments. -/
+theorem IsMaximalGeodesicSolution.domain_subset
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    {S : GeodesicSolution (I := I) g p v}
+    (hmax : IsMaximalGeodesicSolution (I := I) (g := g) (p := p) (v := v) S)
+    (T : GeodesicSolution (I := I) g p v) :
+    T.domain ⊆ S.domain := by
+  intro t ht
+  exact hmax T.isOpen_domain T.isPreconnected_domain T.zero_mem_domain
+    T.initial_position T.initial_velocity T.equation ht
+
+/-- A bundled maximal solution has exactly the union maximal domain.
+
+The reverse inclusion is the substantive direction: it follows by applying
+the raw extension predicate to each bundled solution selected by membership in
+the union. -/
+theorem IsMaximalGeodesicSolution.domain_eq_maximalGeodesicDomain
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    {S : GeodesicSolution (I := I) g p v}
+    (hmax : IsMaximalGeodesicSolution (I := I) (g := g) (p := p) (v := v) S) :
+    S.domain = maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) := by
+  apply Set.Subset.antisymm
+  · exact subset_maximalGeodesicDomain (I := I) (g := g) (p := p) (v := v) S
+  · intro t ht
+    change t ∈ ⋃ T : GeodesicSolution (I := I) g p v, T.domain at ht
+    obtain ⟨T, hT⟩ := Set.mem_iUnion.mp ht
+    exact hmax.domain_subset T hT
 
 /-!
 ### Domain witnesses and compatibility
@@ -1697,6 +1754,20 @@ theorem maximalGeodesicCurve_of_not_mem
     maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) t = p := by
   simp only [maximalGeodesicCurve, dif_neg ht]
 
+/-- At the initial time, a nonempty solution family already determines the
+initial position.  This does not require overlap compatibility because every
+selected witness carries the same `initial_position` field. -/
+theorem maximalGeodesicCurve_zero_of_nonempty
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (hS : Nonempty (GeodesicSolution (I := I) g p v)) :
+    maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) 0 = p := by
+  have h0 : (0 : ℝ) ∈ maximalGeodesicDomain (I := I) (g := g)
+      (p := p) (v := v) := zero_mem_maximalGeodesicDomain (I := I) (g := g)
+        (p := p) (v := v) hS
+  rw [maximalGeodesicCurve_of_mem h0]
+  exact (maximalGeodesicSolutionAt (I := I) (g := g) (p := p) (v := v) h0).initial_position
+
 /-- Pairwise overlap compatibility for the supplied solution family.
 
 For two solutions `S` and `T`, the curves must agree on the intersection of
@@ -1720,6 +1791,19 @@ theorem maximalGeodesicCurve_agrees
   rw [maximalGeodesicCurve_of_mem htm]
   exact hcompat (maximalGeodesicSolutionAt (I := I) (g := g) (p := p) (v := v) htm) S
     ⟨maximalGeodesicSolutionAt_mem (I := I) (g := g) (p := p) (v := v) htm, ht⟩
+
+/-- On the domain of a supplied solution, the selected maximal representative
+agrees on a whole neighbourhood, not just at one time.  Openness of the
+solution domain is what upgrades pointwise overlap compatibility to the germ
+equality required by derivative and smoothness transfer. -/
+theorem maximalGeodesicCurve_eventuallyEq_of_mem
+    {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
+    {p : M} {v : TangentSpace I p}
+    (hcompat : GeodesicSolutionsCompatible (I := I) (g := g) (p := p) (v := v))
+    (S : GeodesicSolution (I := I) g p v) {t : ℝ} (ht : t ∈ S.domain) :
+    maximalGeodesicCurve (I := I) (g := g) (p := p) (v := v) =ᶠ[𝓝 t] S.curve := by
+  filter_upwards [S.isOpen_domain.mem_nhds ht] with s hs
+  exact maximalGeodesicCurve_agrees hcompat S hs
 
 theorem maximalGeodesicCurve_zero
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
