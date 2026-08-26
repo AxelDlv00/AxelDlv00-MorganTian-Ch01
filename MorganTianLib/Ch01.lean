@@ -21,9 +21,9 @@ algebraic curvature-convention kernel, and the standalone scalar,
 vector/operator, traced Riccati, normalized determinant/density comparison,
 and the S19 Hopf--Rinow continuation/minimizer interfaces.  The latter keeps
 metric completeness, model-space ODE completeness, and boundarylessness
-independent;
-its selected-distance completeness bridge, open/order-connected maximal-lifetime
-contract, source-facing geodesic-completeness wrapper, proved affine
+independent.  Its selected-distance completeness bridge,
+open/order-connected maximal-lifetime contract, source-facing
+geodesic-completeness wrapper, proved affine
 geodesic/restriction transport, affine path-length and translation
 compatibility, an explicit candidate-versus-competitor length inequality, and
 global-witness packaging adapters, together with bounded-lifetime/model-
