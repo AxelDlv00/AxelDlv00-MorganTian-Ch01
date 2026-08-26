@@ -21,7 +21,11 @@ domains are required to be open and order-connected, hence interval-shaped;
 this prevents a disconnected relative-continuity witness from counting as an
 extension through a finite endpoint.  The proved theorems are the
 set-theoretic maximal-interval argument and the reusable distance/length
-adapters.  The selected-distance completeness bridge reinstalls
+adapters.  In particular, global witnesses can be packaged into the maximal
+domain contract, affine restriction/translation preserves the checked path
+length, and a supplied minimizing segment is proved no longer than every
+smooth competitor with matching endpoints.  The selected-distance
+completeness bridge reinstalls
 the exact `EMetricSpace`/`CompleteSpace M` pair used by the predicate, while
 the model-space completion remains a separate premise.  Thus no theorem here
 treats metric completeness as an ODE premise, and every existence claim names
@@ -328,6 +332,44 @@ def MaximalGeodesic.refl
     intro s γ hs hopen hinterval hgeo hcont heq
     exact fun t ht => Set.mem_univ t
 
+/-! A global witness can be viewed as a maximal witness with lifetime `univ`.
+This adapter is deliberately one-way: it packages an already-proved global
+solution, and does not manufacture one from metric completeness. -/
+
+/-- Package an all-real-time geodesic as a maximal-domain witness.
+
+The constructor is useful when an upstream S18 argument already returns a
+global solution.  Its maximality proof is set-theoretic because `univ` has no
+strict superdomain; no uniqueness of global solutions is asserted.  The
+source-facing complete-manifold consequence is Morgan--Tian's preceding
+complete-manifold paragraph and Theorem 1.18 (`morganTian2007`), compared with
+do Carmo (`doCarmo1992`), Chapter 7, and Lee (`lee2018`), Theorem 6.19. -/
+def MaximalGeodesic.of_global
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p) (γ : ℝ → M)
+    (hzero : γ 0 = p)
+    (hderiv : HasDerivAt (chartReading (I := I) p γ)
+      (chartVelocityAt (I := I) p v) 0)
+    (hcont : Continuous γ) (hgeo : isGeodesic (I := I) g γ) :
+    MaximalGeodesic (I := I) g p v := by
+  refine
+    { curve := γ
+      lifetime := Set.univ
+      zero_mem := Set.mem_univ _
+      position_zero := hzero
+      initial_derivative := hderiv
+      geodesic_on := ?_
+      continuous_on := hcont.continuousOn
+      interval := ?_
+      lifetime_open := isOpen_univ
+      maximal := ?_ }
+  · intro t ht
+    exact hgeo t
+  · intro a b t ha hb hat htb
+    exact Set.mem_univ t
+  · intro s δ hs hopen hinterval hδ hcontδ heq t ht
+    exact Set.mem_univ t
+
 /-! The custom convexity field is retained for compatibility with the S18
 maximal-domain producer, while the continuation boundary uses Mathlib's
 order-connected interval predicate. -/
@@ -416,6 +458,45 @@ structure MaximalGeodesicContinuation
           (∃ t ∈ s, t < b) ∧
           isGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
           (∀ t ∈ G.lifetime, γ t = G.curve t)
+
+/-- The continuation contract for a witness whose lifetime is already `univ`.
+
+Both directions are witnessed by the same curve and domain.  This is a
+proof-backed bridge from the source-facing all-time predicate to the maximal
+domain record; the completeness argument remains in
+`maximalGeodesic_lifetime_eq_univ_of_complete`. -/
+theorem MaximalGeodesicContinuation.of_univ
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p)
+    (G : MaximalGeodesic (I := I) g p v)
+    (hlife : G.lifetime = (Set.univ : Set ℝ)) :
+    MaximalGeodesicContinuation (I := I) g p v G := by
+  refine { right := ?_, left := ?_ }
+  · intro _hcomplete b _hupper
+    refine ⟨Set.univ, G.curve, ?_, isOpen_univ, ?_, ?_, ?_, ?_, ?_⟩
+    · intro t ht
+      exact Set.mem_univ t
+    · exact Set.ordConnected_univ
+    · exact ⟨b + 1, Set.mem_univ _, by linarith⟩
+    · rw [← hlife]
+      exact G.geodesic_on
+    · rw [← hlife]
+      exact G.continuous_on
+    · intro t ht
+      rfl
+  · intro _hcomplete b _hlower
+    refine ⟨Set.univ, G.curve, ?_, isOpen_univ, ?_, ?_, ?_, ?_, ?_⟩
+    · intro t ht
+      exact Set.mem_univ t
+    · exact Set.ordConnected_univ
+    · exact ⟨b - 1, Set.mem_univ _, by linarith⟩
+    · rw [← hlife]
+      exact G.geodesic_on
+    · rw [← hlife]
+      exact G.continuous_on
+    · intro t ht
+      rfl
 
 /-! ### The unbounded-lifetime argument -/
 
@@ -552,6 +633,45 @@ def IsGeodesicallyComplete
         (chartVelocityAt (I := I) p v) 0 ∧
       Continuous γ ∧ isGeodesic (I := I) g γ
 
+/-- Turn the source-facing all-time existence predicate into the maximal-domain
+producer expected by this module.
+
+The chosen global curve is packaged with lifetime `univ`, and
+`MaximalGeodesicContinuation.of_univ` supplies the two vacuous extension
+certificates.  This direction is an adapter only: it does not prove
+`IsGeodesicallyComplete` from metric completeness, and it deliberately makes
+no uniqueness claim about the chosen witnesses. -/
+noncomputable def CompleteMaximalGeodesicData.of_isGeodesicallyComplete
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (h : IsGeodesicallyComplete (I := I) g) :
+    CompleteMaximalGeodesicData (I := I) g := by
+  classical
+  let γ : ∀ (p : M), TangentSpace I p → ℝ → M :=
+    fun p v => Classical.choose (h p v)
+  have hγzero : ∀ (p : M) (v : TangentSpace I p), γ p v 0 = p := by
+    intro p v
+    exact (Classical.choose_spec (h p v)).1
+  have hγderiv : ∀ (p : M) (v : TangentSpace I p),
+      HasDerivAt (chartReading (I := I) p (γ p v))
+        (chartVelocityAt (I := I) p v) 0 := by
+    intro p v
+    exact (Classical.choose_spec (h p v)).2.1
+  have hγcont : ∀ (p : M) (v : TangentSpace I p), Continuous (γ p v) := by
+    intro p v
+    exact (Classical.choose_spec (h p v)).2.2.1
+  have hγgeo : ∀ (p : M) (v : TangentSpace I p),
+      isGeodesic (I := I) g (γ p v) := by
+    intro p v
+    exact (Classical.choose_spec (h p v)).2.2.2
+  let solution : ∀ (p : M) (v : TangentSpace I p),
+      MaximalGeodesic (I := I) g p v :=
+    fun p v => MaximalGeodesic.of_global g p v (γ p v)
+      (hγzero p v) (hγderiv p v) (hγcont p v) (hγgeo p v)
+  refine { solution := solution, continuation := ?_ }
+  intro p v
+  exact MaximalGeodesicContinuation.of_univ g p v (solution p v) rfl
+
 /-- Metric completeness and a completed S18 producer imply the source-facing
 geodesic-completeness predicate.  This is the forward producer implication at
 Morgan--Tian, Theorem 1.18 (`morganTian2007`); compare do Carmo (`doCarmo1992`),
@@ -662,6 +782,96 @@ theorem constantSpeed_restrict
   rw [habs]
   ac_rfl
 
+omit [FiniteDimensional ℝ E] in
+/-- Riemannian path length is unchanged by affine normalization of a contained
+subinterval.
+
+This is the length counterpart to `isGeodesicOn_affineReparam` and
+`constantSpeed_restrict`.  The proof delegates the change of variables to
+Mathlib's monotone reparameterization theorem and keeps the endpoint and
+interval hypotheses explicit. -/
+theorem canonicalPathELength_affineReparam
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (γ : ℝ → M) {a b : ℝ}
+    (ha : a ∈ Set.Icc (0 : ℝ) 1) (hb : b ∈ Set.Icc (0 : ℝ) 1)
+    (hab : a ≤ b) (hγ : CMDiff[Set.Icc (0 : ℝ) 1] 1 γ) :
+    canonicalPathELength (I := I) g (affineReparam γ a b) 0 1 =
+      canonicalPathELength (I := I) g γ a b := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  change Manifold.pathELength I (fun t : ℝ => γ (a + (b - a) * t)) 0 1 =
+    Manifold.pathELength I γ a b
+  rw [show (fun t : ℝ => γ (a + (b - a) * t)) =
+      γ ∘ (fun t : ℝ => a + (b - a) * t) by rfl]
+  have hcomp :
+      Manifold.pathELength I (γ ∘ (fun t : ℝ => a + (b - a) * t)) 0 1 =
+        Manifold.pathELength I γ
+          ((fun t : ℝ => a + (b - a) * t) 0)
+          ((fun t : ℝ => a + (b - a) * t) 1) := by
+    apply Manifold.pathELength_comp_of_monotoneOn zero_le_one
+    · intro s hs t ht hst
+      nlinarith [hab]
+    · intro t ht
+      fun_prop
+    · have hsub : Set.Icc a b ⊆ Set.Icc (0 : ℝ) 1 := by
+        intro t ht
+        constructor <;> nlinarith [ha.1, hb.2, ht.1, ht.2]
+      have hγab : MDiff[Set.Icc
+          ((fun t : ℝ => a + (b - a) * t) 0)
+          ((fun t : ℝ => a + (b - a) * t) 1)] γ := by
+        simpa using (hγ.mono hsub).mdifferentiableOn (by norm_num)
+      exact hγab
+  have hf0 : (fun t : ℝ => a + (b - a) * t) 0 = a := by ring
+  have hf1 : (fun t : ℝ => a + (b - a) * t) 1 = b := by ring
+  simpa only [hf0, hf1] using hcomp
+
+/-- The smooth-path wrapper for affine restriction to a contained subinterval.
+
+The underlying function is totalized on `ℝ`, while the endpoint and smoothness
+proofs are restricted to `[0,1]`.  This keeps the path representation aligned
+with `SmoothPath` in `Ch01.Metric` and avoids introducing a second path type. -/
+def _root_.MorganTianLib.Ch01.SmoothPath.affineReparam
+    {x y : M} (p : MorganTianLib.Ch01.SmoothPath I x y)
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b) :
+    MorganTianLib.Ch01.SmoothPath I (p a) (p b) where
+  toFun := MorganTianLib.Ch01.Geodesic.affineReparam (p : ℝ → M) a b
+  source_eq := by simp [MorganTianLib.Ch01.Geodesic.affineReparam]
+  target_eq := by simp [MorganTianLib.Ch01.Geodesic.affineReparam]
+  smoothOn := by
+    apply p.smoothOn.comp
+    · rw [contMDiffOn_iff_contDiffOn]
+      fun_prop
+    · intro t ht
+      constructor <;> nlinarith [ht.1, ht.2, ha.1, hb.2]
+
+omit [FiniteDimensional ℝ E] in
+/-- Translation preserves path length on any unit interval whose translated
+times lie in the certified domain. -/
+theorem canonicalPathELength_translate
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (γ : ℝ → M) (c : ℝ)
+    (hγ : CMDiff[Set.Icc c (c + 1)] 1 γ) :
+    canonicalPathELength (I := I) g (fun t : ℝ => γ (t + c)) 0 1 =
+      canonicalPathELength (I := I) g γ c (c + 1) := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  change Manifold.pathELength I (fun t : ℝ => γ (t + c)) 0 1 =
+    Manifold.pathELength I γ c (c + 1)
+  rw [show (fun t : ℝ => γ (t + c)) =
+      γ ∘ (fun t : ℝ => t + c) by rfl]
+  have hcomp :
+      Manifold.pathELength I (γ ∘ (fun t : ℝ => t + c)) 0 1 =
+        Manifold.pathELength I γ
+          ((fun t : ℝ => t + c) 0) ((fun t : ℝ => t + c) 1) := by
+    apply Manifold.pathELength_comp_of_monotoneOn zero_le_one
+    · intro s hs t ht hst
+      linarith
+    · intro t ht
+      fun_prop
+    · simpa [add_comm] using hγ.mdifferentiableOn (by norm_num)
+  simpa [add_zero, add_comm] using hcomp
+
 /-- A geodesic segment together with the source-facing minimizing and
 constant-speed certificates.
 
@@ -743,6 +953,82 @@ theorem MinimizingGeodesic.translation_geodesic_proved
   isGeodesicOn_comp_add (I := I) g (G.path : ℝ → M)
     (Set.Icc (0 : ℝ) 1) G.geodesic_on c
 
+/-- Constant-speed data for an affine subsegment, with the endpoint distance
+made explicit.  This is the metric half of the restriction compatibility
+consumed by later exponential and variation modules. -/
+theorem MinimizingGeodesic.restriction_constantSpeed
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b) :
+    ∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
+      canonicalRiemannianEDist (I := I) g
+          (affineReparam (G.path : ℝ → M) a b s)
+          (affineReparam (G.path : ℝ → M) a b t) =
+        ENNReal.ofReal |s - t| *
+          canonicalRiemannianEDist (I := I) g (G.path a) (G.path b) :=
+  constantSpeed_restrict
+    (D := canonicalRiemannianEDist (I := I) g)
+    (γ := (G.path : ℝ → M))
+    (L := canonicalRiemannianEDist (I := I) g x y)
+    G.constant_speed ha hb hab
+
+/-- Constant-speed data for a translated portion of a minimizing path. -/
+theorem MinimizingGeodesic.translation_constantSpeed
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y) (c s t : ℝ)
+    (hs : s + c ∈ Set.Icc (0 : ℝ) 1)
+    (ht : t + c ∈ Set.Icc (0 : ℝ) 1) :
+    canonicalRiemannianEDist (I := I) g
+        ((G.path : ℝ → M) (s + c)) ((G.path : ℝ → M) (t + c)) =
+      ENNReal.ofReal |s - t| *
+        canonicalRiemannianEDist (I := I) g x y :=
+  constantSpeed_translate
+    (D := canonicalRiemannianEDist (I := I) g)
+    (γ := (G.path : ℝ → M))
+    (L := canonicalRiemannianEDist (I := I) g x y)
+    G.constant_speed c s t hs ht
+
+/-- The affine subsegment has length at least its endpoint distance.
+
+This lower bound is unconditional and deliberately does not pretend to prove
+the compactness/minimizer step.  Equality is exposed as the explicit
+`hsub` premise of `MinimizingGeodesic.restrict_of_length` below. -/
+theorem MinimizingGeodesic.restriction_edist_le_length
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b) :
+    canonicalRiemannianEDist (I := I) g (G.path a) (G.path b) ≤
+      canonicalPathELength (I := I) g
+        (affineReparam (G.path : ℝ → M) a b) 0 1 := by
+  let q : MorganTianLib.Ch01.SmoothPath I (G.path a) (G.path b) :=
+    MorganTianLib.Ch01.SmoothPath.affineReparam G.path ha hb hab
+  change
+    (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩;
+      Manifold.riemannianEDist I (G.path a) (G.path b)) ≤
+    (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩;
+      Manifold.pathELength I (q : ℝ → M) 0 1)
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  exact Manifold.riemannianEDist_le_pathELength
+    (q.smoothOn.of_le (show (1 : ℕ∞ω) ≤ (∞ : ℕ∞ω) by simp))
+    q.source q.target zero_le_one
+
+/-- Translation preserves the certified length of a minimizing path whenever
+the translated unit interval stays inside its smoothness interval. -/
+theorem MinimizingGeodesic.translation_length
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y) (c : ℝ)
+    (hc : Set.Icc c (c + 1) ⊆ Set.Icc (0 : ℝ) 1) :
+    canonicalPathELength (I := I) g
+        (fun t : ℝ => (G.path : ℝ → M) (t + c)) 0 1 =
+      canonicalPathELength (I := I) g (G.path : ℝ → M) c (c + 1) := by
+  apply canonicalPathELength_translate g (G.path : ℝ → M) c
+  exact (G.path.smoothOn.of_le (by simp)).mono hc
+
 /-- Construct a minimizing-segment certificate from its geometric core.
 
 The two affine-compatibility fields are filled by the proved S18 transport
@@ -774,6 +1060,36 @@ def MinimizingGeodesic.of_core
     intro c
     exact isGeodesicOn_comp_add (I := I) g (path : ℝ → M)
       (Set.Icc (0 : ℝ) 1) hgeo c
+
+/-- Package a finite subsegment once its path-length equality has been supplied
+by the compactness/variation producer.
+
+The geodesic equation, smooth-path endpoints, constant-speed identity, and
+affine length change are all proved here.  The sole extra premise `hsub` is
+the genuine segment-length equality that is not derivable from the current
+unit-interval certificates alone; keeping it explicit prevents this adapter
+from smuggling in the unresolved Hopf--Rinow compactness argument. -/
+def MinimizingGeodesic.restrict_of_length
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b)
+    (hsub : canonicalPathELength (I := I) g (G.path : ℝ → M) a b =
+      canonicalRiemannianEDist (I := I) g (G.path a) (G.path b)) :
+    MinimizingGeodesic (I := I) g (G.path a) (G.path b) := by
+  let q : MorganTianLib.Ch01.SmoothPath I (G.path a) (G.path b) :=
+    MorganTianLib.Ch01.SmoothPath.affineReparam G.path ha hb hab
+  have hq : (q : ℝ → M) =
+      MorganTianLib.Ch01.Geodesic.affineReparam (G.path : ℝ → M) a b := rfl
+  refine MinimizingGeodesic.of_core g (G.path a) (G.path b) q ?_ ?_ ?_ ?_
+  · rw [hq]
+    exact G.restriction_geodesic_proved g x y ha hb hab
+  · exact q.smoothOn.continuousOn
+  · rw [hq]
+    exact G.restriction_constantSpeed g x y ha hb hab
+  · rw [hq]
+    exact (canonicalPathELength_affineReparam g (G.path : ℝ → M)
+      ha hb hab (G.path.smoothOn.of_le (by simp))).trans hsub
 
 /-- The zero-length constant segment.  Besides being useful in later proofs,
 this is the zero-dimensional/one-point regression for the interface. -/
@@ -815,6 +1131,75 @@ theorem MinimizingGeodesic.length_eq_riemannianEDist
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   exact G.length_eq_distance
+
+/-- A minimizing segment is no longer than any smooth competitor with the same
+endpoints.
+
+`Manifold.riemannianEDist_le_pathELength` supplies the lower bound for the
+competitor, while `G.length_eq_distance` identifies the candidate's length
+with that infimum.  This explicit inequality is the variational interface
+consumed by later first/second-variation modules; it does not assert
+uniqueness.  The source statement is the complete-manifold paragraph before
+Morgan--Tian, Theorem 1.18 (`morganTian2007`), compared with do Carmo
+(`doCarmo1992`), Chapter 7, and Lee (`lee2018`), Theorem 6.19. -/
+theorem MinimizingGeodesic.length_le_pathELength
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {γ : ℝ → M}
+    (hγ : CMDiff[Set.Icc (0 : ℝ) 1] 1 γ)
+    (hstart : γ 0 = x) (hend : γ 1 = y) :
+    canonicalPathELength (I := I) g (G.path : ℝ → M) 0 1 ≤
+      canonicalPathELength (I := I) g γ 0 1 := by
+  calc
+    canonicalPathELength (I := I) g (G.path : ℝ → M) 0 1 =
+        canonicalRiemannianEDist (I := I) g x y := G.length_eq_distance
+    _ ≤ canonicalPathELength (I := I) g γ 0 1 := by
+      change
+        (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+          ⟨g.toRiemannianMetric⟩;
+          Manifold.riemannianEDist I x y) ≤
+        (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+          ⟨g.toRiemannianMetric⟩;
+          Manifold.pathELength I γ 0 1)
+      letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+        ⟨g.toRiemannianMetric⟩
+      exact Manifold.riemannianEDist_le_pathELength hγ hstart hend zero_le_one
+
+/-- The competitor inequality on an arbitrary ordered parameter interval. -/
+theorem MinimizingGeodesic.length_le_pathELength_interval
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {a b : ℝ} {γ : ℝ → M}
+    (hγ : CMDiff[Set.Icc a b] 1 γ)
+    (hstart : γ a = x) (hend : γ b = y) (hab : a ≤ b) :
+    canonicalPathELength (I := I) g (G.path : ℝ → M) 0 1 ≤
+      canonicalPathELength (I := I) g γ a b := by
+  calc
+    canonicalPathELength (I := I) g (G.path : ℝ → M) 0 1 =
+        canonicalRiemannianEDist (I := I) g x y := G.length_eq_distance
+    _ ≤ canonicalPathELength (I := I) g γ a b := by
+      change
+        (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+          ⟨g.toRiemannianMetric⟩;
+          Manifold.riemannianEDist I x y) ≤
+        (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+          ⟨g.toRiemannianMetric⟩;
+          Manifold.pathELength I γ a b)
+      letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+        ⟨g.toRiemannianMetric⟩
+      exact Manifold.riemannianEDist_le_pathELength hγ hstart hend hab
+
+/-- The same competitor inequality specialized to the project's `SmoothPath`
+representation. -/
+theorem MinimizingGeodesic.length_le_smoothPath_eLength
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    (q : MorganTianLib.Ch01.SmoothPath I x y) :
+    canonicalPathELength (I := I) g (G.path : ℝ → M) 0 1 ≤
+      canonicalPathELength (I := I) g (q : ℝ → M) 0 1 := by
+  exact MinimizingGeodesic.length_le_pathELength g x y G
+    (q.smoothOn.of_le (show (1 : ℕ∞ω) ≤ (∞ : ℕ∞ω) by simp))
+    q.source q.target
 
 /-- In the finite canonical metric, the extended constant-speed identity reads
 as the ordinary `dist` identity used by later variation arguments. -/

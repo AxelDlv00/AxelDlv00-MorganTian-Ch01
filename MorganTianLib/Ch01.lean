@@ -18,15 +18,17 @@ The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
 existence, the canonical metric, distance, volume, and Levi--Civita connection
 coherence layers, the chart Christoffel and geodesic-equation bridges, the
 algebraic curvature-convention kernel, and the standalone scalar,
-vector/operator,
-traced Riccati, normalized determinant/density comparison, and the S19
-Hopf--Rinow continuation/minimizer interfaces.  The latter keeps metric
-completeness, model-space ODE completeness, and boundarylessness independent;
+vector/operator, traced Riccati, normalized determinant/density comparison,
+and the S19 Hopf--Rinow continuation/minimizer interfaces.  The latter keeps
+metric completeness, model-space ODE completeness, and boundarylessness
+independent;
 its selected-distance completeness bridge, open/order-connected maximal-lifetime
-contract, source-facing geodesic-completeness wrapper, and
-proved affine geodesic/restriction transport plus
-bounded-lifetime/model-completion regressions make those distinctions
-checkable.  Its maximal-domain and compactness producers are explicit inputs
+contract, source-facing geodesic-completeness wrapper, proved affine
+geodesic/restriction transport, affine path-length and translation
+compatibility, an explicit candidate-versus-competitor length inequality, and
+global-witness packaging adapters, together with bounded-lifetime/model-
+completion regressions, make those distinctions checkable.  Its
+maximal-domain and compactness producers are explicit inputs
 for the remaining S19 proof; the geodesic-completeness wrapper is an existence
 form and does not assert uniqueness of maximal witnesses.  Later milestones
 add maximal geodesic/exponential,
