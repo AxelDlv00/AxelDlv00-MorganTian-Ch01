@@ -275,7 +275,7 @@ convenient compatibility wrapper used by the earlier API. -/
 hypotheses.  This is the local-regularity form of
 `covariantVector_smul_argument_at`, and uses the same bundled
 `leviCivitaConnection` selected by `g`. -/
-theorem covariantVector_smul_argument_mdifferentiableAt
+theorem covariantVector_smul_argument_at_of_mdifferentiableAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (f : ScalarSection (M := M))
     (X Z : TangentSection (I := I) (M := M)) (x : M)
@@ -2067,7 +2067,7 @@ extension is smuggled into the second-direction contract. -/
 data.  The correction term is compared only at `x`; the earlier
 `mixedCovariantDerivativeAlong_eq_of_eq_at` lemma then removes any dependence
 on the chosen section extension. -/
-theorem secondCovariantDerivativeEval_smul_second_direction_mdifferentiableAt
+theorem secondCovariantDerivativeEval_smul_second_direction_at_of_mdifferentiableAt
     {p q : ℕ}
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (f : ScalarSection (M := M)) (X Z : TangentSection (I := I) (M := M))
@@ -2087,7 +2087,7 @@ theorem secondCovariantDerivativeEval_smul_second_direction_mdifferentiableAt
   have hvec : covariantVector g X (f • Z) x =
       (f • covariantVector g X Z + directionalDerivative X f • Z) x := by
     simpa [directionalDerivative] using
-      (covariantVector_smul_argument_mdifferentiableAt g f X Z x hZ hf)
+      (covariantVector_smul_argument_at_of_mdifferentiableAt g f X Z x hZ hf)
   have hcorrection :
       mixedCovariantDerivativeAlong g (covariantVector g X (f • Z)) A θ Y x =
         mixedCovariantDerivativeAlong g
@@ -2166,7 +2166,7 @@ theorem secondCovariantDerivativeEval_add_second_direction_at {p q : ℕ}
 by another section with the same value at `x`; the smooth-section theorem
 `secondCovariantDerivativeEval_add_second_direction_at` remains available for
 callers that can provide a global extension. -/
-theorem secondCovariantDerivativeEval_add_second_direction_mdifferentiableAt
+theorem secondCovariantDerivativeEval_add_second_direction_at_of_mdifferentiableAt
     {p q : ℕ}
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (X Z Z' : TangentSection (I := I) (M := M))
@@ -2264,10 +2264,10 @@ theorem secondCovariantDerivativeEval_second_direction_tensorialAt_of_regular
     TensorialAt I E (fun Z => secondCovariantDerivativeEval g A θ Y X Z x) x := by
   apply secondCovariantDerivativeEval_second_direction_tensorialAt_of_laws
   · intro f Z hf hZ
-    exact secondCovariantDerivativeEval_smul_second_direction_mdifferentiableAt
+    exact secondCovariantDerivativeEval_smul_second_direction_at_of_mdifferentiableAt
       g f X Z A θ Y x hA_M hA_T (hregular hZ) hZ hf
   · intro Z Z' hZ hZ'
-    exact secondCovariantDerivativeEval_add_second_direction_mdifferentiableAt
+    exact secondCovariantDerivativeEval_add_second_direction_at_of_mdifferentiableAt
       g X Z Z' A θ Y x hA_M hA_T (hregular hZ) (hregular hZ') hZ hZ'
 
 /-- Equal locally differentiable inner-direction extensions have the same
