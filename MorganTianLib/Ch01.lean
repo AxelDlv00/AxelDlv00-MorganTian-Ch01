@@ -3,6 +3,7 @@ import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
+import MorganTianLib.Ch01.Geodesic.Variation
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Curvature.Manifold
 import MorganTianLib.Ch01.Curvature.Tensoriality
@@ -40,7 +41,9 @@ competing global measure.  The provisional `Connection.TensorLaplacian`
 evaluation layer is likewise direct-only until its bundled,
 extension-independent producer is available for S13's Bochner consumer.
 Later milestones add geodesic, Jacobi, normal-coordinate, and
-manifold-comparison modules without exposing chart plumbing as public API.
+manifold-comparison modules without exposing chart plumbing as public API.  The
+S20 geodesic energy/first-variation contract is exported here and depends only
+on the canonical metric/connection layers.
 -/
 
 namespace MorganTianLib
