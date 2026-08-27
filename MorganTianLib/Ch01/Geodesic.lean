@@ -79,7 +79,7 @@ private theorem chartConnectionCoeff_contMDiffAt
   have hcov : CMDiffAt ∞
       (T% (fun y ↦ Connection.leviCivitaConnection g (t.localFrame b j) y
         (t.localFrame b i y))) q :=
-    Connection.contMDiffAt_leviCivitaConnection_apply g (hframe i) (hframe j)
+    Connection.contMDiffAt_leviCivitaConnection_apply_chart g (hframe i) (hframe j)
   have hcoeff : CMDiffAt ∞
       ((LinearMap.piApply (t.localFrame_coeff I b k))
         (fun y ↦ Connection.leviCivitaConnection g (t.localFrame b j) y

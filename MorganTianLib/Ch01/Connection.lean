@@ -697,12 +697,13 @@ theorem contMDiff_leviCivitaConnection
   exact contMDiffCovariantDerivative_bundled (I := I)
 
 /-- Point-local smoothness of the Levi--Civita derivative of two smooth vector
-fields.
+fields in the chart-local `CMDiffAt` presentation used by the geodesic
+coefficient layer.
 
 This is the local regularity form used by coordinate consumers.  Unlike the
 bundled `ContMDiffCovariantDerivative` predicate, it only asks that the two
 input fields be smooth at the point under consideration. -/
-theorem contMDiffAt_leviCivitaConnection_apply
+theorem contMDiffAt_leviCivitaConnection_apply_chart
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {X Y : ∀ x : M, TangentSpace I x} {x : M}
     (hX : CMDiffAt ∞ (T% X) x) (hY : CMDiffAt ∞ (T% Y) x) :
