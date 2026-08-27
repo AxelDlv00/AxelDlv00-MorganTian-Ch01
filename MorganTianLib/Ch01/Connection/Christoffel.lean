@@ -11,9 +11,11 @@ This module identifies the chart coefficients of
 
 `Gamma^k_ij = (1 / 2) * g^{kl} * (partial_i g_lj + partial_j g_il - partial_l g_ij)`.
 
-The coordinate frame and its Gram matrix are proof data only.  The exported
+The coordinate frame and its Gram matrix are proof data only.  The sole public
 theorem keeps the explicit smooth metric and the canonical bundled connection
-visible, so it does not introduce a second affine connection or metric.
+visible, so it does not introduce a second affine connection or metric.  The
+frame/bracket and chart-derivative bridges used by the calculation remain
+private implementation details; no coordinate facade is exported here.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, equation (1.1),
 printed p. 36.  Cross-checks: do Carmo (1992), Theorem 3.6 and Remark 3.7,
@@ -349,7 +351,6 @@ theorem christoffel_formula [IsManifold I ∞ M]
   apply Finset.sum_congr rfl
   intro l _
   ring
-
 end Connection
 end Ch01
 end MorganTianLib
