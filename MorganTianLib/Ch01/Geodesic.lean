@@ -583,7 +583,7 @@ def IsGeodesicAt
 
 This is Morgan--Tian Definition 1.17: `D_t (gamma') = 0` for the canonical
 Levi--Civita connection. -/
-def isGeodesic
+def IsGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) : Prop :=
   ∀ t, IsGeodesicAt (I := I) g gamma t
@@ -596,7 +596,7 @@ This small interval contract belongs to the local geodesic layer.  The
 Hopf--Rinow module consumes it, but does not own it: keeping the predicate here
 lets lower-level Jacobi and variation consumers depend on `Geodesic` without
 pulling in completeness or minimizer interfaces. -/
-def isGeodesicOn
+def IsGeodesicOn
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (s : Set ℝ) : Prop :=
   ∀ t ∈ s, IsGeodesicAt (I := I) g gamma t
@@ -605,8 +605,8 @@ def isGeodesicOn
 theorem isGeodesicOn_mono
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) {s s' : Set ℝ} (hs : s' ⊆ s)
-    (hgamma : isGeodesicOn (I := I) g gamma s) :
-    isGeodesicOn (I := I) g gamma s' := by
+    (hgamma : IsGeodesicOn (I := I) g gamma s) :
+    IsGeodesicOn (I := I) g gamma s' := by
   intro t ht
   exact hgamma t (hs ht)
 
@@ -615,8 +615,8 @@ theorem isGeodesicOn_mono
 theorem isGeodesicOn_univ_iff
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) :
-    isGeodesicOn (I := I) g gamma (Set.univ : Set ℝ) ↔
-      isGeodesic (I := I) g gamma := by
+    IsGeodesicOn (I := I) g gamma (Set.univ : Set ℝ) ↔
+      IsGeodesic (I := I) g gamma := by
   constructor
   · intro h t
     exact h t (Set.mem_univ t)
@@ -628,9 +628,9 @@ the canonical coordinate equation. -/
 theorem isGeodesic_const
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) :
-    isGeodesic g (fun _ : ℝ => p) := by
+    IsGeodesic g (fun _ : ℝ => p) := by
   classical
-  rw [isGeodesic]
+  rw [IsGeodesic]
   intro t
   have hconst (s : ℝ) :
       HasDerivAt (chartReading (I := I) p (fun _ : ℝ => p)) 0 s := by

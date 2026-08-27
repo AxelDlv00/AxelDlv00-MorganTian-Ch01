@@ -104,7 +104,7 @@ structure MaximalGeodesic
     HasDerivAt (chartReading (I := I) p curve)
       (chartVelocityAt (I := I) p v) 0
   /-- The intrinsic equation on the lifetime. -/
-  geodesic_on : isGeodesicOn (I := I) g curve lifetime
+  geodesic_on : IsGeodesicOn (I := I) g curve lifetime
   /-- Continuity on the lifetime. -/
   continuous_on : ContinuousOn curve lifetime
   /-- The lifetime is interval-convex. -/
@@ -118,7 +118,7 @@ structure MaximalGeodesic
   maximal :
     ∀ (s : Set ℝ) (γ : ℝ → M), lifetime ⊆ s →
       (0 : ℝ) ∈ s → IsOpen s → s.OrdConnected →
-      isGeodesicOn (I := I) g γ s → ContinuousOn γ s →
+      IsGeodesicOn (I := I) g γ s → ContinuousOn γ s →
       (∀ t ∈ lifetime, γ t = curve t) → s ⊆ lifetime
 
 /-- The constant zero-velocity maximal geodesic.  This is a concrete
@@ -207,7 +207,7 @@ structure MaximalGeodesicContinuation
           (0 : ℝ) ∈ s ∧
           IsOpen s ∧ s.OrdConnected ∧
           (∃ t ∈ s, b < t) ∧
-          isGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
+          IsGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
           γ 0 = G.curve 0 ∧
           HasDerivAt (chartReading (I := I) p γ)
             (chartVelocityAt (I := I) p v) 0 ∧
@@ -221,7 +221,7 @@ structure MaximalGeodesicContinuation
           (0 : ℝ) ∈ s ∧
           IsOpen s ∧ s.OrdConnected ∧
           (∃ t ∈ s, t < b) ∧
-          isGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
+          IsGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
           γ 0 = G.curve 0 ∧
           HasDerivAt (chartReading (I := I) p γ)
             (chartVelocityAt (I := I) p v) 0 ∧
@@ -310,12 +310,12 @@ theorem exists_globalGeodesic_of_complete
       γ 0 = p ∧
       HasDerivAt (chartReading (I := I) p γ)
         (chartVelocityAt (I := I) p v) 0 ∧
-      Continuous γ ∧ isGeodesic (I := I) g γ := by
+      Continuous γ ∧ IsGeodesic (I := I) g γ := by
   have hlife := maximalGeodesic_lifetime_eq_univ_of_complete g hcomplete G hcontinue
   have hcont : ContinuousOn G.curve (Set.univ : Set ℝ) := by
     rw [← hlife]
     exact G.continuous_on
-  have hgeo : isGeodesicOn (I := I) g G.curve (Set.univ : Set ℝ) := by
+  have hgeo : IsGeodesicOn (I := I) g G.curve (Set.univ : Set ℝ) := by
     rw [← hlife]
     exact G.geodesic_on
   refine ⟨G.curve, G.position_zero, G.initial_derivative, ?_,
@@ -347,7 +347,7 @@ theorem exists_globalGeodesic_of_complete_all
       γ 0 = p ∧
       HasDerivAt (chartReading (I := I) p γ)
         (chartVelocityAt (I := I) p v) 0 ∧
-      Continuous γ ∧ isGeodesic (I := I) g γ := by
+      Continuous γ ∧ IsGeodesic (I := I) g γ := by
   exact exists_globalGeodesic_of_complete g hcomplete (data.solution p v)
     (data.continuation p v)
 
@@ -429,7 +429,7 @@ structure MinimizingGeodesic
   /-- The smooth path whose endpoints are `x` and `y`. -/
   path : SmoothPath I x y
   /-- The intrinsic geodesic equation on the unit interval. -/
-  geodesic_on : isGeodesicOn (I := I) g (path : ℝ → M) (Set.Icc 0 1)
+  geodesic_on : IsGeodesicOn (I := I) g (path : ℝ → M) (Set.Icc 0 1)
   /-- Continuity on the parameter interval. -/
   continuous_on : ContinuousOn (path : ℝ → M) (Set.Icc 0 1)
   /-- Constant-speed normalization in the canonical extended distance. -/
@@ -448,12 +448,12 @@ structure MinimizingGeodesic
   /-- Affine restriction has a geodesic certificate. -/
   restriction_geodesic :
     ∀ {a b : ℝ}, a ∈ Set.Icc (0 : ℝ) 1 → b ∈ Set.Icc (0 : ℝ) 1 → a ≤ b →
-      isGeodesicOn (I := I) g
+      IsGeodesicOn (I := I) g
         (affineReparam (path : ℝ → M) a b) (Set.Icc 0 1)
   /-- Translation has a geodesic certificate on its pulled-back lifetime. -/
   translation_geodesic :
     ∀ c : ℝ,
-      isGeodesicOn (I := I) g (fun t => path (t + c))
+      IsGeodesicOn (I := I) g (fun t => path (t + c))
         ((fun t : ℝ => t + c) ⁻¹' Set.Icc (0 : ℝ) 1)
 
 /-- The source endpoint of a minimizing segment. -/
@@ -602,7 +602,7 @@ theorem exists_minimizingGeodesic
       ⟨g.toRiemannianMetric⟩
     ∃ γ : ℝ → M,
       γ 0 = x ∧ γ 1 = y ∧
-      isGeodesicOn (I := I) g γ (Set.Icc (0 : ℝ) 1) ∧
+      IsGeodesicOn (I := I) g γ (Set.Icc (0 : ℝ) 1) ∧
       (∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
         Manifold.riemannianEDist I (γ s) (γ t) =
           ENNReal.ofReal |s - t| * Manifold.riemannianEDist I x y) ∧
@@ -635,11 +635,11 @@ theorem hopfRinow
         γ 0 = p ∧
         HasDerivAt (chartReading (I := I) p γ)
           (chartVelocityAt (I := I) p v) 0 ∧
-        Continuous γ ∧ isGeodesic (I := I) g γ) ∧
+        Continuous γ ∧ IsGeodesic (I := I) g γ) ∧
     (∀ x y : M,
       ∃ γ : ℝ → M,
         γ 0 = x ∧ γ 1 = y ∧
-        isGeodesicOn (I := I) g γ (Set.Icc (0 : ℝ) 1) ∧
+        IsGeodesicOn (I := I) g γ (Set.Icc (0 : ℝ) 1) ∧
         (∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
           Manifold.riemannianEDist I (γ s) (γ t) =
             ENNReal.ofReal |s - t| * Manifold.riemannianEDist I x y) ∧

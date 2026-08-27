@@ -809,7 +809,7 @@ the latter serve as a reusable local differential predicate. -/
 def IsGeodesicJacobiFieldOn
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (γ : ℝ → M) (J DJ : FieldAlong (I := I) γ) (a b : ℝ) : Prop :=
-  Geodesic.isGeodesicOn (I := I) g γ (Icc a b) ∧
+  Geodesic.IsGeodesicOn (I := I) g γ (Icc a b) ∧
     ContinuousOn γ (Icc a b) ∧
     IsJacobiFieldAlongOn (I := I) g γ J DJ a b
 
@@ -832,7 +832,7 @@ theorem IsGeodesicJacobiFieldOn.isGeodesic
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
     {γ : ℝ → M} {J DJ : FieldAlong (I := I) γ} {a b : ℝ}
     (h : IsGeodesicJacobiFieldOn (I := I) g γ J DJ a b) :
-    Geodesic.isGeodesicOn (I := I) g γ (Icc a b) := h.1
+    Geodesic.IsGeodesicOn (I := I) g γ (Icc a b) := h.1
 
 /-- Extract continuity of the base curve from a geodesic Jacobi certificate. -/
 theorem IsGeodesicJacobiFieldOn.continuousOn
@@ -860,7 +860,7 @@ theorem IsGeodesicJacobiFieldOn.interval_nonempty
 theorem isGeodesicJacobiFieldOn_of_fixed_chart
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
     {α : M} {γ : ℝ → M} {J DJ : FieldAlong (I := I) γ} {a b : ℝ}
-    (hgeo : Geodesic.isGeodesicOn (I := I) g γ (Icc a b))
+    (hgeo : Geodesic.IsGeodesicOn (I := I) g γ (Icc a b))
     (hcont : ContinuousOn γ (Icc a b)) (hab : a < b)
     (hsource : ∀ s ∈ Icc a b, γ s ∈ (chartAt H α).source)
     (h : IsJacobiFieldOnAt (I := I) g α γ J DJ a b) :
@@ -885,7 +885,7 @@ structure GeodesicVariation
   /-- Joint smoothness of the family. -/
   smooth : ContMDiff (𝓘(ℝ, ℝ).prod 𝓘(ℝ, ℝ)) I ∞ (Function.uncurry family)
   /-- Every parameter slice is geodesic on the declared interval. -/
-  slice_geodesic : ∀ s, Geodesic.isGeodesicOn (I := I) g
+  slice_geodesic : ∀ s, Geodesic.IsGeodesicOn (I := I) g
     (fun t => family s t) (Icc a b)
   /-- Continuity of every parameter slice on the declared interval. -/
   slice_continuous : ∀ s, ContinuousOn (fun t => family s t) (Icc a b)
@@ -925,8 +925,8 @@ theorem GeodesicVariation.variationField_isJacobi
 theorem GeodesicVariation.base_isGeodesic
     {g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)}
     {a b : ℝ} (V : GeodesicVariation (I := I) g a b) :
-    Geodesic.isGeodesicOn (I := I) g V.baseCurve (Icc a b) := by
-  change Geodesic.isGeodesicOn (I := I) g
+    Geodesic.IsGeodesicOn (I := I) g V.baseCurve (Icc a b) := by
+  change Geodesic.IsGeodesicOn (I := I) g
     (fun t => V.family 0 t) (Icc a b)
   exact V.slice_geodesic 0
 
