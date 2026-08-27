@@ -768,6 +768,22 @@ theorem leviCivitaConnection_eq_at_of_isMetricCompatible_of_torsion_eq_zero
     isMetricCompatible_bundledCovariantDerivative torsion_bundledCovariantDerivative X₀ hY hZ).trans
       (koszul_of_compatible_of_torsion_extend (I := I) hmetric htorsion X₀ hY hZ).symm
 
+/-- Local smoothness of the canonical connection applied to two smooth tangent
+fields.  This is the pointwise regularity bridge used by curvature consumers;
+the connection and all bundle instances remain the canonical bundled ones. -/
+theorem contMDiffAt_leviCivitaConnection_apply
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    {X Y : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞ (T% Y) p) :
+    ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞
+      (T% (fun q => leviCivitaConnection g Y q (X q))) p := by
+  letI : RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  change ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞
+      (T% (fun q => bundledCovariantDerivative (I := I) Y q (X q))) p
+  exact contMDiffAt_bundledCovariantDerivative_apply hX hY
+
 end Connection
 end Ch01
 end MorganTianLib
