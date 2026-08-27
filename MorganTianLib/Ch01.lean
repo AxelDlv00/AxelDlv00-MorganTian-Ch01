@@ -25,9 +25,10 @@ metric completeness, model-space ODE completeness, and boundarylessness
 independent.  Its selected-distance completeness bridge,
 open/order-connected maximal-lifetime contract, source-facing
 geodesic-completeness wrapper, proved affine
-geodesic/restriction transport, affine path-length and translation
-compatibility, an explicit candidate-versus-competitor length inequality, and
-global-witness packaging adapters, together with bounded-lifetime/model-
+geodesic/restriction transport, proof-backed finite subsegment
+length-realization, affine path-length and translation compatibility, an
+explicit candidate-versus-competitor length inequality, and global-witness
+packaging adapters, together with bounded-lifetime/model-
 completion regressions, make those distinctions checkable.  The public
 subsingleton producer adapters and the zero-dimensional Euclidean regression
 instantiate the selected metric, all-real-time lifetime, and finite-distance

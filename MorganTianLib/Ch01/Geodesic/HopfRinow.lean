@@ -23,8 +23,9 @@ extension through a finite endpoint.  The proved theorems are the
 set-theoretic maximal-interval argument and the reusable distance/length
 adapters.  In particular, global witnesses can be packaged into the maximal
 domain contract, affine restriction/translation preserves the checked path
-length, and a supplied minimizing segment is proved no longer than every
-smooth competitor with matching endpoints.  The selected-distance
+length, and a finite minimizing segment has every ordered subsegment realizing
+its endpoint distance, while a supplied minimizing segment is proved no longer
+than every smooth competitor with matching endpoints.  The selected-distance
 completeness bridge reinstalls
 the exact `EMetricSpace`/`CompleteSpace M` pair used by the predicate, while
 the model-space completion remains a separate premise.  Thus no theorem here
@@ -1015,8 +1016,9 @@ theorem MinimizingGeodesic.translation_constantSpeed
 /-- The affine subsegment has length at least its endpoint distance.
 
 This lower bound is unconditional and deliberately does not pretend to prove
-the compactness/minimizer step.  Equality is exposed as the explicit
-`hsub` premise of `MinimizingGeodesic.restrict_of_length` below. -/
+the compactness/minimizer step.  When the total selected distance is finite,
+`MinimizingGeodesic.restriction_length_eq_distance` below proves the matching
+upper bound as well. -/
 theorem MinimizingGeodesic.restriction_edist_le_length
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (x y : M) (G : MinimizingGeodesic (I := I) g x y)
@@ -1039,6 +1041,186 @@ theorem MinimizingGeodesic.restriction_edist_le_length
   exact Manifold.riemannianEDist_le_pathELength
     (q.smoothOn.of_le (show (1 : ℕ∞ω) ≤ (∞ : ℕ∞ω) by simp))
     q.source q.target zero_le_one
+
+/-- Every ordered subsegment of a finite minimizing segment is itself
+distance-realizing.
+
+The proof combines `pathELength_add` with the three intrinsic distance lower
+bounds and the certified constant-speed law.  Finiteness is used to cancel
+the complementary endpoint terms in `ENNReal`; it is intentionally a
+hypothesis about the selected Riemannian distance, rather than a local ODE
+completeness premise.  This is the restriction compatibility needed by the
+complete-manifold paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, and Lee
+(`lee2018`), Theorem 6.19. -/
+theorem MinimizingGeodesic.restriction_length_eq_distance
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b)
+    (hfinite : canonicalRiemannianEDist (I := I) g x y < ⊤) :
+    canonicalPathELength (I := I) g (G.path : ℝ → M) a b =
+      canonicalRiemannianEDist (I := I) g (G.path a) (G.path b) := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  change Manifold.pathELength I (G.path : ℝ → M) a b =
+    Manifold.riemannianEDist I (G.path a) (G.path b)
+  change Manifold.riemannianEDist I x y < ⊤ at hfinite
+  have hcanon (u v : M) :
+      canonicalRiemannianEDist (I := I) g u v = Manifold.riemannianEDist I u v := by
+    rfl
+  have h0a : (0 : ℝ) ≤ a := ha.1
+  have hb1 : b ≤ (1 : ℝ) := hb.2
+  have hab1 : a ≤ b := hab
+  have hpath : CMDiff[Set.Icc (0 : ℝ) 1] 1 (G.path : ℝ → M) :=
+    G.path.smoothOn.of_le (by simp)
+  have hleft : Manifold.riemannianEDist I x (G.path a) ≤
+      Manifold.pathELength I (G.path : ℝ → M) 0 a := by
+    exact Manifold.riemannianEDist_le_pathELength
+      (hpath.mono (Set.Icc_subset_Icc (by norm_num) ha.2)) G.path.source rfl h0a
+  have hright : Manifold.riemannianEDist I (G.path b) y ≤
+      Manifold.pathELength I (G.path : ℝ → M) b 1 := by
+    exact Manifold.riemannianEDist_le_pathELength
+      (hpath.mono (Set.Icc_subset_Icc hb.1 (by rfl))) rfl
+        G.path.target hb1
+  have hmid : Manifold.riemannianEDist I (G.path a) (G.path b) ≤
+      Manifold.pathELength I (G.path : ℝ → M) a b := by
+    exact Manifold.riemannianEDist_le_pathELength
+      (hpath.mono (Set.Icc_subset_Icc h0a hb1)) rfl rfl hab1
+  have hadd_left :
+      Manifold.pathELength I (G.path : ℝ → M) 0 a +
+          Manifold.pathELength I (G.path : ℝ → M) a b =
+        Manifold.pathELength I (G.path : ℝ → M) 0 b :=
+    Manifold.pathELength_add h0a hab1
+  have hadd_right :
+      Manifold.pathELength I (G.path : ℝ → M) 0 b +
+          Manifold.pathELength I (G.path : ℝ → M) b 1 =
+        Manifold.pathELength I (G.path : ℝ → M) 0 1 :=
+    Manifold.pathELength_add (by linarith [h0a, hab1]) hb1
+  have hL : Manifold.pathELength I (G.path : ℝ → M) 0 1 =
+      Manifold.riemannianEDist I x y := by
+    change canonicalPathELength (I := I) g (G.path : ℝ → M) 0 1 =
+      canonicalRiemannianEDist (I := I) g x y
+    exact G.length_eq_distance
+  have hspeed_left : Manifold.riemannianEDist I x (G.path a) =
+      ENNReal.ofReal a * Manifold.riemannianEDist I x y := by
+    have h := G.constant_speed 0 (by simp) a ha
+    have h' : canonicalRiemannianEDist (I := I) g x (G.path a) =
+        ENNReal.ofReal a * canonicalRiemannianEDist (I := I) g x y := by
+      simpa [G.path.source, abs_of_nonneg h0a] using h
+    calc
+      Manifold.riemannianEDist I x (G.path a) =
+          canonicalRiemannianEDist (I := I) g x (G.path a) := (hcanon x _).symm
+      _ = ENNReal.ofReal a * canonicalRiemannianEDist (I := I) g x y := h'
+      _ = ENNReal.ofReal a * Manifold.riemannianEDist I x y := by rw [hcanon]
+  have hspeed_right : Manifold.riemannianEDist I (G.path b) y =
+      ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y := by
+    have h := G.constant_speed b hb 1 (by simp)
+    rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr hb1)] at h
+    have h' : canonicalRiemannianEDist (I := I) g (G.path b) y =
+        ENNReal.ofReal (1 - b) * canonicalRiemannianEDist (I := I) g x y := by
+      simpa [G.path.target] using h
+    calc
+      Manifold.riemannianEDist I (G.path b) y =
+          canonicalRiemannianEDist (I := I) g (G.path b) y := (hcanon _ _).symm
+      _ = ENNReal.ofReal (1 - b) * canonicalRiemannianEDist (I := I) g x y := h'
+      _ = ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y := by rw [hcanon]
+  have hspeed_mid : Manifold.riemannianEDist I (G.path a) (G.path b) =
+      ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y := by
+    have h := G.constant_speed a ha b hb
+    rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr hab1)] at h
+    have h' : canonicalRiemannianEDist (I := I) g (G.path a) (G.path b) =
+        ENNReal.ofReal (b - a) * canonicalRiemannianEDist (I := I) g x y := by
+      simpa using h
+    calc
+      Manifold.riemannianEDist I (G.path a) (G.path b) =
+          canonicalRiemannianEDist (I := I) g (G.path a) (G.path b) :=
+        (hcanon _ _).symm
+      _ = ENNReal.ofReal (b - a) * canonicalRiemannianEDist (I := I) g x y := h'
+      _ = ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y := by rw [hcanon]
+  have hsum :
+      Manifold.pathELength I (G.path : ℝ → M) a b +
+          (ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+            ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y) ≤
+        Manifold.riemannianEDist I x y := by
+    calc
+      Manifold.pathELength I (G.path : ℝ → M) a b +
+          (ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+            ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y) ≤
+        Manifold.pathELength I (G.path : ℝ → M) a b +
+          (Manifold.pathELength I (G.path : ℝ → M) 0 a +
+            Manifold.pathELength I (G.path : ℝ → M) b 1) := by
+        rw [← hspeed_left, ← hspeed_right]
+        exact add_le_add (le_refl _) (add_le_add hleft hright)
+      _ = Manifold.pathELength I (G.path : ℝ → M) 0 1 := by
+        calc
+          Manifold.pathELength I (G.path : ℝ → M) a b +
+              (Manifold.pathELength I (G.path : ℝ → M) 0 a +
+                Manifold.pathELength I (G.path : ℝ → M) b 1) =
+              (Manifold.pathELength I (G.path : ℝ → M) 0 a +
+                Manifold.pathELength I (G.path : ℝ → M) a b) +
+                Manifold.pathELength I (G.path : ℝ → M) b 1 := by ac_rfl
+          _ = Manifold.pathELength I (G.path : ℝ → M) 0 b +
+                Manifold.pathELength I (G.path : ℝ → M) b 1 := by rw [hadd_left]
+          _ = Manifold.pathELength I (G.path : ℝ → M) 0 1 := hadd_right
+      _ = Manifold.riemannianEDist I x y := hL
+  have hcomp :
+      ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+          ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y +
+          ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y =
+        Manifold.riemannianEDist I x y := by
+    calc
+      ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+          ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y +
+          ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y =
+        (ENNReal.ofReal a + ENNReal.ofReal (1 - b) +
+          ENNReal.ofReal (b - a)) * Manifold.riemannianEDist I x y := by ring
+      _ = (ENNReal.ofReal (a + (1 - b)) + ENNReal.ofReal (b - a)) *
+          Manifold.riemannianEDist I x y := by
+        rw [ENNReal.ofReal_add h0a (by linarith [hb1])]
+      _ = ENNReal.ofReal ((a + (1 - b)) + (b - a)) *
+          Manifold.riemannianEDist I x y := by
+        rw [ENNReal.ofReal_add (by linarith [h0a, hb1]) (sub_nonneg.mpr hab1)]
+      _ = Manifold.riemannianEDist I x y := by
+        ring_nf
+        simp
+  have hcomp_ne_top :
+      ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+          ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y ≠ ⊤ := by
+    apply ne_top_of_le_ne_top hfinite.ne
+    calc
+      ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+          ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y ≤
+        (ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+          ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y) +
+          ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y :=
+        le_add_right (le_refl _)
+      _ = Manifold.riemannianEDist I x y := hcomp
+  have hupper : Manifold.pathELength I (G.path : ℝ → M) a b ≤
+      ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y := by
+    apply ENNReal.le_of_add_le_add_right hcomp_ne_top
+    calc
+      Manifold.pathELength I (G.path : ℝ → M) a b +
+          (ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+            ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y) ≤
+        Manifold.riemannianEDist I x y := hsum
+      _ = ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y +
+          (ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+            ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y) := by
+        symm
+        calc
+          ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y +
+              (ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+                ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y) =
+              ENNReal.ofReal a * Manifold.riemannianEDist I x y +
+                ENNReal.ofReal (1 - b) * Manifold.riemannianEDist I x y +
+                ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y := by ac_rfl
+          _ = Manifold.riemannianEDist I x y := hcomp
+  have hlower : ENNReal.ofReal (b - a) * Manifold.riemannianEDist I x y ≤
+      Manifold.pathELength I (G.path : ℝ → M) a b := by
+    rw [← hspeed_mid]
+    exact hmid
+  exact le_antisymm (hupper.trans_eq hspeed_mid.symm) (hspeed_mid.trans_le hlower)
 
 /-- Translation preserves the certified length of a minimizing path whenever
 the translated unit interval stays inside its smoothness interval. -/
@@ -1113,6 +1295,26 @@ def MinimizingGeodesic.restrict_of_length
   · rw [hq]
     exact (canonicalPathELength_affineReparam g (G.path : ℝ → M)
       ha hb hab (G.path.smoothOn.of_le (by simp))).trans hsub
+
+/-- Restrict a finite minimizing segment without a separate length certificate.
+
+`restriction_length_eq_distance` supplies the only premise required by
+`restrict_of_length`; the resulting object retains the proof-backed geodesic,
+constant-speed, and affine-length compatibility.  The finite selected
+distance hypothesis is explicit so this adapter does not conflate metric
+completeness with the `[CompleteSpace E]` premise of the local IVP.  Its
+source-facing use is the complete-manifold paragraph preceding Morgan--Tian,
+Theorem 1.18 (`morganTian2007`), with do Carmo (`doCarmo1992`), Chapter 7,
+and Lee (`lee2018`), Theorem 6.19 as comparison references. -/
+def MinimizingGeodesic.restrict_of_finite
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b)
+    (hfinite : canonicalRiemannianEDist (I := I) g x y < ⊤) :
+    MinimizingGeodesic (I := I) g (G.path a) (G.path b) :=
+  G.restrict_of_length g x y ha hb hab
+    (G.restriction_length_eq_distance g x y ha hb hab hfinite)
 
 /-- The zero-length constant segment.  Besides being useful in later proofs,
 this is the zero-dimensional/one-point regression for the interface. -/
@@ -1377,6 +1579,21 @@ theorem exists_refl_minimizingGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (x : M) : Nonempty (MinimizingGeodesic (I := I) g x x) :=
   ⟨MinimizingGeodesic.refl g x⟩
+
+/-- The diagonal segment also exercises the finite subsegment restriction API.
+This is the zero-dimensional/one-point regression for the
+`restriction_length_eq_distance` theorem. -/
+theorem refl_restriction_length_eq_distance
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x : M) {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b) :
+    canonicalPathELength (I := I) g
+        ((MinimizingGeodesic.refl g x).path : ℝ → M) a b =
+      canonicalRiemannianEDist (I := I) g
+        ((MinimizingGeodesic.refl g x).path a)
+        ((MinimizingGeodesic.refl g x).path b) := by
+  exact MinimizingGeodesic.restriction_length_eq_distance
+    g x x (MinimizingGeodesic.refl g x) ha hb hab (by simp)
 
 omit [FiniteDimensional ℝ E] in
 /-- Finiteness is deliberately a component hypothesis: this probe exposes the
