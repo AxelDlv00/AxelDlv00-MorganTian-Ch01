@@ -6,6 +6,7 @@ import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Geodesic
 import MorganTianLib.Ch01.Geodesic.HopfRinow
 import MorganTianLib.Ch01.Curvature.Model
+import MorganTianLib.Ch01.Geodesic.Variation
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Jacobi
@@ -30,7 +31,8 @@ continuations.  The A2 chart-density and normalized change-of-variables
 substrate remains a direct provisional leaf until its named N1 cut-locus
 consumer fixes its stable boundary; it uses Mathlib's `LinearMap.normDet` and
 `μHE[finrank ℝ E]` directly and does not install a competing global measure.
-The provisional
+The S20 geodesic energy/first-variation contract is also exported and depends
+only on the canonical metric/connection layers.  The provisional
 `Connection.TensorLaplacian` evaluation layer is likewise direct-only until
 its bundled, extension-independent producer is available for S13's Bochner
 consumer.
