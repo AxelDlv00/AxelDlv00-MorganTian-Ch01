@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Axel Dlv. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSES/Apache-2.0.txt.
+-/
 import MorganTianLib.Ch01.Geodesic
 import MorganTianLib.Ch01.Curvature.Tensoriality
 

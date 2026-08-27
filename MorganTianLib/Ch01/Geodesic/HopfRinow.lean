@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Axel Dlv. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSES/Apache-2.0.txt.
+-/
 import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Geodesic
 import Mathlib.Order.Interval.Set.OrdConnected
@@ -28,8 +32,9 @@ treats metric completeness as an ODE premise, and every existence claim names
 its required producer.
 
 The source-facing target is the paragraph preceding Morgan--Tian, Theorem
-1.18, pp. 41--42 (`morganTian2007`); see also do Carmo, Chapter 7, Section 2,
-and Lee, Theorem 6.19.  The minimizing-segment interface is intentionally
+1.18, pp. 41--42 (`morganTian2007`); see also do Carmo (1992), Chapter 7,
+Section 2 (`doCarmo1992`), and Lee (2018), Theorem 6.19 (`lee2018`).  The
+minimizing-segment interface is intentionally
 weaker than uniqueness or the no-conjugate-subsegment result, which belong to
 later S24/V1 work.
 -/
@@ -193,6 +198,7 @@ structure MaximalGeodesicContinuation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) (G : MaximalGeodesic (I := I) g p v)
     [T3Space M] where
+  /-- Forward continuation witness beyond every upper bound of the lifetime. -/
   right :
     RiemannianMetricComplete (I := I) g →
       ∀ b : ℝ, (∀ t ∈ G.lifetime, t ≤ b) →
@@ -206,6 +212,7 @@ structure MaximalGeodesicContinuation
           HasDerivAt (chartReading (I := I) p γ)
             (chartVelocityAt (I := I) p v) 0 ∧
           (∀ t ∈ G.lifetime, γ t = G.curve t)
+  /-- Backward continuation witness beyond every lower bound of the lifetime. -/
   left :
     RiemannianMetricComplete (I := I) g →
       ∀ b : ℝ, (∀ t ∈ G.lifetime, b ≤ t) →
@@ -321,8 +328,10 @@ type rather than hiding it in a finite-interval facade. -/
 structure CompleteMaximalGeodesicData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     [T3Space M] [CompleteSpace E] [BoundarylessManifold I M] where
+  /-- Maximal geodesic supplied for each initial point and velocity. -/
   solution : ∀ (p : M) (v : TangentSpace I p),
     MaximalGeodesic (I := I) g p v
+  /-- Continuation certificate associated with each supplied maximal solution. -/
   continuation : ∀ (p : M) (v : TangentSpace I p),
     MaximalGeodesicContinuation (I := I) g p v (solution p v)
 
@@ -545,6 +554,7 @@ structure MinimizingGeodesicData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     [T3Space M] [CompleteSpace E]
     [BoundarylessManifold I M] where
+  /-- Minimizing segment existence whenever the selected distance is finite. -/
   exists_segment :
     RiemannianMetricComplete (I := I) g →
       ∀ x y : M,
