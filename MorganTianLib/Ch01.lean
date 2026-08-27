@@ -9,6 +9,7 @@ import MorganTianLib.Ch01.Curvature.Model
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Jacobi
+import MorganTianLib.Ch01.Geodesic.IndexForm
 import MorganTianLib.Ch01.Comparison.DeterminantDensity
 import MorganTianLib.Ch01.Comparison.PositiveRiccati
 import MorganTianLib.Ch01.Comparison.OperatorRiccati
@@ -21,9 +22,10 @@ The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
 existence, the canonical metric, distance, volume, and Levi--Civita connection
 coherence layers; the chart Christoffel and geodesic-equation bridges; the
 canonical source-ordered curvature and tensoriality subset; the local
-Hopf--Rinow interfaces; the intrinsic Jacobi/conjugacy contracts; and the
-standalone scalar, vector/operator, Riccati, and normalized determinant/density
-comparison layers.  The Jacobi variation interface records its
+Hopf--Rinow interfaces; the intrinsic Jacobi/conjugacy contracts; the
+source-ordered intrinsic index form and explicit second-variation assembly;
+and the standalone scalar, vector/operator, Riccati, and normalized
+determinant/density comparison layers.  The Jacobi variation interface records its
 torsion-free/curvature commutation certificate explicitly, while the full
 chart-transfer and ODE existence/uniqueness producers remain named roadmap
 continuations.  The A2 chart-density and normalized change-of-variables
