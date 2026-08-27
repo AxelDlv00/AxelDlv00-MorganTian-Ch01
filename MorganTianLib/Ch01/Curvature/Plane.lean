@@ -14,12 +14,14 @@ invertible `GL₂(ℝ)` change of generators.  Thus a value descended to
 `SectionalPlane` is independent of the chosen generators, while retaining an
 explicit representative for decomposable calculations.
 
-The diagonal quotient and its bilinear-form variant are the intrinsic core of
-Morgan--Tian Definition 1.6 and Definition 1.7 (`morganTian2007`).  The
-Gram-determinant normalization is cross-checked against do Carmo, Chapter 4,
-Section 3 (`doCarmo1992`), and Petersen, Chapter 3 (`petersen2016`).  No chart,
-frame, connection, or selected extension occurs here.  The tangent-space
-producer remains the direct-only witness-indexed adapter in
+The diagonal quotient is the intrinsic scalar sectional-curvature layer of
+Morgan--Tian Definition 1.6 (`morganTian2007`); its bilinear-form variant is a
+metric ingredient for the full curvature operator of Definition 1.7, which is
+provided separately by `Curvature.Operator`.  The Gram-determinant
+normalization is cross-checked against do Carmo, Chapter 4, Section 3
+(`doCarmo1992`), and Petersen, Chapter 3 (`petersen2016`).  No chart, frame,
+connection, or selected extension occurs here.  The tangent-space producer
+remains the direct-only witness-indexed adapter in
 `Curvature.SectionalProvisional`.
 
 The relation is presented explicitly rather than through a quotient of a
@@ -268,7 +270,7 @@ noncomputable def sectionalPlaneSpan : SectionalPlane U → Submodule ℝ U :=
   rfl
 
 /-- Equality in the quotient is exactly an invertible change of generators. -/
-@[simp] theorem sectionalPlaneMk_eq_iff {p q : SectionalPlaneBasis U} :
+theorem sectionalPlaneMk_eq_iff {p q : SectionalPlaneBasis U} :
     sectionalPlaneMk p = sectionalPlaneMk q ↔ sectionalPlaneChange p q := by
   exact Quotient.eq
 
@@ -361,7 +363,7 @@ by a bundled tangent metric, whose fibres intentionally do not receive a
 second `InnerProductSpace` instance. -/
 def sectionalCurvatureBilinPlane {B : U → U → U → U → ℝ}
     (hB : IsAlgebraicCurvature B) (G : U →ₗ[ℝ] U →ₗ[ℝ] ℝ)
-    (_hG : ∀ x y, G x y = G y x) : SectionalPlane U → ℝ :=
+    : SectionalPlane U → ℝ :=
   planeValue (fun p => B p.x p.y p.x p.y / wedgePairingDiag G p.x p.y) (by
     intro p q hpq
     rcases hpq with ⟨a, b, c, d, hdet, hqx, hqy⟩
@@ -369,17 +371,20 @@ def sectionalCurvatureBilinPlane {B : U → U → U → U → ℝ}
     simpa [wedgePairingDiag] using
       (sectionalCurvatureBilin_changeBasis hB G a b c d p.x p.y hdet).symm)
 
+/-- The plain-bilinear plane evaluator reduces to its normalized value on a
+chosen independent representative.  No symmetry premise on `G` is needed for
+this representative formula or for the change-of-generators descent. -/
 @[simp] theorem sectionalCurvatureBilinPlane_mk {B : U → U → U → U → ℝ}
     (hB : IsAlgebraicCurvature B) (G : U →ₗ[ℝ] U →ₗ[ℝ] ℝ)
-    (hG : ∀ x y, G x y = G y x) (p : SectionalPlaneBasis U) :
-    sectionalCurvatureBilinPlane hB G hG (sectionalPlaneMk p) =
+    (p : SectionalPlaneBasis U) :
+    sectionalCurvatureBilinPlane hB G (sectionalPlaneMk p) =
       B p.x p.y p.x p.y / wedgePairingDiag G p.x p.y := by
   rfl
 
 /-- Generator-independence of the tangent-compatible bilinear quotient. -/
 theorem sectionalCurvatureBilinPlane_basis_independent {B : U → U → U → U → ℝ}
     (hB : IsAlgebraicCurvature B) (G : U →ₗ[ℝ] U →ₗ[ℝ] ℝ)
-    (_hG : ∀ x y, G x y = G y x) {p q : SectionalPlaneBasis U}
+    {p q : SectionalPlaneBasis U}
     (hpq : sectionalPlaneChange p q) :
     B p.x p.y p.x p.y / wedgePairingDiag G p.x p.y =
       B q.x q.y q.x q.y / wedgePairingDiag G q.x q.y := by
@@ -392,19 +397,19 @@ theorem sectionalCurvatureBilinPlane_basis_independent {B : U → U → U → U 
 representative of an equal quotient plane. -/
 theorem sectionalCurvatureBilinPlane_eq_of_eq {B : U → U → U → U → ℝ}
     (hB : IsAlgebraicCurvature B) (G : U →ₗ[ℝ] U →ₗ[ℝ] ℝ)
-    (hG : ∀ x y, G x y = G y x) {p q : SectionalPlaneBasis U}
+    {p q : SectionalPlaneBasis U}
     (h : sectionalPlaneMk p = sectionalPlaneMk q) :
     B p.x p.y p.x p.y / wedgePairingDiag G p.x p.y =
       B q.x q.y q.x q.y / wedgePairingDiag G q.x q.y := by
   simpa only [sectionalCurvatureBilinPlane_mk] using
-    (congrArg (sectionalCurvatureBilinPlane hB G hG) h)
+    (congrArg (sectionalCurvatureBilinPlane hB G) h)
 
 /-- The tangent-compatible evaluator is unchanged by swapping generators. -/
 theorem sectionalCurvatureBilinPlane_swap {B : U → U → U → U → ℝ}
     (hB : IsAlgebraicCurvature B) (G : U →ₗ[ℝ] U →ₗ[ℝ] ℝ)
-    (hG : ∀ x y, G x y = G y x) (p : SectionalPlaneBasis U) :
-    sectionalCurvatureBilinPlane hB G hG (sectionalPlaneMk p.swap) =
-      sectionalCurvatureBilinPlane hB G hG (sectionalPlaneMk p) := by
+    (p : SectionalPlaneBasis U) :
+    sectionalCurvatureBilinPlane hB G (sectionalPlaneMk p.swap) =
+      sectionalCurvatureBilinPlane hB G (sectionalPlaneMk p) := by
   rw [sectionalPlaneMk_swap]
 
 end Curvature

@@ -125,8 +125,11 @@ noncomputable def sectionalCurvatureAt
   Provisional.curvature4 g p x y x y / metricWedgeSqAt g p x y
 
 /-- An explicit pointwise algebraic-curvature witness for the exact selected-
-extension producer.  The witness is intentionally an input until S07 proves
-the metric last-pair symmetry of `Provisional.curvature4`. -/
+extension producer.  The generic Bianchi field here cycles the first three
+slots; in source `(0,4)` order, `Provisional.curvature4_bianchi` cycles the
+first, second, and fourth slots, with `IsAlgebraicCurvature.antisymm_last`
+relating the two forms.  The witness is intentionally an input until S07
+proves the metric last-pair symmetry of `Provisional.curvature4`. -/
 def IsAlgebraicCurvatureAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) : Prop :=
@@ -140,7 +143,7 @@ noncomputable def sectionalCurvatureAtPlane
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (hR : IsAlgebraicCurvatureAt g p) :
     SectionalPlane (TangentSpace I p) → ℝ :=
-  sectionalCurvatureBilinPlane hR (metricBilinAt g p) (metricBilinAt_symm g p)
+  sectionalCurvatureBilinPlane hR (metricBilinAt g p)
 
 /-- The tangent plane evaluator reduces to the existing representative
 sectional-curvature adapter. -/
@@ -160,8 +163,7 @@ theorem sectionalCurvatureAtPlane_basis_independent
     (hqr : sectionalPlaneChange q r) :
     sectionalCurvatureAt g p q.x q.y = sectionalCurvatureAt g p r.x r.y := by
   simpa [sectionalCurvatureAt, metricWedgeSqAt] using
-    (sectionalCurvatureBilinPlane_basis_independent hR (metricBilinAt g p)
-      (metricBilinAt_symm g p) hqr)
+    (sectionalCurvatureBilinPlane_basis_independent hR (metricBilinAt g p) hqr)
 
 /-- Equality of quotient tangent planes gives equality of their sectional
 curvature values. -/
