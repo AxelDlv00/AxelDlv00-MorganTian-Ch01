@@ -1,15 +1,17 @@
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Push
 import MorganTianLib.Ch01.Curvature.Manifold
-import MorganTianLib.Ch01.Curvature.Sectional
+import MorganTianLib.Ch01.Curvature.Plane
 
 /-!
 # Provisional tangent sectional curvature
 
 This direct-only module connects the connection-free sectional-curvature API
 to the selected-extension producer Curvature.Provisional.curvature4.
-The connection-free definitions remain in Curvature.Sectional; this file
-owns only the bundled tangent metric adapters and their pointwise results.
+The connection-free definitions remain in Curvature.Sectional, while the
+intrinsic quotient of independent generators is owned by `Curvature.Plane`;
+this file owns only the bundled tangent metric adapters and their pointwise
+results.
 
 The producer is intentionally not promoted to a canonical Riemannian
 curvature tensor.  Every theorem that uses plane or operator symmetries takes
@@ -123,12 +125,66 @@ noncomputable def sectionalCurvatureAt
   Provisional.curvature4 g p x y x y / metricWedgeSqAt g p x y
 
 /-- An explicit pointwise algebraic-curvature witness for the exact selected-
-extension producer.  The witness is intentionally an input until S07 proves
-the metric last-pair symmetry of `Provisional.curvature4`. -/
+extension producer.  The generic Bianchi field here cycles the first three
+slots; in source `(0,4)` order, `Provisional.curvature4_bianchi` cycles the
+first, second, and fourth slots, with `IsAlgebraicCurvature.antisymm_last`
+relating the two forms.  The witness is intentionally an input until S07
+proves the metric last-pair symmetry of `Provisional.curvature4`. -/
 def IsAlgebraicCurvatureAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) : Prop :=
   IsAlgebraicCurvature (fun x y z w => Provisional.curvature4 g p x y z w)
+
+/-- Sectional curvature on an intrinsic tangent two-plane.  The quotient is
+descended through `Curvature.SectionalPlane` using the existing plain
+bilinear metric adapter; the selected-extension producer remains guarded by
+the explicit pointwise algebraic-curvature witness. -/
+noncomputable def sectionalCurvatureAtPlane
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    (p : M) (hR : IsAlgebraicCurvatureAt g p) :
+    SectionalPlane (TangentSpace I p) → ℝ :=
+  sectionalCurvatureBilinPlane hR (metricBilinAt g p)
+
+/-- The tangent plane evaluator reduces to the existing representative
+sectional-curvature adapter. -/
+@[simp] theorem sectionalCurvatureAtPlane_mk
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    (p : M) (hR : IsAlgebraicCurvatureAt g p)
+    (q : SectionalPlaneBasis (TangentSpace I p)) :
+    sectionalCurvatureAtPlane g p hR (sectionalPlaneMk q) =
+      sectionalCurvatureAt g p q.x q.y := by
+  rfl
+
+/-- Generator-independence of the tangent-space plane evaluator. -/
+theorem sectionalCurvatureAtPlane_basis_independent
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    (p : M) (hR : IsAlgebraicCurvatureAt g p)
+    {q r : SectionalPlaneBasis (TangentSpace I p)}
+    (hqr : sectionalPlaneChange q r) :
+    sectionalCurvatureAt g p q.x q.y = sectionalCurvatureAt g p r.x r.y := by
+  simpa [sectionalCurvatureAt, metricWedgeSqAt] using
+    (sectionalCurvatureBilinPlane_basis_independent hR (metricBilinAt g p) hqr)
+
+/-- Equality of quotient tangent planes gives equality of their sectional
+curvature values. -/
+theorem sectionalCurvatureAtPlane_eq_of_eq
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    (p : M) (hR : IsAlgebraicCurvatureAt g p)
+    {q r : SectionalPlaneBasis (TangentSpace I p)}
+    (hqr : sectionalPlaneMk q = sectionalPlaneMk r) :
+    sectionalCurvatureAtPlane g p hR (sectionalPlaneMk q) =
+      sectionalCurvatureAtPlane g p hR (sectionalPlaneMk r) := by
+  exact congrArg (sectionalCurvatureAtPlane g p hR) hqr
+
+/-- The tangent plane evaluator is unchanged by reversing the generator
+order. -/
+theorem sectionalCurvatureAtPlane_swap
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    (p : M) (hR : IsAlgebraicCurvatureAt g p)
+    (q : SectionalPlaneBasis (TangentSpace I p)) :
+    sectionalCurvatureAtPlane g p hR (sectionalPlaneMk q.swap) =
+      sectionalCurvatureAtPlane g p hR (sectionalPlaneMk q) := by
+  rw [sectionalPlaneMk_swap]
 
 /-- Pointwise diagonal constant sectional curvature for the exact producer.
 The full tensor equivalence below additionally takes an explicit algebraic
