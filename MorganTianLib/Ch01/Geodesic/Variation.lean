@@ -244,7 +244,7 @@ theorem energy_zero_of_const (x : M) (a b : ℝ) :
     energy (I := I) g (fun _ : ℝ => x) a b = 0 := by
   simp [energy]
 
-/-- Positive definiteness of the supplied bundle metric. -/
+/-- Nonnegativity of the supplied bundle metric's self-inner product. -/
 theorem metric_inner_self_nonneg (x : M) (v : TangentSpace I x) :
     0 ≤ g.inner x v v := by
   by_cases hv : v = 0
@@ -572,9 +572,12 @@ geodesic predicate. -/
 structure CovariantAccelerationData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (a b : ℝ) : Type _ where
+  /-- The tangent-valued acceleration assigned to the curve at every time. -/
   acceleration : ∀ t, TangentSpace I (gamma t)
+  /-- Continuity of the squared-speed density on the closed interval. -/
   speedSq_continuous :
     ContinuousOn (speedSq (I := I) g gamma) (Icc a b)
+  /-- The interior derivative of squared speed supplied by the acceleration. -/
   speedSq_deriv : ∀ t ∈ Ioo a b,
     HasDerivAt (fun s => speedSq (I := I) g gamma s)
       (2 * g.inner (gamma t) (velocity (I := I) gamma t) (acceleration t)) t
@@ -589,8 +592,11 @@ connection API.  This is an additional extension hypothesis, not an
 along-curve derivative: it can be unavailable when a self-intersecting curve
 has incompatible velocities at the same point. -/
 structure VelocityExtension (gamma : ℝ → M) (a b : ℝ) : Type _ where
+  /-- The global tangent-bundle section used by the connection adapter. -/
   field : ∀ x : M, TangentSpace I x
+  /-- Smoothness of the global tangent-bundle section. -/
   mdifferentiable : MDiff (T% field)
+  /-- Agreement of the section with the restricted curve velocity on `uIcc a b`. -/
   agrees : ∀ t ∈ uIcc a b,
     field (gamma t) = velocityWithin (I := I) gamma a b t
 
@@ -608,12 +614,17 @@ noncomputable def canonicalAcceleration
 structure CanonicalAccelerationData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (a b : ℝ) : Type _ where
+  /-- The differentiable section used to form the canonical acceleration. -/
   extension : VelocityExtension (I := I) gamma a b
+  /-- The tangent-valued acceleration field on the curve. -/
   acceleration : ∀ t, TangentSpace I (gamma t)
+  /-- Identification of the acceleration with the Levi--Civita adapter. -/
   acceleration_eq : ∀ t ∈ uIcc a b,
     acceleration t = canonicalAcceleration g extension t
+  /-- Continuity of the squared-speed density on the closed interval. -/
   speedSq_continuous :
     ContinuousOn (speedSq (I := I) g gamma) (Icc a b)
+  /-- The interior squared-speed derivative expressed through this acceleration. -/
   speedSq_deriv : ∀ t ∈ Ioo a b,
     HasDerivAt (fun s => speedSq (I := I) g gamma s)
       (2 * g.inner (gamma t) (velocity (I := I) gamma t) (acceleration t)) t
@@ -973,12 +984,17 @@ The surface is defined on all of `ℝ × ℝ` so that `mfderiv` can form the
 variational field; regularity and the zero slice are restricted to the compact
 parameter rectangle. -/
 structure SmoothVariation (gamma : ℝ → M) (a b epsilon : ℝ) : Type _ where
+  /-- The two-parameter family of curves, defined on all parameter values. -/
   family : ℝ → ℝ → M
+  /-- Positivity of the variation parameter radius. -/
   epsilon_pos : 0 < epsilon
+  /-- The curve interval is ordered. -/
   interval_order : a ≤ b
+  /-- Smoothness of the surface on the parameter rectangle. -/
   surface_smooth :
     ContMDiffOn 𝓘(ℝ, ℝ × ℝ) I ∞ (Function.uncurry family)
       (Icc (-epsilon) epsilon ×ˢ Icc a b)
+  /-- The zero parameter slice is the base curve on `[a,b]`. -/
   zero_slice : ∀ t ∈ Icc a b, family 0 t = gamma t
 
 omit [IsManifold I ∞ M] in
@@ -1154,22 +1170,31 @@ structure FirstVariationData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {gamma : ℝ → M} {a b epsilon : ℝ}
     (V : SmoothVariation (I := I) gamma a b epsilon) : Type _ where
+  /-- The variation-local covariant acceleration field along the base curve. -/
   acceleration : ∀ t, TangentSpace I (baseCurve V t)
+  /-- The covariant derivative field paired with the variation field. -/
   covariantDerivative : ∀ t, TangentSpace I (baseCurve V t)
+  /-- The scalar derivative value supplied for the variation energy. -/
   energyDerivative : ℝ
+  /-- Genuine differentiability of the variation energy at the zero slice. -/
   energy_deriv : HasDerivAt (variationEnergy (I := I) g V) energyDerivative 0
+  /-- The supplied differentiation-under-the-integral identity for energy. -/
   energy_deriv_eq_integral :
     energyDerivative =
       ∫ t in a..b, covariantPairing (I := I) g V covariantDerivative t
+  /-- Continuity of the variation pairing on the closed curve interval. -/
   pairing_continuous :
     ContinuousOn (variationPairing (I := I) g V) (Icc a b)
+  /-- The interior derivative identity for the variation pairing. -/
   pairing_deriv : ∀ t ∈ Ioo a b,
     HasDerivAt (variationPairing (I := I) g V)
       (covariantPairing (I := I) g V covariantDerivative t +
         accelerationPairing (I := I) g V acceleration t) t
+  /-- Interval integrability of the covariant-pairing contribution. -/
   covariant_pair_integrable :
     IntervalIntegrable
       (covariantPairing (I := I) g V covariantDerivative) volume a b
+  /-- Interval integrability of the acceleration-pairing contribution. -/
   acceleration_pair_integrable :
     IntervalIntegrable
       (accelerationPairing (I := I) g V acceleration) volume a b

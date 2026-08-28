@@ -90,7 +90,7 @@ metric instance. -/
 private noncomputable def curvature
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (X Y Z : TangentSpace I p) : TangentSpace I p :=
-  Curvature.curvature g p X Y Z
+  Curvature.Provisional.curvature g p X Y Z
 
 /-! ## Covariant derivatives along a curve -/
 
@@ -268,7 +268,7 @@ private lemma curvatureCoord_add_left
         (fun s : ℝ => curvature (I := I) g (γ s) (J₁ s) (V s) (W s) +
           curvature (I := I) g (γ s) (J₂ s) (V s) (W s)) := by
     funext s
-    exact Curvature.Tensoriality.curvature_add_first (g := g) (p := γ s)
+    exact Curvature.Provisional.curvature_add_first (g := g) (p := γ s)
       (X := J₁ s) (Y := J₂ s) (Z := V s) (W := W s)
   unfold curvatureCoord
   rw [hfield, fieldCoord_add]
@@ -283,9 +283,9 @@ private lemma curvatureCoord_smul_left
       (fun s : ℝ => curvature (I := I) g (γ s) (c • J s) (V s) (W s)) =
         (fun s : ℝ => c • curvature (I := I) g (γ s) (J s) (V s) (W s)) := by
     funext s
-    change Curvature.curvature (I := I) g (γ s) (c • J s) (V s) (W s) =
-      c • Curvature.curvature (I := I) g (γ s) (J s) (V s) (W s)
-    exact Curvature.Tensoriality.curvature_smul_first (g := g) (p := γ s)
+    change Curvature.Provisional.curvature (I := I) g (γ s) (c • J s) (V s) (W s) =
+      c • Curvature.Provisional.curvature (I := I) g (γ s) (J s) (V s) (W s)
+    exact Curvature.Provisional.curvature_smul_first (g := g) (p := γ s)
       (c := c) (X := J s) (Y := V s) (W := W s)
   unfold curvatureCoord
   rw [hfield, fieldCoord_smul]
@@ -504,9 +504,9 @@ theorem isJacobiFieldOnAt_zero
     have hcurv : ∀ s : ℝ, curvature (I := I) g (γ s) 0
         (velocity (I := I) γ s) (velocity (I := I) γ s) = 0 := by
       intro s
-      change Curvature.curvature (I := I) g (γ s) 0
+      change Curvature.Provisional.curvature (I := I) g (γ s) 0
         (velocity (I := I) γ s) (velocity (I := I) γ s) = 0
-      simpa using (Curvature.Tensoriality.curvature_smul_first (g := g) (p := γ s)
+      simpa using (Curvature.Provisional.curvature_smul_first (g := g) (p := γ s)
         (c := (0 : ℝ)) (X := velocity (I := I) γ s)
         (Y := velocity (I := I) γ s) (W := velocity (I := I) γ s))
     have hcurv_field :
@@ -599,9 +599,9 @@ theorem isJacobiFieldOn_zero
     have hcurv : ∀ s : ℝ, curvature (I := I) g (γ s) 0
         (velocity (I := I) γ s) (velocity (I := I) γ s) = 0 := by
       intro s
-      change Curvature.curvature (I := I) g (γ s) 0
+      change Curvature.Provisional.curvature (I := I) g (γ s) 0
         (velocity (I := I) γ s) (velocity (I := I) γ s) = 0
-      simpa using (Curvature.Tensoriality.curvature_smul_first (g := g) (p := γ s)
+      simpa using (Curvature.Provisional.curvature_smul_first (g := g) (p := γ s)
         (c := (0 : ℝ)) (X := velocity (I := I) γ s)
         (Y := velocity (I := I) γ s) (W := velocity (I := I) γ s))
     have hcurv_field : (fun s : ℝ => curvature (I := I) g (γ s) 0
@@ -665,9 +665,9 @@ theorem isJacobiFieldOn_euclidean_affine
     have hcurv : ∀ x : TangentSpace (𝓘(ℝ, E)) p,
         curvature (I := 𝓘(ℝ, E)) g p x 0 0 = 0 := by
       intro x
-      change Curvature.curvature (I := 𝓘(ℝ, E)) g p x 0 0 = 0
+      change Curvature.Provisional.curvature (I := 𝓘(ℝ, E)) g p x 0 0 = 0
       simpa using
-        (Curvature.Tensoriality.curvature_smul_second (g := g) (p := p)
+        (Curvature.Provisional.curvature_smul_second (g := g) (p := p)
           (c := (0 : ℝ)) (X := x) (Y := 0) (W := 0))
     have hcurv_field :
         (fun s : ℝ => curvature (I := 𝓘(ℝ, E)) g p

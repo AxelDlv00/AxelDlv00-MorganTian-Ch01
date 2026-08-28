@@ -1,21 +1,24 @@
-import MorganTianLib.Ch01.Curvature
+import MorganTianLib.Ch01.Curvature.Manifold
 
 /-!
 # Pointwise tensoriality of the Levi--Civita curvature
 
-This module supplies the first pointwise consumer of the canonical commutator
-from `MorganTianLib.Ch01.Curvature`.  Morgan--Tian Definition 1.4 and Claim
-1.5 (`morganTian2007`) treat the curvature as a tensor at a point.  Mathlib's bundled
+This module supplies the first pointwise consumer of the provisional field
+commutator from `MorganTianLib.Ch01.Curvature.Manifold`.  Morgan--Tian
+Definition 1.4 and Claim
+1.5 treat the curvature as a tensor at a point.  Mathlib's bundled
 `CovariantDerivative` exposes the commutator first on differentiable sections,
 so the proofs below make the local smooth extension used at the evaluation
 point explicit.  The resulting additivity and scalar laws are then packaged
 as `TensorialAt` witnesses.
 
-The layer proves the three `(1,3)` slots, the corresponding extension-local
-congruence, and the first Bianchi identity in both the operator and
+The layer proves the three `(1,3)` slots, the imported field-level germ-locality
+contract, and the first Bianchi identity in both the operator and
 source-ordered `(0,4)` forms.  Metric last-pair skew and pair interchange
 remain downstream of the metric-compatible tensor-covariant-derivative API;
-the differential/second Bianchi identity is outside this module.
+the differential/second Bianchi identity is outside this module.  The source
+anchor is `morganTian2007`, Definition 1.4 and Claim 1.5, retained arXiv
+printed pp. 37--38.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField
@@ -26,7 +29,8 @@ noncomputable section
 namespace MorganTianLib
 namespace Ch01
 namespace Curvature
-namespace Tensoriality
+
+section Tensoriality
 
 variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
@@ -36,7 +40,6 @@ variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
 private abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
   ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
 
-omit [FiniteDimensional ℝ EM] in
 private lemma smoothAt_eventually_mdifferentiableAt
     {X : (x : M) → TangentSpace I x} {p : M} (hX : SmoothAt X p) :
     ∀ᶠ q in 𝓝 p, MDiffAt (T% X) q := by
@@ -52,7 +55,6 @@ private lemma covariantField_mdifferentiableAt_lc
   exact (Connection.contMDiffAt_leviCivitaConnection_apply g hX hY).mdifferentiableAt
     (by simp)
 
-omit [FiniteDimensional ℝ EM] in
 private lemma extend_add_eventuallyEq {p : M} (X Y : TangentSpace I p) :
     FiberBundle.extend (E := (TangentSpace I : M → Type _)) EM (X + Y) =ᶠ[𝓝 p]
       FiberBundle.extend (E := (TangentSpace I : M → Type _)) EM X +
@@ -79,7 +81,6 @@ private lemma extend_add_eventuallyEq {p : M} (X Y : TangentSpace I p) :
     ← t.continuousLinearMapAt_apply_of_mem ℝ hp,
     ← t.continuousLinearMapAt_apply_of_mem ℝ hp, map_add]
 
-omit [FiniteDimensional ℝ EM] in
 private lemma extend_smul_eventuallyEq {p : M} (c : ℝ) (X : TangentSpace I p) :
     FiberBundle.extend (E := (TangentSpace I : M → Type _)) EM (c • X) =ᶠ[𝓝 p]
       (fun _ : M => c) • FiberBundle.extend (E := (TangentSpace I : M → Type _)) EM X := by
@@ -110,7 +111,6 @@ private lemma covariantField_add_eventually_at
     smoothAt_eventually_mdifferentiableAt hW] with q hZq hWq
   exact covariantField_add_argument cov hZq hWq
 
-omit [FiniteDimensional ℝ EM] in
 private lemma covariantField_congr_eventually_at
     (cov : CovariantDerivative I EM (TangentSpace I : M → Type _))
     {X Y Y' : (x : M) → TangentSpace I x} {p : M}
@@ -218,8 +218,6 @@ private lemma curvatureField_add_right_at
         curvatureField (Connection.leviCivitaConnection g) X Y W p := by
   let cov := Connection.leviCivitaConnection g
   letI : cov.ContMDiffCovariantDerivative ∞ := Connection.contMDiff_leviCivitaConnection g
-  have hX' : MDiffAt (T% X) p := hX.mdifferentiableAt (by simp)
-  have hY' : MDiffAt (T% Y) p := hY.mdifferentiableAt (by simp)
   have hZ' : MDiffAt (T% Z) p := hZ.mdifferentiableAt (by simp)
   have hW' : MDiffAt (T% W) p := hW.mdifferentiableAt (by simp)
   have hYZ := covariantField_mdifferentiableAt_lc g hY hZ
@@ -307,9 +305,16 @@ private lemma curvatureField_smul_right_const_at
   rw [hfirst, hsecond, hthird]
   module
 
-/-! ### Canonical pointwise slot laws -/
+/-! ### Provisional selected-extension pointwise slot laws
 
-/-- Additivity of the canonical curvature operator in its first vector slot. -/
+The following declarations concern `Curvature.Provisional.curvature` and
+`Curvature.Provisional.curvature4`.  They establish fiberwise laws for the
+selected-extension facade; they do not establish the pending arbitrary-smooth-
+extension application theorem. -/
+
+namespace Provisional
+
+/-- Additivity of the provisional selected-extension curvature in its first slot. -/
 theorem curvature_add_first
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (X Y Z W : TangentSpace I p) :
@@ -342,7 +347,7 @@ theorem curvature_add_first
   rw [hfirst]
   simpa [curvature_def, cov, X', Y', Z', W', S', T'] using hadd
 
-/-- Homogeneity of the canonical curvature operator in its first vector slot. -/
+/-- Homogeneity of the provisional selected-extension curvature in its first slot. -/
 theorem curvature_smul_first
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (c : ℝ) (X Y W : TangentSpace I p) :
@@ -376,7 +381,7 @@ theorem curvature_smul_first
   rw [hT]
   exact hsmul
 
-/-- Additivity of the canonical curvature operator in its second vector slot. -/
+/-- Additivity of the provisional selected-extension curvature in its second slot. -/
 theorem curvature_add_second
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (X Y Z W : TangentSpace I p) :
@@ -390,7 +395,7 @@ theorem curvature_add_second
       rw [curvature_swap g p Y X W, curvature_swap g p Z X W]
       abel
 
-/-- Homogeneity of the canonical curvature operator in its second vector slot. -/
+/-- Homogeneity of the provisional selected-extension curvature in its second slot. -/
 theorem curvature_smul_second
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (c : ℝ) (X Y W : TangentSpace I p) :
@@ -405,7 +410,7 @@ theorem curvature_smul_second
       rw [curvature_swap g p Y X W]
       module
 
-/-- Additivity of the canonical curvature operator in its third vector slot. -/
+/-- Additivity of the provisional selected-extension curvature in its third slot. -/
 theorem curvature_add_third
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (X Y Z W : TangentSpace I p) :
@@ -450,7 +455,7 @@ theorem curvature_add_third
   rw [hthird]
   simpa [curvature_def, cov, X', Y', Z', W', S', T'] using hadd
 
-/-- Homogeneity of the canonical curvature operator in its third vector slot. -/
+/-- Homogeneity of the provisional selected-extension curvature in its third slot. -/
 theorem curvature_smul_third
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (c : ℝ) (X Y Z : TangentSpace I p) :
@@ -621,7 +626,7 @@ theorem curvature4_smul_fourth
 
 /-! The four-tensor is tensorial in each tangent slot.  The hypotheses on
 sections are consumed only by `TensorialAt`; the pointwise laws above reduce
-the resulting goals to the canonical tangent-fiber operations. -/
+the resulting goals to the selected-extension tangent-fiber operations. -/
 
 /-- The metric-paired curvature is a `TensorialAt` in its first slot. -/
 theorem curvature4_tensorial_first
@@ -725,12 +730,6 @@ private lemma curvatureField_bianchi_local
       simpa [mvfderiv] using hneg
     rw [hneg']
     module
-  have hXY := torsion_free_at (hX.mdifferentiableAt (by simp))
-    (hY.mdifferentiableAt (by simp))
-  have hYZ := torsion_free_at (hY.mdifferentiableAt (by simp))
-    (hZ.mdifferentiableAt (by simp))
-  have hZX := torsion_free_at (hZ.mdifferentiableAt (by simp))
-    (hX.mdifferentiableAt (by simp))
   have hDYZ : SmoothAt (covariantField cov Y Z) p :=
     Connection.contMDiffAt_leviCivitaConnection_apply g hY hZ
   have hDZY : SmoothAt (covariantField cov Z Y) p :=
@@ -764,16 +763,20 @@ private lemma curvatureField_bianchi_local
     exact hZ.of_le (ENat.LEInfty.out : (2 : ℕ∞ω) ≤ ∞)
   have hbrXY : MDiffAt (T% (VectorField.mlieBracket I X Y)) p := by
     exact (ContMDiffAt.mlieBracket_vectorField (m := (1 : ℕ∞)) (n := (2 : ℕ∞))
-      hX2 hY2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt (by norm_num)
+      hX2 hY2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt
+      (by norm_num)
   have hbrYZ : MDiffAt (T% (VectorField.mlieBracket I Y Z)) p := by
     exact (ContMDiffAt.mlieBracket_vectorField (m := (1 : ℕ∞)) (n := (2 : ℕ∞))
-      hY2 hZ2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt (by norm_num)
+      hY2 hZ2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt
+      (by norm_num)
   have hbrZX : MDiffAt (T% (VectorField.mlieBracket I Z X)) p := by
     exact (ContMDiffAt.mlieBracket_vectorField (m := (1 : ℕ∞)) (n := (2 : ℕ∞))
-      hZ2 hX2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt (by norm_num)
+      hZ2 hX2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt
+      (by norm_num)
   have hbrXZ : MDiffAt (T% (VectorField.mlieBracket I X Z)) p := by
     exact (ContMDiffAt.mlieBracket_vectorField (m := (1 : ℕ∞)) (n := (2 : ℕ∞))
-      hX2 hZ2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt (by norm_num)
+      hX2 hZ2 (by rw [minSmoothness_of_isRCLikeNormedField]; norm_num)).mdifferentiableAt
+      (by norm_num)
   have hYZ_ev : ∀ᶠ q in 𝓝 p,
       covariantField cov Y Z q - covariantField cov Z Y q =
         VectorField.mlieBracket I Y Z q := by
@@ -895,7 +898,8 @@ private lemma curvatureField_bianchi_local
   rw [hBswap, hCswap, hj]
   module
 
-/-- The extension-based first Bianchi identity in the source curvature order:
+/-- The provisional selected-extension first Bianchi identity in the source
+curvature order:
 `R X Y Z + R Y Z X + R Z X Y = 0`. -/
 theorem curvature_bianchi
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
@@ -925,6 +929,8 @@ theorem curvature4_bianchi
   have hp := congrArg (fun V => g.inner p V Z) h
   rw [map_add, map_add, map_zero] at hp
   simpa [curvature4_def] using hp
+
+end Provisional
 
 end Tensoriality
 

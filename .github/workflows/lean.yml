@@ -27,6 +27,10 @@ jobs:
           persist-credentials: false
 
       - name: Build with Lean
+        id: lean-action
+        # Mathlib's remote artifact service can fail before Lake starts.  Keep
+        # the first result available so only a pre-build setup failure retries.
+        continue-on-error: true
         uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
         with:
           build: true
@@ -34,3 +38,20 @@ jobs:
           lint: false
           use-mathlib-cache: true
           use-github-cache: false
+
+      - name: Retry Lean build after transient setup failure
+        if: steps.lean-action.outcome == 'failure' && steps.lean-action.outputs.build-status == ''
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        with:
+          build: true
+          test: false
+          lint: false
+          use-mathlib-cache: true
+          use-github-cache: false
+
+      - name: Preserve Lean build failure
+        if: steps.lean-action.outcome == 'failure' && steps.lean-action.outputs.build-status != ''
+        shell: bash
+        run: |
+          echo "::error::Lean build failed on the initial attempt"
+          exit 1
