@@ -25,7 +25,10 @@ adapters.  In particular, global witnesses can be packaged into the maximal
 domain contract, affine restriction/translation preserves the checked path
 length, and a finite minimizing segment has every ordered subsegment realizing
 its endpoint distance, while a supplied minimizing segment is proved no longer
-than every smooth competitor with matching endpoints.  The selected-distance
+than every smooth competitor with matching endpoints, including on each finite
+ordered subsegment.  The universal continuation form quantifies over every
+supplied maximal witness rather than only a selected initial-data solution.
+The selected-distance
 completeness bridge reinstalls
 the exact `EMetricSpace`/`CompleteSpace M` pair used by the predicate, while
 the model-space completion remains a separate premise.  Thus no theorem here
@@ -384,6 +387,36 @@ theorem MaximalGeodesic.lifetime_ordConnected
   intro a ha b hb _hab t ht
   exact G.interval ha hb ht.1 ht.2
 
+/-- In a subsingleton manifold, maximality forces every supplied lifetime to
+be all of `ℝ`.
+
+The constant curve on `Set.univ` is an admissible extension, and all
+manifold-valued curves agree by subsingleton elimination.  This is a
+proof-backed zero-dimensional regression for the universal maximal-geodesic
+boundary; it does not use metric completeness or the model-space completion.
+The source-facing complete-manifold comparison is the paragraph preceding
+Morgan--Tian, Theorem 1.18 (`morganTian2007`); see also do Carmo
+(`doCarmo1992`), Chapter 7, and Lee (`lee2018`), Theorem 6.19. -/
+theorem MaximalGeodesic.lifetime_eq_univ_of_subsingleton
+    [Subsingleton M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p)
+    (G : MaximalGeodesic (I := I) g p v) :
+    G.lifetime = (Set.univ : Set ℝ) := by
+  apply Set.eq_univ_of_forall
+  intro t
+  have hgeo : isGeodesicOn (I := I) g (fun _ : ℝ => p) (Set.univ : Set ℝ) := by
+    intro s _
+    exact isGeodesic_const (I := I) g p s
+  have hcont : ContinuousOn (fun _ : ℝ => p) (Set.univ : Set ℝ) :=
+    continuousOn_const
+  have heq : ∀ s ∈ G.lifetime, (fun _ : ℝ => p) s = G.curve s := by
+    intro s hs
+    exact Subsingleton.elim _ _
+  have hmax := G.maximal (Set.univ : Set ℝ) (fun _ : ℝ => p)
+    (Set.subset_univ _) isOpen_univ Set.ordConnected_univ hgeo hcont heq
+  exact hmax (Set.mem_univ t)
+
 /-- The constant maximal geodesic has the displayed lifetime. -/
 @[simp]
 theorem MaximalGeodesic.refl_lifetime
@@ -460,6 +493,29 @@ structure MaximalGeodesicContinuation
           isGeodesicOn (I := I) g γ s ∧ ContinuousOn γ s ∧
           (∀ t ∈ G.lifetime, γ t = G.curve t)
 
+/-! A source-facing completeness statement must quantify over every maximal
+solution supplied by the S18 boundary, not only over one selected witness for
+each initial datum.  The following proposition records that stronger contract
+without choosing a maximal solution or hiding its continuation data. -/
+
+/-- Every maximal geodesic admits the continuation rule used by the
+complete-manifold argument.
+
+This is the universal form of the S18 producer contract.  It is deliberately a
+proposition rather than a typeclass: a later maximal-domain construction can
+provide it without installing a competing global geodesic instance.  The
+metric-completeness hypothesis is consumed only by the continuation rules below
+and remains separate from `[CompleteSpace E]`.  The source target is the
+complete-manifold paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
+and Lee (`lee2018`), Theorem 6.19. -/
+def AllMaximalGeodesicContinuation
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) : Prop :=
+  ∀ (p : M) (v : TangentSpace I p)
+    (G : MaximalGeodesic (I := I) g p v),
+    MaximalGeodesicContinuation (I := I) g p v G
+
 /-- The continuation contract for a witness whose lifetime is already `univ`.
 
 Both directions are witnessed by the same curve and domain.  This is a
@@ -498,6 +554,24 @@ theorem MaximalGeodesicContinuation.of_univ
       exact G.continuous_on
     · intro t ht
       rfl
+
+/-- A subsingleton manifold satisfies the universal continuation contract.
+
+This adapter combines the set-theoretic subsingleton maximality regression with
+the vacuous continuation certificate for `Set.univ`.  It is useful for checking
+the quantifier in `AllMaximalGeodesicContinuation` without asserting the
+general analytic S18 producer.  The metric, model-space, and boundary
+contracts stay visible in the signature for the source-facing S19 API;
+references are Morgan--Tian (`morganTian2007`), do Carmo (`doCarmo1992`), and
+Lee (`lee2018`). -/
+theorem allMaximalGeodesicContinuation_of_subsingleton
+    [Subsingleton M]
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _)) :
+    AllMaximalGeodesicContinuation (I := I) g := by
+  intro p v G
+  exact MaximalGeodesicContinuation.of_univ g p v G
+    (G.lifetime_eq_univ_of_subsingleton g p v)
 
 /-! ### The unbounded-lifetime argument -/
 
@@ -559,6 +633,46 @@ theorem maximalGeodesic_lifetime_eq_univ_of_complete
   obtain ⟨b, hb, htb⟩ :=
     maximalGeodesic_lifetime_unboundedAbove g hcomplete G hcontinue t
   exact G.interval ha hb hat.le htb.le
+
+/-- Every supplied maximal geodesic is global under the universal continuation
+contract.
+
+The conclusion retains both unbounded-lifetime witnesses and the original
+maximal curve, so later exponential and variation consumers need not discard
+the domain record and reconstruct it from an existential curve.  Metric
+completeness is the selected `RiemannianMetricComplete` premise; `[CompleteSpace
+E]` remains the local ODE premise and `[BoundarylessManifold I M]` remains the
+all-initial-data contract.  This is the universal source-facing form of the
+complete-manifold paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`); compare do Carmo (`doCarmo1992`), Chapter 7, Section 2,
+and Lee (`lee2018`), Theorem 6.19. -/
+theorem all_maximalGeodesics_global_of_complete
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (hcomplete : RiemannianMetricComplete (I := I) g)
+    (hall : AllMaximalGeodesicContinuation (I := I) g) :
+    ∀ (p : M) (v : TangentSpace I p)
+      (G : MaximalGeodesic (I := I) g p v),
+      G.lifetime = (Set.univ : Set ℝ) ∧
+      LifetimeUnboundedAbove G.lifetime ∧
+      LifetimeUnboundedBelow G.lifetime ∧
+      Continuous G.curve ∧ isGeodesic (I := I) g G.curve := by
+  intro p v G
+  have hcontinue := hall p v G
+  have hlife := maximalGeodesic_lifetime_eq_univ_of_complete
+    g hcomplete G hcontinue
+  have habove := maximalGeodesic_lifetime_unboundedAbove
+    g hcomplete G hcontinue
+  have hbelow := maximalGeodesic_lifetime_unboundedBelow
+    g hcomplete G hcontinue
+  have hcont : ContinuousOn G.curve (Set.univ : Set ℝ) := by
+    rw [← hlife]
+    exact G.continuous_on
+  have hgeo : isGeodesicOn (I := I) g G.curve (Set.univ : Set ℝ) := by
+    rw [← hlife]
+    exact G.geodesic_on
+  refine ⟨hlife, habove, hbelow, continuousOn_univ.mp hcont, ?_⟩
+  exact (isGeodesicOn_univ_iff (I := I) g G.curve).mp hgeo
 
 /-- The source-facing global extension consequence for one initial datum.
 
@@ -1222,6 +1336,45 @@ theorem MinimizingGeodesic.restriction_length_eq_distance
     exact hmid
   exact le_antisymm (hupper.trans_eq hspeed_mid.symm) (hspeed_mid.trans_le hlower)
 
+/-- A finite minimizing subsegment is no longer than any competitor with the
+same endpoint values on that subinterval.
+
+The candidate side is identified with its endpoint distance by
+`restriction_length_eq_distance`; the competitor side is bounded below by
+Mathlib's intrinsic-distance/path-length inequality.  This is the
+subsegment form consumed by later first- and second-variation arguments.  The
+finite selected-distance premise is kept explicit and is independent of the
+`[CompleteSpace E]` local-ODE premise.  The source comparison is the
+complete-manifold paragraph preceding Morgan--Tian, Theorem 1.18
+(`morganTian2007`); see do Carmo (`doCarmo1992`), Chapter 7, and Lee
+(`lee2018`), Theorem 6.19. -/
+theorem MinimizingGeodesic.restriction_length_le_pathELength_interval
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (G : MinimizingGeodesic (I := I) g x y)
+    {a b : ℝ} (ha : a ∈ Set.Icc (0 : ℝ) 1)
+    (hb : b ∈ Set.Icc (0 : ℝ) 1) (hab : a ≤ b)
+    (hfinite : canonicalRiemannianEDist (I := I) g x y < ⊤)
+    {γ : ℝ → M}
+    (hγ : CMDiff[Set.Icc a b] 1 γ)
+    (hstart : γ a = G.path a) (hend : γ b = G.path b) :
+    canonicalPathELength (I := I) g (G.path : ℝ → M) a b ≤
+      canonicalPathELength (I := I) g γ a b := by
+  calc
+    canonicalPathELength (I := I) g (G.path : ℝ → M) a b =
+        canonicalRiemannianEDist (I := I) g (G.path a) (G.path b) :=
+      G.restriction_length_eq_distance g x y ha hb hab hfinite
+    _ ≤ canonicalPathELength (I := I) g γ a b := by
+      change
+        (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+          ⟨g.toRiemannianMetric⟩;
+          Manifold.riemannianEDist I (G.path a) (G.path b)) ≤
+        (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+          ⟨g.toRiemannianMetric⟩;
+          Manifold.pathELength I γ a b)
+      letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+        ⟨g.toRiemannianMetric⟩
+      exact Manifold.riemannianEDist_le_pathELength hγ hstart hend hab
+
 /-- Translation preserves the certified length of a minimizing path whenever
 the translated unit interval stays inside its smoothness interval. -/
 theorem MinimizingGeodesic.translation_length
@@ -1770,6 +1923,29 @@ theorem euclidean_zero_dimensional_maximal_lifetime
       euclidean_zero_dimensional_metric_complete
       (euclidean_zero_dimensional_complete_maximal_data.solution p v)
       (euclidean_zero_dimensional_complete_maximal_data.continuation p v)⟩
+
+/-- The zero-dimensional regression also covers an arbitrary supplied maximal
+geodesic, rather than only the selected solution in
+`euclidean_zero_dimensional_complete_maximal_data`.
+
+This exercises the universal continuation quantifier and the two unboundedness
+conclusions of `all_maximalGeodesics_global_of_complete`. -/
+theorem euclidean_zero_dimensional_all_maximal_lifetime
+    (p : EuclideanSpace ℝ (Fin 0))
+    (v : TangentSpace 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)) p)
+    (G : MaximalGeodesic (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+      (euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))) p v) :
+    G.lifetime = (Set.univ : Set ℝ) ∧
+      LifetimeUnboundedAbove G.lifetime ∧ LifetimeUnboundedBelow G.lifetime := by
+  have h := all_maximalGeodesics_global_of_complete
+    (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+    (g := euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0)))
+    euclidean_zero_dimensional_metric_complete
+    (allMaximalGeodesicContinuation_of_subsingleton
+      (I := 𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
+      (g := euclideanSmoothMetric (F := EuclideanSpace ℝ (Fin 0))))
+    p v G
+  exact ⟨h.1, h.2.1, h.2.2.1⟩
 
 /-- The maximal-domain producer and selected-metric completeness combine to
 give the source-facing all-real-time geodesic witness in the one-point model. -/

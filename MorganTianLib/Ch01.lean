@@ -51,8 +51,11 @@ the selected-distance completeness bridge, open/order-connected
 maximal-lifetime contract, source-facing geodesic-completeness wrapper,
 proof-backed affine geodesic/restriction transport, finite subsegment
 length-realization, affine path-length and translation compatibility, and an
-explicit candidate-versus-competitor inequality.  Its maximal-domain and
-compactness producers remain explicit inputs; the regressions cover
+explicit candidate-versus-competitor inequality.  The universal continuation
+form quantifies over every supplied maximal witness, while a subsingleton
+regression checks that quantifier independently of the selected producer.  Its
+maximal-domain and compactness producers remain explicit inputs; the regressions
+cover
 subsingleton, Euclidean, bounded-lifetime, disconnected-component, and
 incomplete-metric cases without asserting uniqueness.  The S20 geodesic
 energy/first-variation contract depends only on the canonical metric/connection
