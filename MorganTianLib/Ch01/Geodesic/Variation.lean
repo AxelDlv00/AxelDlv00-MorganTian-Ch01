@@ -27,11 +27,20 @@ provide one curve-level acceleration field and the test-field realization
 theorem.  No per-variation completeness witness or criticality equivalence is
 exported here.  This is the S18 handoff: no coordinate acceleration or
 competing geodesic predicate is introduced here.  The slice proves the
-energy/length inequality and its equality condition, but deliberately
-introduces no minimizer predicate; the existence and identification of
-minimizers belong to S19.  The integral density uses unrestricted `mfderiv`;
-the separate `velocityWithin` accessor retains the one-sided derivative needed
-by endpoint terms.
+energy/length inequality and its equality condition in both the auxiliary
+real speed integral and Mathlib's canonical `Manifold.pathELength`, but
+deliberately introduces no minimizer predicate; the existence and
+identification of minimizers belong to S19.  The integral density uses
+unrestricted `mfderiv`; the separate `velocityWithin` accessor retains the
+one-sided derivative needed by endpoint terms.
+
+The interval statements use the pinned Mathlib APIs
+`intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le`,
+`MeasureTheory.ofReal_integral_eq_lintegral_ofReal`, and
+`Manifold.pathELength_eq_lintegral_mfderiv_Icc`; their regularity and endpoint
+hypotheses are kept visible in the declarations below.
+The API snapshot is Mathlib commit
+`520045ab14e26149ee970e2e617ca04b09bde5d6` from `lake-manifest.json`.
 -/
 
 open Bundle Filter Function Manifold MeasureTheory Set
@@ -564,6 +573,176 @@ theorem curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_const_norm_velocit
     intro t ht
     simpa [speed_eq_norm_velocity (I := I) g gamma t] using hc t ht
 
+/-! The following declarations keep the public length side of the contract in
+Mathlib's extended nonnegative reals.  The real-valued `curveLength` above is
+only an analytic intermediary; the bridge is used explicitly so no second
+manifold-length definition is installed. -/
+
+/-- The interval energy/length inequality transported to Mathlib's canonical
+`Manifold.pathELength`.  The right-hand side is deliberately `ENNReal.ofReal`
+of the normalized real energy expression, so the interval factor and the
+energy normalization remain visible (Morgan--Tian, `morganTian2007`, pp.
+41--43; do Carmo, `doCarmo1992`, Ch. 9, Section 2).  The transport uses the
+pinned Mathlib `ENNReal.ofReal_pow`, `ENNReal.ofReal_le_ofReal`, and
+`Manifold.pathELength_eq_lintegral_mfderiv_Icc` APIs. -/
+theorem pathELength_sq_le_ofReal_two_mul_interval_sub_mul_energy
+    (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
+    (hs : IntervalIntegrable (speed (I := I) g gamma) volume a b)
+    (hs2 : IntervalIntegrable
+      (fun t => (speed (I := I) g gamma t) ^ 2) volume a b) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    (Manifold.pathELength I gamma a b) ^ 2 ≤
+      ENNReal.ofReal (2 * (b - a) * energy (I := I) g gamma a b) := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  have hbridge := ofReal_curveLength_eq_pathELength (I := I) g gamma hab hs
+  have hreal := curveLength_sq_le_two_mul_interval_sub_mul_energy
+    (I := I) g gamma hab hs hs2
+  have hcurve : 0 ≤ curveLength (I := I) g gamma a b :=
+    curveLength_nonneg (I := I) g gamma hab
+  calc
+    (Manifold.pathELength I gamma a b) ^ 2 =
+        (ENNReal.ofReal (curveLength (I := I) g gamma a b)) ^ 2 := by
+      rw [← hbridge]
+    _ = ENNReal.ofReal ((curveLength (I := I) g gamma a b) ^ 2) := by
+      rw [ENNReal.ofReal_pow hcurve 2]
+    _ ≤ ENNReal.ofReal (2 * (b - a) * energy (I := I) g gamma a b) :=
+      ENNReal.ofReal_le_ofReal hreal
+
+/-- The `[0,1]` specialization of
+`pathELength_sq_le_ofReal_two_mul_interval_sub_mul_energy`. -/
+theorem pathELength_sq_le_ofReal_two_mul_energy
+    (gamma : ℝ → M)
+    (hs : IntervalIntegrable (speed (I := I) g gamma) volume 0 1)
+    (hs2 : IntervalIntegrable
+      (fun t => (speed (I := I) g gamma t) ^ 2) volume 0 1) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    (Manifold.pathELength I gamma 0 1) ^ 2 ≤
+      ENNReal.ofReal (2 * energy (I := I) g gamma 0 1) := by
+  simpa using pathELength_sq_le_ofReal_two_mul_interval_sub_mul_energy
+    (I := I) g gamma (a := 0) (b := 1) (by norm_num) hs hs2
+
+/-- Equality in the canonical extended-real energy/length inequality is
+equivalent, under continuous speed on a nondegenerate interval, to constant
+norm of the intrinsic velocity.  The real equality theorem is transported
+through the canonical `pathELength` bridge; no minimizer or geodesic predicate
+is introduced here (Morgan--Tian, `morganTian2007`, pp. 41--43; do Carmo,
+`doCarmo1992`, Ch. 9, Section 2).  Equality reflection uses the pinned Mathlib
+`ENNReal.ofReal_eq_ofReal_iff` API with both nonnegativity hypotheses explicit. -/
+theorem pathELength_sq_eq_ofReal_two_mul_interval_sub_mul_energy_iff_const_norm_velocity
+    (gamma : ℝ → M) {a b : ℝ} (hab : a < b)
+    (hs : ContinuousOn (speed (I := I) g gamma) (Icc a b)) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    ((Manifold.pathELength I gamma a b) ^ 2 =
+        ENNReal.ofReal (2 * (b - a) * energy (I := I) g gamma a b)) ↔
+      ∃ c : ℝ, ∀ t ∈ Icc a b,
+        ‖velocity (I := I) gamma t‖ = c := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  have hbase := curveLength_sq_eq_two_mul_interval_sub_mul_energy_iff_const_norm_velocity
+    (I := I) g gamma hab hs
+  have hs' : IntervalIntegrable (speed (I := I) g gamma) volume a b :=
+    hs.intervalIntegrable_of_Icc hab.le
+  have hbridge := ofReal_curveLength_eq_pathELength (I := I) g gamma hab.le hs'
+  have hcurve : 0 ≤ curveLength (I := I) g gamma a b :=
+    curveLength_nonneg (I := I) g gamma hab.le
+  have hright : 0 ≤ 2 * (b - a) * energy (I := I) g gamma a b := by
+    exact mul_nonneg (mul_nonneg (by norm_num) (sub_nonneg.mpr hab.le))
+      (energy_nonneg (I := I) g gamma hab.le)
+  constructor
+  · intro h
+    apply hbase.mp
+    apply (ENNReal.ofReal_eq_ofReal_iff (sq_nonneg _) hright).mp
+    calc
+      ENNReal.ofReal ((curveLength (I := I) g gamma a b) ^ 2) =
+          (ENNReal.ofReal (curveLength (I := I) g gamma a b)) ^ 2 :=
+        ENNReal.ofReal_pow hcurve 2
+      _ = (Manifold.pathELength I gamma a b) ^ 2 := by rw [hbridge]
+      _ = ENNReal.ofReal (2 * (b - a) * energy (I := I) g gamma a b) := h
+  · intro hconst
+    have hreal := hbase.mpr hconst
+    calc
+      (Manifold.pathELength I gamma a b) ^ 2 =
+          (ENNReal.ofReal (curveLength (I := I) g gamma a b)) ^ 2 := by
+        rw [hbridge]
+      _ = ENNReal.ofReal ((curveLength (I := I) g gamma a b) ^ 2) :=
+        (ENNReal.ofReal_pow hcurve 2).symm
+      _ = ENNReal.ofReal (2 * (b - a) * energy (I := I) g gamma a b) :=
+        congrArg ENNReal.ofReal hreal
+
+/-- The normalized `[0,1]` equality characterization in the canonical
+`ENNReal` length representation. -/
+theorem pathELength_sq_eq_ofReal_two_mul_energy_iff_const_norm_velocity
+    (gamma : ℝ → M)
+    (hs : ContinuousOn (speed (I := I) g gamma) (Icc 0 1)) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    ((Manifold.pathELength I gamma 0 1) ^ 2 =
+        ENNReal.ofReal (2 * energy (I := I) g gamma 0 1)) ↔
+      ∃ c : ℝ, ∀ t ∈ Icc 0 1,
+        ‖velocity (I := I) gamma t‖ = c := by
+  simpa using pathELength_sq_eq_ofReal_two_mul_interval_sub_mul_energy_iff_const_norm_velocity
+    (I := I) g gamma (a := 0) (b := 1) (by norm_num) hs
+
+/-- The canonical `pathELength` equality characterization on an ordered
+interval, including the degenerate case.  The strict-interval declaration is
+kept separate above so its positive interval-length hypothesis remains
+visible. -/
+theorem pathELength_sq_eq_ofReal_two_mul_interval_sub_mul_energy_iff_const_norm_velocity_of_le
+    (gamma : ℝ → M) {a b : ℝ} (hab : a ≤ b)
+    (hs : ContinuousOn (speed (I := I) g gamma) (Icc a b)) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    ((Manifold.pathELength I gamma a b) ^ 2 =
+        ENNReal.ofReal (2 * (b - a) * energy (I := I) g gamma a b)) ↔
+      ∃ c : ℝ, ∀ t ∈ Icc a b,
+        ‖velocity (I := I) gamma t‖ = c := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  rcases hab.eq_or_lt with rfl | hlt
+  · simp only [Manifold.pathELength_self, sub_self, mul_zero, ENNReal.ofReal_zero,
+      pow_two, energy, intervalIntegral.integral_same]
+    constructor
+    · intro _
+      refine ⟨‖velocity (I := I) gamma a‖, ?_⟩
+      intro t ht
+      have hta : t = a := by simpa using ht
+      subst t
+      rfl
+    · intro _
+      trivial
+  · exact pathELength_sq_eq_ofReal_two_mul_interval_sub_mul_energy_iff_const_norm_velocity
+      (I := I) g gamma hlt hs
+
+/-- A pointwise constant speed realizes equality in the canonical extended-real
+energy/length inequality on every ordered interval. -/
+theorem pathELength_sq_eq_ofReal_two_mul_interval_sub_mul_energy_of_const_speed
+    (gamma : ℝ → M) {a b c : ℝ} (hab : a ≤ b)
+    (hs : IntervalIntegrable (speed (I := I) g gamma) volume a b)
+    (hconst : ∀ t ∈ Icc a b, speed (I := I) g gamma t = c) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    (Manifold.pathELength I gamma a b) ^ 2 =
+      ENNReal.ofReal (2 * (b - a) * energy (I := I) g gamma a b) := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  have hbridge := ofReal_curveLength_eq_pathELength (I := I) g gamma hab hs
+  have hcurve : 0 ≤ curveLength (I := I) g gamma a b :=
+    curveLength_nonneg (I := I) g gamma hab
+  have hreal := curveLength_sq_eq_two_mul_interval_sub_mul_energy_of_const_speed
+    (I := I) g gamma hab hconst
+  calc
+    (Manifold.pathELength I gamma a b) ^ 2 =
+        (ENNReal.ofReal (curveLength (I := I) g gamma a b)) ^ 2 := by
+      rw [hbridge]
+    _ = ENNReal.ofReal ((curveLength (I := I) g gamma a b) ^ 2) :=
+      (ENNReal.ofReal_pow hcurve 2).symm
+    _ = ENNReal.ofReal (2 * (b - a) * energy (I := I) g gamma a b) :=
+      congrArg ENNReal.ofReal hreal
+
 /-- A typed, curve-level intrinsic acceleration contract.  Its acceleration is
 indexed only by the base curve and interval, independently of any variation;
 it is intended to be supplied by the S18 connection/geodesic producer.  This
@@ -848,6 +1027,41 @@ private theorem euclidean_straightLine_energy (p v : ℝ) {a b : ℝ} (_hab : a 
   rw [intervalIntegral.integral_congr hEq, intervalIntegral.integral_const]
   simp [smul_eq_mul]
   ring
+
+/-- The flat affine regression also reaches the canonical extended-real path
+length.  This checks that the `ofReal` transport is compatible with the
+Euclidean straight-line normalization, including the degenerate interval. -/
+private theorem euclidean_straightLine_pathELength (p v : ℝ) {a b : ℝ}
+    (hab : a ≤ b) :
+    let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, ℝ) ∞ ℝ
+        (fun x : ℝ => TangentSpace 𝓘(ℝ, ℝ) x) :=
+      { riemannianMetricVectorSpace ℝ with
+        contMDiff := (riemannianMetricVectorSpace ℝ).contMDiff.of_le (by simp) }
+    letI : Bundle.RiemannianBundle (TangentSpace 𝓘(ℝ, ℝ) : ℝ → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    (Manifold.pathELength 𝓘(ℝ, ℝ) (fun s : ℝ => p + s * v) a b) ^ 2 =
+      ENNReal.ofReal (2 * (b - a) * energy (I := 𝓘(ℝ, ℝ)) g
+        (fun s : ℝ => p + s * v) a b) := by
+  dsimp
+  let g : Bundle.ContMDiffRiemannianMetric 𝓘(ℝ, ℝ) ∞ ℝ
+      (fun x : ℝ => TangentSpace 𝓘(ℝ, ℝ) x) :=
+    { riemannianMetricVectorSpace ℝ with
+      contMDiff := (riemannianMetricVectorSpace ℝ).contMDiff.of_le (by simp) }
+  letI : Bundle.RiemannianBundle (TangentSpace 𝓘(ℝ, ℝ) : ℝ → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  have hconst : ∀ t ∈ Icc a b,
+      speed (I := 𝓘(ℝ, ℝ)) g (fun s : ℝ => p + s * v) t = |v| := by
+    intro t ht
+    rw [speed, euclidean_straightLine_speedSq p v t]
+    exact Real.sqrt_sq_eq_abs v
+  have hs : IntervalIntegrable
+      (speed (I := 𝓘(ℝ, ℝ)) g (fun s : ℝ => p + s * v)) volume a b := by
+    have hcont : ContinuousOn
+        (speed (I := 𝓘(ℝ, ℝ)) g (fun s : ℝ => p + s * v)) (Icc a b) := by
+      exact continuousOn_const.congr (fun t ht => hconst t ht)
+    exact hcont.intervalIntegrable_of_Icc hab
+  exact pathELength_sq_eq_ofReal_two_mul_interval_sub_mul_energy_of_const_speed
+    (I := 𝓘(ℝ, ℝ)) g (fun s : ℝ => p + s * v) hab hs hconst
 
 /-- Zero velocity gives zero energy. -/
 theorem energy_eq_zero_of_velocity_eq_zero
