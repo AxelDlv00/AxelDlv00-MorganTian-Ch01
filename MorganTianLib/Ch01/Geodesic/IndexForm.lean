@@ -304,7 +304,7 @@ theorem indexForm_add_left
       rw [map_add, add_apply, Curvature.Provisional.curvature4_add_first]
       ring
     _ = _ := intervalIntegral.integral_add h₁ h₂
-  
+
 
 /-- Homogeneity in the first field. -/
 theorem indexForm_smul_left
