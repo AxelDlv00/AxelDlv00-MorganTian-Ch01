@@ -10,8 +10,9 @@ import MorganTianLib.Ch01.Curvature.Operator
 /-!
 # The open-cone model boundary
 
-This module records the part of Morgan--Tian Chapter 1, Definitions 1.14--1.16
-(`morganTian2007`), which is independent of a pointwise curvature producer.
+This module records the part of Morgan--Tian Chapter 1 consisting of
+Definition 1.14, Proposition 1.15, and Corollary 1.16 (`morganTian2007`), which
+is independent of a pointwise curvature producer.
 For a real vector space `V`, the tangent model of the open cone is written
 `V × ℝ`; the second factor is the radial direction.  The exterior square has
 the intrinsic splitting
@@ -29,8 +30,9 @@ endomorphism.  Consequently the pointwise Levi--Civita curvature calculation
 and the eigenvalue statement `s⁻² (λ - 1)` are not asserted here; this module is
 the reusable algebraic consumer for that later interface.
 
-The decomposition and normalization follow Morgan--Tian, Definitions 1.14--
-1.16, printed pp. 40--41, with the exterior-power universal property from the
+The decomposition and normalization follow Morgan--Tian, Definition 1.14,
+Proposition 1.15, and Corollary 1.16, printed pp. 40--41, with the
+exterior-power universal property from the
 pinned Mathlib `LinearAlgebra.ExteriorPower.Basic` API.  The product tangent
 projection uses Mathlib's `mfderiv_fst`/`mfderiv_snd` declarations; the
 pointwise form is not yet assembled into a `Bundle.ContMDiffRiemannianMetric`
@@ -635,10 +637,13 @@ def coneWedgeBlockForm (s : ℝ)
       LinearMap.congr_fun (coneWedgeSplit_unsplit (V := V)) (ψ, v)
   rw [hφ, hψ]
 
-/-- A cone block supplied by a curvature-operator bilinear form.
+/-- The named cone-block wrapper used by the fixed-model consumer below.
 
-The operator itself remains owned by `Curvature.Operator`; this declaration is
-only its cone-block transport. -/
+The generic block is `coneWedgeBlockForm`; this wrapper gives the curvature
+consumer a discoverable name while its operator remains owned by
+`Curvature.Operator`.  It has one current caller, `coneCurvatureModel`, and is
+intended to be migrated to the generic declaration when the geometric S17
+producer replaces that model consumer. -/
 def coneCurvatureBlock
     (s : ℝ) (A : ⋀[ℝ]^2 V →ₗ[ℝ] ⋀[ℝ]^2 V →ₗ[ℝ] ℝ) :
     ⋀[ℝ]^2 (V × ℝ) →ₗ[ℝ] ⋀[ℝ]^2 (V × ℝ) →ₗ[ℝ] ℝ :=
@@ -739,21 +744,23 @@ noncomputable def coneCurvatureDifferenceOperator
     Curvature.curvatureOperator_ιMulti]
   rfl
 
-/-- The stable algebraic cone-curvature core obtained from the accepted S08
-bilinear form.  It is `s² (Rm_N - wedge² g_N)` on horizontal bivectors and
-zero on mixed bivectors; the pure radial-radial wedge is already zero in `Λ²`.
-The witness `hB` is an algebraic fixed-inner-product-space input, not yet the
-selected-extension manifold curvature producer. -/
-noncomputable def coneCurvature
+/-- A fixed-model algebraic specialization of the S08 bilinear form.
+
+It is `s² (Rm_N - wedge² g_N)` on horizontal bivectors and zero on mixed
+bivectors; the pure radial-radial wedge is already zero in `Λ²`.  The witness
+`hB` is an algebraic fixed-inner-product-space input, not the selected-
+extension manifold curvature producer reserved for the future
+`Models.coneCurvature` owner. -/
+noncomputable def coneCurvatureModel
     (s : ℝ) (hB : Curvature.IsAlgebraicCurvature B) :
     (⋀[ℝ]^2 (W × ℝ)) →ₗ[ℝ] (⋀[ℝ]^2 (W × ℝ) →ₗ[ℝ] ℝ) :=
   coneCurvatureBlock s (coneCurvatureDifferenceOperator hB)
 
 /-- Symmetry of the algebraic cone block inherited from the S08 operator. -/
-theorem coneCurvature_symm
+theorem coneCurvatureModel_symm
     (s : ℝ) (hB : Curvature.IsAlgebraicCurvature B)
     (φ ψ : ⋀[ℝ]^2 (W × ℝ)) :
-    coneCurvature s hB φ ψ = coneCurvature s hB ψ φ := by
+    coneCurvatureModel s hB φ ψ = coneCurvatureModel s hB ψ φ := by
   change coneCurvatureBlock s (coneCurvatureDifferenceOperator hB) φ ψ =
     coneCurvatureBlock s (coneCurvatureDifferenceOperator hB) ψ φ
   apply coneCurvatureBlock_symm
@@ -762,10 +769,10 @@ theorem coneCurvature_symm
     (isAlgebraicCurvature_coneBaseCurvatureDifference hB) a b
 
 /-- The complete horizontal block of the S08-backed cone operator. -/
-theorem coneCurvature_horizontal
+theorem coneCurvatureModel_horizontal
     (s : ℝ) (hB : Curvature.IsAlgebraicCurvature B)
     (φ ψ : ⋀[ℝ]^2 W) :
-    coneCurvature s hB
+    coneCurvatureModel s hB
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ) φ)
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ) ψ) =
       s ^ 2 * coneCurvatureDifferenceOperator hB φ ψ := by
@@ -773,68 +780,68 @@ theorem coneCurvature_horizontal
     (coneCurvatureDifferenceOperator hB) φ ψ
 
 /-- Horizontal decomposable evaluation of the algebraic cone block. -/
-@[simp] theorem coneCurvature_horizontal_ιMulti
+@[simp] theorem coneCurvatureModel_horizontal_ιMulti
     (s : ℝ) (hB : Curvature.IsAlgebraicCurvature B)
     (x y z w : W) :
-    coneCurvature s hB
+    coneCurvatureModel s hB
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ)
           (ιMulti ℝ 2 ![x, y]))
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ)
           (ιMulti ℝ 2 ![z, w])) =
       s ^ 2 * (B x y z w - Curvature.wedgeInner x y z w) := by
-  rw [coneCurvature, coneCurvatureBlock_horizontal,
+  rw [coneCurvatureModel, coneCurvatureBlock_horizontal,
     coneCurvatureDifferenceOperator_ιMulti]
 
 /-- Radial rescaling law for the S08-backed cone block. -/
-theorem coneCurvature_scale
+theorem coneCurvatureModel_scale
     (s c : ℝ) (hB : Curvature.IsAlgebraicCurvature B)
     (φ ψ : ⋀[ℝ]^2 (W × ℝ)) :
-    coneCurvature (c * s) hB φ ψ =
-      c ^ 2 * coneCurvature s hB φ ψ := by
+    coneCurvatureModel (c * s) hB φ ψ =
+      c ^ 2 * coneCurvatureModel s hB φ ψ := by
   exact coneCurvatureBlock_scale s c
     (coneCurvatureDifferenceOperator hB) φ ψ
 
 /-- Flat-base component probe: setting the supplied base curvature form to zero
 leaves exactly the negative metric-wedge term. -/
-theorem coneCurvature_flat_horizontal_ιMulti
+theorem coneCurvatureModel_flat_horizontal_ιMulti
     (s : ℝ) (hB : Curvature.IsAlgebraicCurvature B)
     (hflat : ∀ x y z w, B x y z w = 0)
     (x y z w : W) :
-    coneCurvature s hB
+    coneCurvatureModel s hB
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ)
           (ιMulti ℝ 2 ![x, y]))
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ)
           (ιMulti ℝ 2 ![z, w])) =
       -s ^ 2 * Curvature.wedgeInner x y z w := by
-  rw [coneCurvature_horizontal_ιMulti, hflat]
+  rw [coneCurvatureModel_horizontal_ιMulti, hflat]
   ring
 
 /-- Constant-curvature component probe: if the supplied base form is `K` times
 the metric wedge form, the cone horizontal coefficient is `K - 1`. -/
-theorem coneCurvature_constant_horizontal_ιMulti
+theorem coneCurvatureModel_constant_horizontal_ιMulti
     (s K : ℝ) (hB : Curvature.IsAlgebraicCurvature B)
     (hK : ∀ x y z w, B x y z w = K * Curvature.wedgeInner x y z w)
     (x y z w : W) :
-    coneCurvature s hB
+    coneCurvatureModel s hB
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ)
           (ιMulti ℝ 2 ![x, y]))
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ)
           (ιMulti ℝ 2 ![z, w])) =
       s ^ 2 * ((K - 1) * Curvature.wedgeInner x y z w) := by
-  rw [coneCurvature_horizontal_ιMulti, hK]
+  rw [coneCurvatureModel_horizontal_ιMulti, hK]
   ring
 
 /-- Constant-curvature model specialization of the horizontal block. -/
-theorem coneCurvature_model_horizontal_ιMulti
+theorem coneCurvatureModel_constant_model_horizontal_ιMulti
     (s K : ℝ) (x y z w : W) :
-    coneCurvature s
+    coneCurvatureModel s
         (Curvature.isAlgebraicCurvature_modelCurvature4 (W := W) K)
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ)
           (ιMulti ℝ 2 ![x, y]))
         (exteriorPower.map 2 (LinearMap.inl ℝ W ℝ)
           (ιMulti ℝ 2 ![z, w])) =
       s ^ 2 * ((K - 1) * Curvature.wedgeInner x y z w) := by
-  apply coneCurvature_constant_horizontal_ιMulti s K
+  apply coneCurvatureModel_constant_horizontal_ιMulti s K
     (Curvature.isAlgebraicCurvature_modelCurvature4 (W := W) K)
   intro a b c d
   rfl
@@ -847,16 +854,16 @@ square, while the cone's mixed factor is handled separately by the mixed-block
 theorems below. -/
 
 /-- The horizontal model component is zero in base dimension zero. -/
-theorem coneCurvature_model_fin_zero_horizontal_ιMulti
+theorem coneCurvatureModel_fin_zero_horizontal_ιMulti
     (s K : ℝ) (x y z w : EuclideanSpace ℝ (Fin 0)) :
-    coneCurvature s
+    coneCurvatureModel s
         (Curvature.isAlgebraicCurvature_modelCurvature4
           (W := EuclideanSpace ℝ (Fin 0)) K)
         (exteriorPower.map 2 (LinearMap.inl ℝ (EuclideanSpace ℝ (Fin 0)) ℝ)
           (ιMulti ℝ 2 ![x, y]))
         (exteriorPower.map 2 (LinearMap.inl ℝ (EuclideanSpace ℝ (Fin 0)) ℝ)
           (ιMulti ℝ 2 ![z, w])) = 0 := by
-  rw [coneCurvature_model_horizontal_ιMulti]
+  rw [coneCurvatureModel_constant_model_horizontal_ιMulti]
   simp [Curvature.wedgeInner,
     Subsingleton.elim x (0 : EuclideanSpace ℝ (Fin 0)),
     Subsingleton.elim y (0 : EuclideanSpace ℝ (Fin 0)),
@@ -864,9 +871,9 @@ theorem coneCurvature_model_fin_zero_horizontal_ιMulti
     Subsingleton.elim w (0 : EuclideanSpace ℝ (Fin 0))]
 
 /-- The horizontal model component is zero in base dimension one. -/
-theorem coneCurvature_model_fin_one_horizontal_ιMulti
+theorem coneCurvatureModel_fin_one_horizontal_ιMulti
     (s K : ℝ) (x y z w : EuclideanSpace ℝ (Fin 1)) :
-    coneCurvature s
+    coneCurvatureModel s
         (Curvature.isAlgebraicCurvature_modelCurvature4
           (W := EuclideanSpace ℝ (Fin 1)) K)
         (exteriorPower.map 2 (LinearMap.inl ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
@@ -876,22 +883,22 @@ theorem coneCurvature_model_fin_one_horizontal_ιMulti
   have hW : Curvature.wedgeInner x y z w = 0 := by
     simpa [Curvature.modelCurvature4, Curvature.wedgeInner] using
       (Curvature.modelCurvature4_fin_one 1 x y z w)
-  rw [coneCurvature_model_horizontal_ιMulti, hW]
+  rw [coneCurvatureModel_constant_model_horizontal_ιMulti, hW]
   ring
 
 /-- A two-dimensional model probe records the horizontal scale and the
 reversed-last-slot sign. -/
-theorem coneCurvature_model_fin_two_component_probe (s K : ℝ) :
+theorem coneCurvatureModel_fin_two_component_probe (s K : ℝ) :
     let e₀ := (EuclideanSpace.basisFun (Fin 2) ℝ) 0
     let e₁ := (EuclideanSpace.basisFun (Fin 2) ℝ) 1
-    coneCurvature s
+    coneCurvatureModel s
         (Curvature.isAlgebraicCurvature_modelCurvature4
           (W := EuclideanSpace ℝ (Fin 2)) K)
         (exteriorPower.map 2 (LinearMap.inl ℝ (EuclideanSpace ℝ (Fin 2)) ℝ)
           (ιMulti ℝ 2 ![((2 : ℝ) • e₀), e₁]))
         (exteriorPower.map 2 (LinearMap.inl ℝ (EuclideanSpace ℝ (Fin 2)) ℝ)
           (ιMulti ℝ 2 ![e₀, e₁])) = 2 * s ^ 2 * (K - 1) ∧
-    coneCurvature s
+    coneCurvatureModel s
         (Curvature.isAlgebraicCurvature_modelCurvature4
           (W := EuclideanSpace ℝ (Fin 2)) K)
         (exteriorPower.map 2 (LinearMap.inl ℝ (EuclideanSpace ℝ (Fin 2)) ℝ)
@@ -920,24 +927,24 @@ theorem coneCurvature_model_fin_two_component_probe (s K : ℝ) :
       mul_zero]
     ring
   constructor
-  · rw [coneCurvature_model_horizontal_ιMulti, h₁]
+  · rw [coneCurvatureModel_constant_model_horizontal_ιMulti, h₁]
     ring
-  · rw [coneCurvature_model_horizontal_ιMulti, h₂]
+  · rw [coneCurvatureModel_constant_model_horizontal_ιMulti, h₂]
     ring
 
 /-- The algebraic cone block vanishes on a mixed first argument. -/
-theorem coneCurvature_mixed_left
+theorem coneCurvatureModel_mixed_left
     (s : ℝ) (hB : Curvature.IsAlgebraicCurvature B)
     (u : W) (φ : ⋀[ℝ]^2 (W × ℝ)) :
-    coneCurvature s hB (coneWedgeMixed u) φ = 0 := by
+    coneCurvatureModel s hB (coneWedgeMixed u) φ = 0 := by
   exact coneCurvatureBlock_mixed_left s
     (coneCurvatureDifferenceOperator hB) u φ
 
 /-- The algebraic cone block vanishes on a mixed second argument. -/
-theorem coneCurvature_mixed_right
+theorem coneCurvatureModel_mixed_right
     (s : ℝ) (hB : Curvature.IsAlgebraicCurvature B)
     (φ : ⋀[ℝ]^2 (W × ℝ)) (u : W) :
-    coneCurvature s hB φ (coneWedgeMixed u) = 0 := by
+    coneCurvatureModel s hB φ (coneWedgeMixed u) = 0 := by
   exact coneCurvatureBlock_mixed_right s
     (coneCurvatureDifferenceOperator hB) φ u
 
