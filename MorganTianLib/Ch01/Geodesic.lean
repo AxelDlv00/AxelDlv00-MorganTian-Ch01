@@ -13,6 +13,9 @@ Levi--Civita connection from `Ch01.Connection` and gives a fixed-chart
 second-order reduction together with its current-foot transport.  The local
 IVP and uniqueness results are deliberately chart-local; moving-chart gluing,
 the maximal interval, and smooth dependence on initial data are later F2 work.
+Accordingly this is a direct-import staging leaf, absent from the stable
+`MorganTianLib.Ch01` umbrella until the S18 chart-independent producer and
+equivalence theorem land.
 
 In a chart `alpha`, the equation is
 
@@ -141,7 +144,9 @@ The first velocity supplies the direction (the first lower Christoffel slot),
 and the second supplies the differentiated vector field.  This is the one
 coordinate adapter intentionally shared with the local geodesic and Jacobi
 certificates; the frame/coefficient implementation and compatibility aliases
-above remain private. -/
+above remain private. Its intrinsic interpretation requires the relevant
+chart-source and regularity witnesses because the coordinate maps are
+totalized outside their natural domains. -/
 def chartConnectionContraction
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y v w : E) : E :=
@@ -558,7 +563,8 @@ current foot and transported back to the tangent fibre.
 The connection term is evaluated with
   `Connection.leviCivitaConnection g`; this is the coordinate realization of
   the canonical connection and introduces neither a second connection nor an
-  implicit metric. -/
+  implicit metric. Its intrinsic interpretation requires the chart-source and
+  regularity witnesses carried by `IsGeodesicAt`. -/
 def covariantAcceleration
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) : TangentSpace I (gamma t) :=
@@ -566,7 +572,10 @@ def covariantAcceleration
     (chartAcceleration (I := I) g (gamma t) gamma t)
 
 /-- A curve is geodesic at `t` when it has the required second-order
-regularity and its Levi--Civita covariant acceleration vanishes. -/
+regularity and its Levi--Civita covariant acceleration vanishes. The leading
+chart-source conjunct is compatibility bookkeeping and follows for the
+current-foot chart; it is retained while the staged constructors migrate to
+the future chart-independent S18 producer. -/
 def IsGeodesicAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) : Prop :=

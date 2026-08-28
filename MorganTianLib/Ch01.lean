@@ -3,8 +3,6 @@ import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
-import MorganTianLib.Ch01.Geodesic
-import MorganTianLib.Ch01.Geodesic.HopfRinow
 import MorganTianLib.Ch01.Geodesic.Variation
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Curvature.Manifold
@@ -13,8 +11,6 @@ import MorganTianLib.Ch01.Curvature.Plane
 import MorganTianLib.Ch01.Curvature.Operator
 import MorganTianLib.Ch01.Curvature.SectionalProvisional
 import MorganTianLib.Ch01.Curvature.OperatorProvisional
-import MorganTianLib.Ch01.Jacobi
-import MorganTianLib.Ch01.Geodesic.IndexForm
 import MorganTianLib.Ch01.Comparison.DeterminantDensity
 import MorganTianLib.Ch01.Comparison.PositiveRiccati
 import MorganTianLib.Ch01.Comparison.OperatorRiccati
@@ -46,10 +42,14 @@ cut-locus consumer fixes its stable boundary; it uses Mathlib's
 competing global measure.  The provisional `Connection.TensorLaplacian`
 evaluation layer is likewise direct-only until its bundled,
 extension-independent producer is available for S13's Bochner consumer.
-The lower geodesic and Hopf--Rinow interfaces, the intrinsic Jacobi contracts,
-and the source-ordered index-form/second-variation assembly are exported here
-as their own focused modules.  Their producer obligations remain explicit in
-the roadmap; no chart plumbing is promoted to a public API.
+The S18 geodesic, S19 Hopf--Rinow, S21 Jacobi, and S23 index-form modules remain
+direct-import staging leaves and are deliberately absent from this umbrella.
+Their moving-chart certificates still need the roadmap's chart-independent
+producer/equivalence, and the Jacobi/index-form leaves additionally consume the
+selected-extension curvature facade without its arbitrary-extension
+application theorem.  `Geodesic.Variation` remains exported because its S20
+energy and analytic first-variation contracts depend only on the accepted
+metric and connection layers.
 -/
 
 namespace MorganTianLib

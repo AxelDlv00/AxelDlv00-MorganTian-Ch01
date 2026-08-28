@@ -7,7 +7,11 @@ import Mathlib.Order.Interval.Set.OrdConnected
 
 This module is the S19 boundary between the intrinsic geodesic IVP and the
 complete-manifold consequences used later in Chapter 1.  It deliberately
-keeps three inputs separate:
+keeps three inputs separate.
+
+It is a direct-import staging leaf, absent from the stable
+`MorganTianLib.Ch01` umbrella until S18 supplies the chart-independent maximal
+geodesic producer and S19 discharges the continuation/minimizer interfaces.
 
 * `RiemannianMetricComplete` installs the canonical extended Riemannian
   distance and asks for its `CompleteSpace` instance;
@@ -67,15 +71,6 @@ def RiemannianMetricComplete
   letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
   @CompleteSpace M inferInstance
 
-/-- A lifetime is unbounded above, expressed without choosing an endpoint
-convention for open intervals. -/
-def LifetimeUnboundedAbove (s : Set ℝ) : Prop :=
-  ∀ b : ℝ, ∃ t ∈ s, b < t
-
-/-- A lifetime is unbounded below. -/
-def LifetimeUnboundedBelow (s : Set ℝ) : Prop :=
-  ∀ b : ℝ, ∃ t ∈ s, t < b
-
 /-! ## Maximal geodesic and continuation contracts -/
 
 /-- A maximal intrinsic geodesic supplied by the S18 maximal-domain layer.
@@ -100,7 +95,8 @@ structure MaximalGeodesic
       (chartVelocityAt (I := I) p v) 0
   /-- The intrinsic equation on the lifetime. -/
   geodesic_on : isGeodesicOn (I := I) g curve lifetime
-  /-- Continuity on the lifetime. -/
+  /-- Continuity on the lifetime. This compatibility field is retained for
+  continuation consumers while the staged S18 certificate is migrated. -/
   continuous_on : ContinuousOn curve lifetime
   /-- The lifetime is interval-convex. -/
   interval :
@@ -171,7 +167,8 @@ completeness premise. -/
 theorem MaximalGeodesic.refl_unboundedAbove
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) :
-    LifetimeUnboundedAbove (MaximalGeodesic.refl (I := I) g p).lifetime := by
+    ¬ BddAbove (MaximalGeodesic.refl (I := I) g p).lifetime := by
+  rw [not_bddAbove_iff]
   intro b
   exact ⟨b + 1, Set.mem_univ _, by linarith⟩
 
@@ -180,7 +177,8 @@ completeness premise. -/
 theorem MaximalGeodesic.refl_unboundedBelow
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) :
-    LifetimeUnboundedBelow (MaximalGeodesic.refl (I := I) g p).lifetime := by
+    ¬ BddBelow (MaximalGeodesic.refl (I := I) g p).lifetime := by
+  rw [not_bddBelow_iff]
   intro b
   exact ⟨b - 1, Set.mem_univ _, by linarith⟩
 
@@ -232,8 +230,9 @@ theorem maximalGeodesic_lifetime_unboundedAbove
     {p : M} {v : TangentSpace I p}
     (G : MaximalGeodesic (I := I) g p v)
     (hcontinue : MaximalGeodesicContinuation (I := I) g p v G) :
-    LifetimeUnboundedAbove G.lifetime := by
+    ¬ BddAbove G.lifetime := by
   classical
+  rw [not_bddAbove_iff]
   intro b
   by_contra hbound
   have hupper : ∀ t ∈ G.lifetime, t ≤ b := by
@@ -255,8 +254,9 @@ theorem maximalGeodesic_lifetime_unboundedBelow
     {p : M} {v : TangentSpace I p}
     (G : MaximalGeodesic (I := I) g p v)
     (hcontinue : MaximalGeodesicContinuation (I := I) g p v G) :
-    LifetimeUnboundedBelow G.lifetime := by
+    ¬ BddBelow G.lifetime := by
   classical
+  rw [not_bddBelow_iff]
   intro b
   by_contra hbound
   have hlower : ∀ t ∈ G.lifetime, b ≤ t := by
@@ -280,10 +280,10 @@ theorem maximalGeodesic_lifetime_eq_univ_of_complete
     G.lifetime = (Set.univ : Set ℝ) := by
   apply Set.eq_univ_of_forall
   intro t
-  obtain ⟨a, ha, hat⟩ :=
-    maximalGeodesic_lifetime_unboundedBelow g hcomplete G hcontinue t
-  obtain ⟨b, hb, htb⟩ :=
-    maximalGeodesic_lifetime_unboundedAbove g hcomplete G hcontinue t
+  obtain ⟨a, ha, hat⟩ := (not_bddBelow_iff.mp
+    (maximalGeodesic_lifetime_unboundedBelow g hcomplete G hcontinue)) t
+  obtain ⟨b, hb, htb⟩ := (not_bddAbove_iff.mp
+    (maximalGeodesic_lifetime_unboundedAbove g hcomplete G hcontinue)) t
   exact G.interval ha hb hat.le htb.le
 
 /-- The source-facing global extension consequence for one initial datum.
@@ -421,7 +421,8 @@ structure MinimizingGeodesic
   path : SmoothPath I x y
   /-- The intrinsic geodesic equation on the unit interval. -/
   geodesic_on : isGeodesicOn (I := I) g (path : ℝ → M) (Set.Icc 0 1)
-  /-- Continuity on the parameter interval. -/
+  /-- Continuity on the unit interval, retained as compatibility data for the
+  staged minimizing-path interface. -/
   continuous_on : ContinuousOn (path : ℝ → M) (Set.Icc 0 1)
   /-- Constant-speed normalization in the canonical extended distance. -/
   constant_speed :
