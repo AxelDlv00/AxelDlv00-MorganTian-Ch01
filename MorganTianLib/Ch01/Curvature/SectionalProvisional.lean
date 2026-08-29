@@ -303,6 +303,55 @@ theorem sectionalCurvatureAt_eq_zero_of_not_linearIndependent
   rw [hnum, hden]
   simp
 
+/-- Pointwise constant sectional curvature can be tested on the intrinsic
+tangent two-plane quotient.  The explicit algebraic-curvature witness remains
+part of the statement until the selected-extension producer acquires the
+metric last-pair symmetry required by S07.
+
+This is the tangent-space form of Morgan--Tian Definition 1.6
+(`morganTian2007`): independent representatives have a strictly positive Gram
+determinant, while both sides of the diagonal identity vanish for dependent
+pairs. -/
+theorem hasConstantSectionalCurvatureAt_iff_sectionalCurvatureAtPlane
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    (p : M) (hR : IsAlgebraicCurvatureAt g p) (lam : ℝ) :
+    HasConstantSectionalCurvatureAt g p lam ↔
+      ∀ P : SectionalPlane (TangentSpace I p),
+        sectionalCurvatureAtPlane g p hR P = lam := by
+  constructor
+  · intro hconst P
+    change Quotient (sectionalPlaneSetoid (TangentSpace I p)) at P
+    refine Quotient.inductionOn P ?_
+    intro q
+    change sectionalCurvatureAtPlane g p hR (sectionalPlaneMk q) = lam
+    rw [sectionalCurvatureAtPlane_mk]
+    unfold sectionalCurvatureAt
+    rw [hconst q.x q.y]
+    have hpos : 0 < metricWedgeSqAt g p q.x q.y :=
+      (metricWedgeSqAt_pos_iff_linearIndependent g p q.x q.y).mpr q.independent
+    exact mul_div_cancel_right₀ lam hpos.ne'
+  · intro hplane x y
+    by_cases hxy : LinearIndependent ℝ ![x, y]
+    · have hpos : 0 < metricWedgeSqAt g p x y :=
+        (metricWedgeSqAt_pos_iff_linearIndependent g p x y).mpr hxy
+      have hvalue := hplane
+        (sectionalPlaneMk (⟨x, y, hxy⟩ : SectionalPlaneBasis (TangentSpace I p)))
+      rw [sectionalCurvatureAtPlane_mk] at hvalue
+      unfold sectionalCurvatureAt at hvalue
+      exact (div_eq_iff hpos.ne').mp hvalue
+    · letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+        ⟨g.toRiemannianMetric⟩
+      have hR' : IsAlgebraicCurvature
+          (fun a b c d => Provisional.curvature4 g p a b c d) := hR
+      have hnum : Provisional.curvature4 g p x y x y = 0 :=
+        curvature_diag_eq_zero_of_not_linearIndependent hR' hxy
+      have hden : metricWedgeSqAt g p x y = 0 := by
+        apply le_antisymm
+        · exact not_lt.mp (fun hpos => hxy
+            ((metricWedgeSqAt_pos_iff_linearIndependent g p x y).mp hpos))
+        · exact metricWedgeSqAt_nonneg g p x y
+      rw [hnum, hden, mul_zero]
+
 /-- Pointwise diagonal constant curvature is equivalent to the full
 source-ordered tensor identity, assuming the explicit algebraic witness. -/
 theorem hasConstantSectionalCurvatureAt_iff_tensor

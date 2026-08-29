@@ -122,6 +122,26 @@ theorem sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator
     (metricWedgeSqAt_nonneg g p x y).lt_of_ne (Ne.symm hgram)
   exact div_pos (h _ hphi) hgram_pos
 
+/-- A pointwise positive curvature operator is positive on every genuine
+tangent two-plane.  Linear independence supplies both nondegeneracy
+hypotheses required by
+`sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator`; the exact bundled
+metric is installed only locally to identify the exterior-square Gram form.
+
+The algebraic-curvature witness remains explicit until the S07 producer
+boundary proves the missing metric symmetries. -/
+theorem sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator_of_linearIndependent
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    (p : M) (hR : IsAlgebraicCurvatureAt g p)
+    (h : HasPositiveCurvatureOperator hR)
+    {x y : TangentSpace I p} (hxy : LinearIndependent ℝ ![x, y]) :
+    0 < sectionalCurvatureAt g p x y := by
+  apply sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator g p hR h
+  · letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    exact ιMulti_ne_zero_of_linearIndependent hxy
+  · exact ((metricWedgeSqAt_pos_iff_linearIndependent g p x y).mpr hxy).ne'
+
 end TangentSpace
 
 end Curvature
