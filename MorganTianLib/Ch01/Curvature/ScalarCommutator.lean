@@ -1,4 +1,3 @@
-import MorganTianLib.Ch01.Curvature.Tensoriality
 import Mathlib.Analysis.Calculus.VectorField
 import Mathlib.Geometry.Manifold.VectorField.LieBracket
 import Mathlib.Tactic.LinearCombination
@@ -18,7 +17,7 @@ Lie-bracket APIs are the pinned Mathlib interfaces used by this proof.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField
-open scoped Bundle ContDiff Manifold Matrix RealInnerProductSpace Topology
+open scoped Bundle ContDiff Manifold Matrix Topology
 
 noncomputable section
 

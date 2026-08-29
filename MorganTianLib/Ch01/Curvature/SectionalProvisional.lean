@@ -17,7 +17,7 @@ results.
 The producer is intentionally not promoted to a canonical Riemannian
 curvature tensor.  Every theorem that uses plane or operator symmetries keeps
 an explicit `IsAlgebraicCurvatureAt` witness for compatibility and dependency
-transparency; `Curvature.Symmetries.Provisional.curvature4_isAlgebraicCurvature`
+transparency; `Curvature.Provisional.curvature4_isAlgebraicCurvature`
 now supplies that witness for the selected producer.  The first-order
 canonical producer replacement remains open, as documented in
 `Curvature.Manifold` and the S06/S07 rows of `ROADMAP.md`.

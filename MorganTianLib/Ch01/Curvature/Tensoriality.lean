@@ -312,6 +312,9 @@ symmetry layer while keeping the selected-extension facade below separate.
 The hypotheses are written with the public `ContMDiffAt` type rather than the
 private abbreviation used by the proof above. -/
 
+/-- For smooth local tangent fields, the curvature commutator is additive in
+its first slot.  The explicit `ContMDiffAt ... ∞` hypotheses provide the two
+first-slot fields and the final field used by the nested derivatives. -/
 theorem curvatureField_add_left_smoothAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {X Y Z W : (x : M) → TangentSpace I x} {p : M}
@@ -323,6 +326,9 @@ theorem curvatureField_add_left_smoothAt
         curvatureField (Connection.leviCivitaConnection g) Y Z W p := by
   exact curvatureField_add_left_at g hX hY hW
 
+/-- For smooth local tangent fields, the curvature commutator is additive in
+its third `(1,3)` slot.  All four displayed fields are required to satisfy the
+explicit `ContMDiffAt ... ∞` hypotheses used by the local derivative proof. -/
 theorem curvatureField_add_right_smoothAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {X Y Z W : (x : M) → TangentSpace I x} {p : M}
@@ -335,6 +341,9 @@ theorem curvatureField_add_right_smoothAt
         curvatureField (Connection.leviCivitaConnection g) X Y W p := by
   exact curvatureField_add_right_at g hX hY hZ hW
 
+/-- A constant scalar factors out of the first curvature slot for smooth local
+tangent fields.  The explicit `ContMDiffAt ... ∞` hypotheses supply the local
+regularity needed by the nested derivatives. -/
 theorem curvatureField_smul_left_smoothAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {c : ℝ} {X Y W : (x : M) → TangentSpace I x} {p : M}
@@ -345,6 +354,9 @@ theorem curvatureField_smul_left_smoothAt
       c • curvatureField (Connection.leviCivitaConnection g) X Y W p := by
   exact curvatureField_smul_left_at g hX hY hW
 
+/-- A constant scalar factors out of the third `(1,3)` curvature slot for
+smooth local tangent fields.  The explicit `ContMDiffAt ... ∞` hypotheses are
+part of this smooth-local adapter's contract. -/
 theorem curvatureField_smul_right_const_smoothAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {c : ℝ} {X Y W : (x : M) → TangentSpace I x} {p : M}
@@ -359,8 +371,8 @@ theorem curvatureField_smul_right_const_smoothAt
 
 The following declarations concern `Curvature.Provisional.curvature` and
 `Curvature.Provisional.curvature4`.  They establish fiberwise laws for the
-selected-extension facade; they do not establish the pending arbitrary-smooth-
-extension application theorem. -/
+selected-extension facade; they do not establish the pending first-order
+(`MDiffAt`/arbitrary differentiable-extension) application theorem. -/
 
 namespace Provisional
 

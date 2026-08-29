@@ -9,7 +9,7 @@ to the selected-extension tangent curvature producer.  The generic
 construction remains in Curvature.Operator; the declarations here consume
 the pointwise sectional adapter and retain an explicit
 `IsAlgebraicCurvatureAt` witness for compatibility and dependency
-transparency.  `Curvature.Symmetries.Provisional.curvature4_isAlgebraicCurvature`
+transparency.  `Curvature.Provisional.curvature4_isAlgebraicCurvature`
 discharges that witness for the selected producer, while the first-order
 canonical producer replacement remains open.
 

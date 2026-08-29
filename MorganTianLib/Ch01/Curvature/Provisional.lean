@@ -10,7 +10,8 @@ deliberately not imported by the Chapter 1 umbrella.  The definitions and
 theorems below are private implementation checks, not a public coordinate
 facade.  This file is distinct from the public-but-provisional
 `Curvature.Provisional` namespace in `Curvature/Manifold.lean`, whose
-arbitrary-extension replacement trigger is recorded in `ROADMAP.md`.
+first-order (`MDiffAt`/arbitrary differentiable-extension) replacement trigger
+is recorded in `ROADMAP.md`.
 
 Source: Morgan--Tian `morganTian2007`, Definition 1.4 and Claim 1.5,
 retained arXiv printed pp. 37--38.

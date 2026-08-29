@@ -777,7 +777,6 @@ theorem curvature4Field_eq_of_value_eq
     {X X' Y Y' Z Z' W W' : (x : M) → TangentSpace I x} {p : M}
     (hX : SmoothAt X p) (hX' : SmoothAt X' p)
     (hY : SmoothAt Y p) (hY' : SmoothAt Y' p)
-    (_hZ : SmoothAt Z p) (_hZ' : SmoothAt Z' p)
     (hW : SmoothAt W p) (hW' : SmoothAt W' p)
     (hXX' : X p = X' p) (hYY' : Y p = Y' p)
     (hZZ' : Z p = Z' p) (hWW' : W p = W' p) :
