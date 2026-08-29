@@ -356,6 +356,36 @@ theorem sectionalCurvaturePlane_model (lam : ℝ)
     simpa [wedgeSq, real_inner_comm, pow_two] using (ne_of_gt hpos)
   field_simp [hden]
 
+/-- The intrinsic plane evaluator is constantly `lam` exactly when the
+underlying algebraic curvature form has constant curvature `lam`.  The forward
+direction uses a representative of each quotient plane and the strict Gram
+criterion; the reverse direction is the genuine-plane converse supplied by
+`hasConstantCurvature_iff_sectionalCurvature`.
+
+This is the quotient-level form of Morgan--Tian Definition 1.6
+(`morganTian2007`).  It is deliberately stated only for the algebraic fibre
+layer, before the selected-extension tangent producer is discharged. -/
+theorem hasConstantCurvature_iff_sectionalCurvaturePlane
+    {B : W → W → W → W → ℝ} (hB : IsAlgebraicCurvature B) (lam : ℝ) :
+    HasConstantCurvature B lam ↔
+      ∀ P : SectionalPlane W, sectionalCurvaturePlane hB P = lam := by
+  constructor
+  · intro hconst P
+    change Quotient (sectionalPlaneSetoid W) at P
+    refine Quotient.inductionOn P ?_
+    intro p
+    change sectionalCurvaturePlane hB (sectionalPlaneMk p) = lam
+    rw [sectionalCurvaturePlane_mk]
+    exact (hasConstantCurvature_iff_sectionalCurvature hB lam).mp hconst
+      p.x p.y p.independent
+  · intro hplane
+    apply (hasConstantCurvature_iff_sectionalCurvature hB lam).mpr
+    intro x y hxy
+    have hvalue := hplane
+      (sectionalPlaneMk (⟨x, y, hxy⟩ : SectionalPlaneBasis W))
+    change sectionalCurvature B x y = lam at hvalue
+    exact hvalue
+
 /-! ### Tangent-space-compatible plain bilinear form -/
 
 /-- The bilinear-form version of the plane quotient.  This is the form used
