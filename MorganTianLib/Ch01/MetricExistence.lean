@@ -44,6 +44,59 @@ namespace MorganTianLib
 namespace Ch01
 namespace MetricExistence
 
+/-! ## Finite-dimensional boundedness -/
+
+/-- **Math.** A positive-definite finite-dimensional bilinear form has a bounded
+unit sublevel set.  The metric structure records this boundedness separately
+from positivity; this coercivity lemma discharges that field for the explicit
+cone form and for later metric constructions. -/
+theorem isVonNBounded_of_posDef {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
+    [FiniteDimensional ℝ F] (q : F →L[ℝ] F →L[ℝ] ℝ)
+    (hpos : ∀ v : F, v ≠ 0 → 0 < q v v) :
+    Bornology.IsVonNBounded ℝ {v : F | q v v < 1} := by
+  rcases subsingleton_or_nontrivial F with hs | hn
+  · exact Set.Finite.isVonNBounded (𝕜 := ℝ) (Set.toFinite _)
+  have hcompact : IsCompact (Metric.sphere (0 : F) 1) := isCompact_sphere 0 1
+  have hne : (Metric.sphere (0 : F) 1).Nonempty :=
+    NormedSpace.sphere_nonempty.mpr zero_le_one
+  have hcont : Continuous fun v : F => q v v := q.continuous.clm_apply continuous_id
+  obtain ⟨v₀, hv₀mem, hv₀min⟩ := hcompact.exists_isMinOn hne hcont.continuousOn
+  set c := q v₀ v₀ with hc_def
+  have hv₀ne : v₀ ≠ 0 := by
+    intro h
+    rw [mem_sphere_iff_norm, sub_zero, h, norm_zero] at hv₀mem
+    norm_num at hv₀mem
+  have hc : 0 < c := hpos v₀ hv₀ne
+  have hcoer : ∀ v : F, c * ‖v‖ ^ 2 ≤ q v v := by
+    intro v
+    rcases eq_or_ne v 0 with rfl | hv
+    · simp
+    · have hnv : ‖v‖ ≠ 0 := norm_ne_zero_iff.mpr hv
+      set u := ‖v‖⁻¹ • v with hu
+      have hmem : u ∈ Metric.sphere (0 : F) 1 := by
+        rw [mem_sphere_iff_norm, sub_zero, hu, norm_smul, norm_inv, norm_norm,
+          inv_mul_cancel₀ hnv]
+      have hqu : c ≤ q u u := hv₀min hmem
+      have hexp : q v v = ‖v‖ ^ 2 * q u u := by
+        rw [hu]
+        simp only [map_smul, smul_apply, smul_eq_mul]
+        field_simp
+      rw [hexp]
+      nlinarith [hqu, sq_nonneg ‖v‖]
+  apply Bornology.IsVonNBounded.subset _
+    (NormedSpace.isVonNBounded_ball ℝ F (Real.sqrt (1 / c) + 1))
+  intro v hv
+  simp only [Set.mem_setOf_eq] at hv
+  rw [Metric.mem_ball, dist_zero_right]
+  have h1 : c * ‖v‖ ^ 2 < 1 := lt_of_le_of_lt (hcoer v) hv
+  have h2 : ‖v‖ ^ 2 < 1 / c := by
+    rw [lt_div_iff₀ hc]
+    linarith [mul_comm c (‖v‖ ^ 2)]
+  have h3 : ‖v‖ < Real.sqrt (1 / c) := by
+    rw [show ‖v‖ = Real.sqrt (‖v‖ ^ 2) by rw [Real.sqrt_sq (norm_nonneg _)]]
+    exact Real.sqrt_lt_sqrt (sq_nonneg _) h2
+  linarith [Real.sqrt_nonneg (1 / c)]
+
 /-! ## A private metric on the model fiber -/
 
 private structure ModelMetric (F : Type*) [NormedAddCommGroup F] [NormedSpace ℝ F] where

@@ -5,6 +5,8 @@ import Mathlib.Tactic.Module
 import Mathlib.Geometry.Manifold.Riemannian.Basic
 import Mathlib.Geometry.Manifold.MFDeriv.SpecificFunctions
 import Mathlib.Topology.Algebra.Module.FiniteDimensionBilinear
+import MorganTianLib.Ch01.MetricExistence
+import MorganTianLib.Ch01.Metric.Pullback
 import MorganTianLib.Ch01.Curvature.Operator
 
 /-!
@@ -19,7 +21,10 @@ the intrinsic splitting
 
 `Λ² (V × ℝ) ≃ₗ Λ² V × V`.
 
-The exported block form is the exact algebraic bilinear shape of the cone
+The exported `coneMetric` is Mathlib's canonical bundled smooth metric.  Its
+inner form is `s² g_N + ds²`, assembled from pullbacks along the product
+projection and the intrinsic radial coordinate.  The exported block form is
+the exact algebraic bilinear shape of the cone
 curvature calculation in the source convention: `s² A` on the horizontal block
 and zero on the mixed block (the pure radial wedge is vacuous in `Λ²`).  `A` is
 deliberately an input bilinear form, rather than a new curvature
@@ -30,14 +35,14 @@ endomorphism.  Consequently the pointwise Levi--Civita curvature calculation
 and the eigenvalue statement `s⁻² (λ - 1)` are not asserted here; this module is
 the reusable algebraic consumer for that later interface.
 
-The decomposition and normalization follow Morgan--Tian, Definition 1.14,
+The metric, decomposition, and normalization follow Morgan--Tian, Definition 1.14,
 Proposition 1.15, and Corollary 1.16, printed pp. 40--41, with the
 exterior-power universal property from the
 pinned Mathlib `LinearAlgebra.ExteriorPower.Basic` API.  The product tangent
-projection uses Mathlib's `mfderiv_fst`/`mfderiv_snd` declarations; the
-pointwise form is not yet assembled into a `Bundle.ContMDiffRiemannianMetric`
-because the pinned bundle API has no prescribed pullback/product
-bilinear-section constructor.  The S08 consumer below is intentionally a
+projection uses Mathlib's `mfderiv_fst`/`mfderiv_snd` declarations.  The pinned
+bundle API has no prescribed pullback/product bilinear-section constructor, so
+`Metric.Pullback` supplies the local-trivialization smoothness bridge while
+retaining Mathlib's `Bundle.ContMDiffRiemannianMetric`.  The S08 consumer below is intentionally a
 fixed inner-product-space model: bundled tangent fibres do not install a
 global `InnerProductSpace`, so a future manifold adapter must use the existing
 bilinear-form interface rather than treating this model as that adapter.  Its
@@ -83,6 +88,16 @@ def coneRadius {N : Type*} (q : Cone N) : ℝ := q.2
 
 theorem coneRadius_pos {N : Type*} (q : Cone N) : 0 < coneRadius q :=
   q.2.property
+
+/-- The intrinsic radial coordinate never vanishes on the cone. -/
+@[simp] theorem coneRadius_ne_zero {N : Type*} (q : Cone N) :
+    coneRadius q ≠ 0 :=
+  (coneRadius_pos q).ne'
+
+/-- The square of the positive radial coordinate is strictly positive. -/
+theorem coneRadius_sq_pos {N : Type*} (q : Cone N) :
+    0 < (coneRadius q) ^ 2 :=
+  sq_pos_of_pos (coneRadius_pos q)
 
 /-- The radial coordinate is smooth on the product manifold. -/
 theorem coneRadius_contMDiff :
@@ -133,6 +148,49 @@ def coneTangentProjection (q : Cone N) :
       (mfderiv (I.prod 𝓘(ℝ, ℝ)) 𝓘(ℝ, ℝ)
         (Prod.snd : Cone N → (positiveReal : Type _)) q))
 
+/-- The canonical tangent equivalence for the product cone.
+
+Its forward map is `coneTangentProjection`; its inverse is the definitional
+product-model identification supplied by Mathlib. -/
+def coneTangentEquiv (q : Cone N) :
+    TangentSpace (I.prod 𝓘(ℝ, ℝ)) q ≃ₗ[ℝ] (TangentSpace I q.1 × ℝ) where
+  toLinearMap := (coneTangentProjection (I := I) q).toLinearMap
+  invFun := fun u => u
+  left_inv := by
+    intro u
+    have hproj : coneTangentProjection (I := I) q u = (show E × ℝ from u) := by
+      change E × ℝ at u
+      rw [coneTangentProjection, ContinuousLinearMap.prod_apply, mfderiv_fst,
+        mfderiv_snd]
+      rfl
+    change (show E × ℝ from coneTangentProjection (I := I) q u) =
+      (show E × ℝ from u)
+    exact hproj
+  right_inv := by
+    intro u
+    change E × ℝ at u
+    have hproj : coneTangentProjection (I := I) q
+        (show TangentSpace (I.prod 𝓘(ℝ, ℝ)) q from u) = u := by
+      change E × ℝ at u
+      rw [coneTangentProjection, ContinuousLinearMap.prod_apply, mfderiv_fst,
+        mfderiv_snd]
+      rfl
+    simpa using hproj
+
+omit [IsManifold I ∞ N] [FiniteDimensional ℝ E] in
+/-- Applying the tangent equivalence exposes the canonical projection. -/
+@[simp] theorem coneTangentEquiv_apply (q : Cone N)
+    (u : TangentSpace (I.prod 𝓘(ℝ, ℝ)) q) :
+    coneTangentEquiv (I := I) q u = coneTangentProjection (I := I) q u :=
+  rfl
+
+omit [IsManifold I ∞ N] [FiniteDimensional ℝ E] in
+/-- The inverse tangent equivalence is the canonical product inclusion. -/
+@[simp] theorem coneTangentEquiv_symm_apply (q : Cone N)
+    (u : TangentSpace I q.1 × ℝ) :
+    (coneTangentEquiv (I := I) q).symm u = u :=
+  rfl
+
 omit [IsManifold I ∞ N] [FiniteDimensional ℝ E] in
 private theorem coneTangentProjection_apply_model (q : Cone N)
     (u : TangentSpace (I.prod 𝓘(ℝ, ℝ)) q) :
@@ -147,8 +205,8 @@ private theorem coneTangentProjection_apply_model (q : Cone N)
 /-- The pointwise open-cone bilinear form.
 
 At `(x,s)` it is `s² g_x` on horizontal components plus the standard radial
-term.  The definition is kept as a pointwise form until the hom-bundle
-smoothness constructor and intrinsic cone curvature producer are available.
+term.  It is packaged as `coneMetric` below through the native hom-bundle
+smoothness API.
 The explicit finite-dimensional hypothesis is used only by
 `LinearMap.toContinuousBilinearMap` to package this pointwise bilinear map. -/
 noncomputable def coneForm
@@ -362,6 +420,224 @@ theorem coneForm_self_pos
   · have hpos : 0 < u.2 * u.2 := mul_self_pos.mpr hrad_ne
     nlinarith [mul_nonneg (sq_nonneg (coneRadius q)) hbase]
 
+/-! ## The bundled cone metric -/
+
+private lemma mfderiv_positiveReal_val (r : positiveReal) :
+    mfderiv 𝓘(ℝ, ℝ) 𝓘(ℝ, ℝ) (Subtype.val : positiveReal → ℝ) r =
+      ContinuousLinearMap.id ℝ ℝ := by
+  rw [show (Subtype.val : positiveReal → ℝ) =
+      ⇑(extChartAt 𝓘(ℝ, ℝ) r) by rfl]
+  exact mfderiv_extChartAt_self
+
+omit [IsManifold I ∞ N] [FiniteDimensional ℝ E] in
+/-- The differential of the cone radius is the radial tangent component. -/
+@[simp] theorem mfderiv_coneRadius (q : Cone N)
+    (u : TangentSpace (I.prod 𝓘(ℝ, ℝ)) q) :
+    mfderiv (I.prod 𝓘(ℝ, ℝ)) 𝓘(ℝ, ℝ) (coneRadius (N := N)) q u =
+      (show E × ℝ from u).2 := by
+  have hval : MDifferentiableAt 𝓘(ℝ, ℝ) 𝓘(ℝ, ℝ)
+      (Subtype.val : positiveReal → ℝ) q.2 :=
+    (contMDiff_subtype_val (I := 𝓘(ℝ, ℝ)) (n := ∞)
+      (U := positiveReal)).mdifferentiableAt (by simp)
+  have hsnd : MDifferentiableAt (I.prod 𝓘(ℝ, ℝ)) 𝓘(ℝ, ℝ)
+      (Prod.snd : Cone N → positiveReal) q :=
+    (contMDiff_snd (I := I) (J := 𝓘(ℝ, ℝ))
+      (n := ∞)).mdifferentiableAt (by simp)
+  have hcomp : coneRadius (N := N) =
+      (Subtype.val : positiveReal → ℝ) ∘
+        (Prod.snd : Cone N → positiveReal) := by
+    rfl
+  rw [hcomp, mfderiv_comp q hval hsnd, mfderiv_snd,
+    mfderiv_positiveReal_val]
+  rfl
+
+private noncomputable def coneHorizontalForm
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) (q : Cone N) :
+    TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ]
+      TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ] ℝ :=
+  pullbackFormOf (fun y => g.inner y) (Prod.fst : Cone N → N) q
+
+omit [FiniteDimensional ℝ E] in
+private theorem coneHorizontalForm_contMDiff
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) :
+    ContMDiff (I.prod 𝓘(ℝ, ℝ))
+      ((I.prod 𝓘(ℝ, ℝ)).prod
+        𝓘(ℝ, (E × ℝ) →L[ℝ] (E × ℝ) →L[ℝ] ℝ)) ∞
+      (fun q => (⟨q, coneHorizontalForm g q⟩ :
+        Bundle.TotalSpace ((E × ℝ) →L[ℝ] (E × ℝ) →L[ℝ] ℝ)
+          (fun q => TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ]
+            TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ] ℝ))) :=
+  pullbackForm_contMDiff g contMDiff_fst
+
+private noncomputable def coneRadialForm (q : Cone N) :
+    TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ]
+      TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ] ℝ :=
+  pullbackFormOf (I := I.prod 𝓘(ℝ, ℝ)) (I' := 𝓘(ℝ, ℝ))
+    (M := Cone N) (M' := ℝ)
+    (fun _ : ℝ => (innerSL ℝ : ℝ →L[ℝ] ℝ →L[ℝ] ℝ))
+    (coneRadius (N := N)) q
+
+omit [FiniteDimensional ℝ E] in
+private theorem coneRadialForm_contMDiff :
+    ContMDiff (I.prod 𝓘(ℝ, ℝ))
+      ((I.prod 𝓘(ℝ, ℝ)).prod
+        𝓘(ℝ, (E × ℝ) →L[ℝ] (E × ℝ) →L[ℝ] ℝ)) ∞
+      (fun q : Cone N => (⟨q, coneRadialForm (I := I) (N := N) q⟩ :
+        Bundle.TotalSpace ((E × ℝ) →L[ℝ] (E × ℝ) →L[ℝ] ℝ)
+          (fun q => TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ]
+            TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ] ℝ))) :=
+  by
+    exact contMDiff_pullbackFormOf
+      (b := fun _ : ℝ => (innerSL ℝ : ℝ →L[ℝ] ℝ →L[ℝ] ℝ))
+      (by
+        intro y
+        rw [Bundle.contMDiffAt_section]
+        convert! contMDiffAt_const
+          (c := (innerSL ℝ : ℝ →L[ℝ] ℝ →L[ℝ] ℝ))
+        ext
+        simp [hom_trivializationAt_apply, ContinuousLinearMap.inCoordinates]
+        rfl
+        )
+      (coneRadius_contMDiff (I := I) (N := N))
+
+omit [IsManifold I ∞ N] [FiniteDimensional ℝ E] in
+private theorem coneRadialForm_apply (q : Cone N)
+    (u v : TangentSpace (I.prod 𝓘(ℝ, ℝ)) q) :
+    coneRadialForm (I := I) q u v =
+      (show E × ℝ from u).2 * (show E × ℝ from v).2 := by
+  unfold coneRadialForm
+  rw [pullbackFormOf_apply]
+  have hval : MDifferentiableAt 𝓘(ℝ, ℝ) 𝓘(ℝ, ℝ)
+      (Subtype.val : positiveReal → ℝ) q.2 :=
+    (contMDiff_subtype_val (I := 𝓘(ℝ, ℝ)) (n := ∞)
+      (U := positiveReal)).mdifferentiableAt (by simp)
+  have hsnd : MDifferentiableAt (I.prod 𝓘(ℝ, ℝ)) 𝓘(ℝ, ℝ)
+      (Prod.snd : Cone N → positiveReal) q :=
+    (contMDiff_snd (I := I) (J := 𝓘(ℝ, ℝ))
+      (n := ∞)).mdifferentiableAt (by simp)
+  have hcomp : coneRadius (N := N) =
+      (Subtype.val : positiveReal → ℝ) ∘
+        (Prod.snd : Cone N → positiveReal) := by
+    rfl
+  rw [hcomp, mfderiv_comp q hval hsnd, mfderiv_snd,
+    mfderiv_positiveReal_val]
+  change innerSL ℝ ((ContinuousLinearMap.id ℝ ℝ)
+      ((show E × ℝ from u).2))
+      ((ContinuousLinearMap.id ℝ ℝ) ((show E × ℝ from v).2)) = _
+  simp [innerSL_apply_apply]
+  ring
+
+private theorem coneForm_eq_pullback
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) (q : Cone N)
+    (u v : TangentSpace (I.prod 𝓘(ℝ, ℝ)) q) :
+    coneForm g q u v =
+      (coneRadius q) ^ 2 * coneHorizontalForm g q u v +
+        coneRadialForm (I := I) q u v := by
+  rw [coneForm_apply, coneHorizontalForm, pullbackFormOf_apply, mfderiv_fst,
+    coneRadialForm_apply]
+  rw [coneTangentProjection_apply_model (I := I),
+    coneTangentProjection_apply_model (I := I)]
+  rfl
+
+/-- The pointwise cone form is a smooth hom-bundle section. -/
+theorem coneForm_contMDiff
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) :
+    ContMDiff (I.prod 𝓘(ℝ, ℝ))
+      ((I.prod 𝓘(ℝ, ℝ)).prod
+        𝓘(ℝ, (E × ℝ) →L[ℝ] (E × ℝ) →L[ℝ] ℝ)) ∞
+      (fun q => (⟨q, coneForm g q⟩ :
+        Bundle.TotalSpace ((E × ℝ) →L[ℝ] (E × ℝ) →L[ℝ] ℝ)
+          (fun q => TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ]
+            TangentSpace (I.prod 𝓘(ℝ, ℝ)) q →L[ℝ] ℝ))) := by
+  have hscale : ContMDiff (I.prod 𝓘(ℝ, ℝ)) 𝓘(ℝ, ℝ) ∞
+      (fun q : Cone N => (coneRadius q) ^ 2) :=
+    (coneRadius_contMDiff (I := I) (N := N)).pow 2
+  have hsum :=
+    (hscale.smul_section (coneHorizontalForm_contMDiff (I := I) g)).add_section
+      (coneRadialForm_contMDiff (I := I) (N := N))
+  refine hsum.congr ?_
+  intro q
+  refine Bundle.TotalSpace.ext rfl ?_
+  apply heq_of_eq
+  ext u v
+  change coneForm g q u v =
+    (coneRadius q) ^ 2 * coneHorizontalForm g q u v +
+      coneRadialForm (I := I) q u v
+  exact (coneForm_eq_pullback (I := I) g q u v)
+
+/-- The canonical smooth Riemannian metric `s² g_N + ds²` on the open cone. -/
+noncomputable def coneMetric
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) :
+    Bundle.ContMDiffRiemannianMetric (I.prod 𝓘(ℝ, ℝ)) ∞ (E × ℝ)
+      (TangentSpace (I.prod 𝓘(ℝ, ℝ)) : Cone N → Type _) where
+  inner := coneForm g
+  symm q u v := coneForm_symm g q u v
+  pos q u hu := coneForm_self_pos g q u hu
+  isVonNBounded q :=
+    MetricExistence.isVonNBounded_of_posDef (F := E × ℝ) (coneForm g q)
+      (fun u hu => coneForm_self_pos g q u hu)
+  contMDiff := coneForm_contMDiff g
+
+/-- The bundled metric stores the pointwise cone form as its inner field. -/
+@[simp] theorem coneMetric_inner
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) (q : Cone N) :
+    (coneMetric (I := I) g).inner q = coneForm g q :=
+  rfl
+
+/-- Evaluation of the bundled metric is definitionally the cone form. -/
+@[simp] theorem coneMetric_apply
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) (q : Cone N)
+    (u v : TangentSpace (I.prod 𝓘(ℝ, ℝ)) q) :
+    (coneMetric (I := I) g).inner q u v = coneForm g q u v :=
+  rfl
+
+/-- The defining cone-metric formula in the canonical product tangent model. -/
+theorem coneMetric_inner_apply
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) (q : Cone N)
+    (u v : TangentSpace (I.prod 𝓘(ℝ, ℝ)) q) :
+    (coneMetric (I := I) g).inner q u v =
+      (coneRadius q) ^ 2 *
+          g.inner q.1 (show E × ℝ from u).1 (show E × ℝ from v).1 +
+        (show E × ℝ from u).2 * (show E × ℝ from v).2 := by
+  rw [coneMetric_inner, coneForm_apply]
+  rw [coneTangentProjection_apply_model (I := I),
+    coneTangentProjection_apply_model (I := I)]
+  rfl
+
+/-- **Math.** In the product tangent splitting, the cone metric is exactly
+`r² g(u,v) + a b` on `(u,a)` and `(v,b)`. -/
+@[simp] theorem coneMetric_metricInner_mk
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) (x : N) (r : positiveReal)
+    (u v : TangentSpace I x) (a b : ℝ) :
+    (coneMetric (I := I) g).inner (x, r) (u, a) (v, b) =
+      (r : ℝ) ^ 2 * g.inner x u v + a * b := by
+  rw [coneMetric_apply, coneForm_apply]
+  rw [coneTangentProjection_apply_model (I := I),
+    coneTangentProjection_apply_model (I := I)]
+  rfl
+
+/-- **Math.** On arbitrary product tangent vectors, the cone metric is
+`r² g(u_N,v_N) + u_r v_r`. -/
+@[simp] theorem coneMetric_metricInner_prod
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : N → Type _)) (x : N) (r : positiveReal)
+    (u v : TangentSpace (I.prod 𝓘(ℝ, ℝ)) (x, r)) :
+    (coneMetric (I := I) g).inner (x, r) u v =
+      (r : ℝ) ^ 2 * g.inner x u.1 v.1 + u.2 * v.2 := by
+  rw [coneMetric_apply, coneForm_apply]
+  rw [coneTangentProjection_apply_model (I := I),
+    coneTangentProjection_apply_model (I := I)]
+  rfl
+
 variable {V : Type*} [AddCommGroup V] [Module ℝ V]
 
 /-! ## The horizontal/mixed exterior-square decomposition -/
@@ -551,6 +827,19 @@ private theorem mixedPart_map_inl :
   rw [coneWedgeMixed_apply, coneWedgeMixedPart_iMulti]
   simp
 
+/-- The repeated unit radial generator has zero exterior square. -/
+@[simp] theorem coneWedge_radial_self :
+    ιMulti ℝ 2 ![((0 : V), (1 : ℝ)), ((0 : V), (1 : ℝ))] = 0 := by
+  apply (ιMulti ℝ 2).map_eq_zero_of_eq
+    (v := ![((0 : V), (1 : ℝ)), ((0 : V), (1 : ℝ))])
+    (i := (0 : Fin 2)) (j := (1 : Fin 2)) rfl
+  exact Fin.zero_ne_one
+
+/-- The mixed inclusion is injective, by its explicit left inverse. -/
+theorem coneWedgeMixed_injective {u v : V}
+    (h : coneWedgeMixed u = coneWedgeMixed v) : u = v := by
+  simpa using congrArg coneWedgeMixedPart h
+
 @[simp] theorem coneWedgeSplit_mixed (u : V) :
     coneWedgeSplit (coneWedgeMixed u) = (0, u) := by
   apply Prod.ext
@@ -620,6 +909,15 @@ def coneWedgeBlockForm (s : ℝ)
     coneWedgeBlockForm s A φ ψ =
       s ^ 2 * A (coneWedgeSplit φ).1 (coneWedgeSplit ψ).1 :=
   rfl
+
+/-- A nonnegative horizontal input gives a nonnegative cone block on the
+diagonal; the mixed sector remains in the kernel. -/
+theorem coneWedgeBlockForm_self_nonneg (s : ℝ)
+    (A : ⋀[ℝ]^2 V →ₗ[ℝ] ⋀[ℝ]^2 V →ₗ[ℝ] ℝ)
+    (hA : ∀ φ, 0 ≤ A φ φ) (φ : ⋀[ℝ]^2 (V × ℝ)) :
+    0 ≤ coneWedgeBlockForm s A φ φ := by
+  rw [coneWedgeBlockForm_apply]
+  exact mul_nonneg (sq_nonneg s) (hA _)
 
 @[simp] theorem coneWedgeBlockForm_equiv (s : ℝ)
     (A : ⋀[ℝ]^2 V →ₗ[ℝ] ⋀[ℝ]^2 V →ₗ[ℝ] ℝ)
@@ -800,6 +1098,107 @@ theorem coneCurvatureModel_scale
       c ^ 2 * coneCurvatureModel s hB φ ψ := by
   exact coneCurvatureBlock_scale s c
     (coneCurvatureDifferenceOperator hB) φ ψ
+
+/-! ### Global low-dimensional regressions -/
+
+/-- In base dimension zero the S08 difference operator vanishes on the whole
+exterior square, including the mixed-sector decomposition. -/
+theorem coneCurvatureDifferenceOperator_fin_zero
+    (K : ℝ) :
+    coneCurvatureDifferenceOperator
+      (B := fun x y z w : EuclideanSpace ℝ (Fin 0) =>
+        Curvature.modelCurvature4 K x y z w)
+      (Curvature.isAlgebraicCurvature_modelCurvature4
+        (W := EuclideanSpace ℝ (Fin 0)) K) = 0 := by
+  refine exteriorPower.linearMap_ext ?_
+  apply DFunLike.ext _ _
+  intro a
+  refine exteriorPower.linearMap_ext ?_
+  apply DFunLike.ext _ _
+  intro b
+  have ha : a = ![a 0, a 1] := by
+    ext i
+    fin_cases i <;> rfl
+  have hb : b = ![b 0, b 1] := by
+    ext i
+    fin_cases i <;> rfl
+  rw [ha, hb]
+  simp only [LinearMap.compAlternatingMap_apply]
+  rw [coneCurvatureDifferenceOperator_ιMulti]
+  change Curvature.modelCurvature4 K (a 0) (a 1) (b 0) (b 1) -
+      Curvature.wedgeInner (a 0) (a 1) (b 0) (b 1) = 0
+  rw [Curvature.modelCurvature4_fin_zero K,
+    show Curvature.wedgeInner (a 0) (a 1) (b 0) (b 1) = 0 by
+      simp [Curvature.wedgeInner,
+        Subsingleton.elim (a 0) (0 : EuclideanSpace ℝ (Fin 0)),
+        Subsingleton.elim (a 1) (0 : EuclideanSpace ℝ (Fin 0)),
+        Subsingleton.elim (b 0) (0 : EuclideanSpace ℝ (Fin 0)),
+        Subsingleton.elim (b 1) (0 : EuclideanSpace ℝ (Fin 0))]]
+  simp
+
+/-- In base dimension one the S08 difference operator vanishes on the whole
+exterior square, while the cone mixed factor remains explicitly available. -/
+theorem coneCurvatureDifferenceOperator_fin_one
+    (K : ℝ) :
+    coneCurvatureDifferenceOperator
+      (B := fun x y z w : EuclideanSpace ℝ (Fin 1) =>
+        Curvature.modelCurvature4 K x y z w)
+      (Curvature.isAlgebraicCurvature_modelCurvature4
+        (W := EuclideanSpace ℝ (Fin 1)) K) = 0 := by
+  refine exteriorPower.linearMap_ext ?_
+  apply DFunLike.ext _ _
+  intro a
+  refine exteriorPower.linearMap_ext ?_
+  apply DFunLike.ext _ _
+  intro b
+  have ha : a = ![a 0, a 1] := by
+    ext i
+    fin_cases i <;> rfl
+  have hb : b = ![b 0, b 1] := by
+    ext i
+    fin_cases i <;> rfl
+  rw [ha, hb]
+  simp only [LinearMap.compAlternatingMap_apply]
+  rw [coneCurvatureDifferenceOperator_ιMulti]
+  change Curvature.modelCurvature4 K (a 0) (a 1) (b 0) (b 1) -
+      Curvature.wedgeInner (a 0) (a 1) (b 0) (b 1) = 0
+  rw [Curvature.modelCurvature4_fin_one K,
+    show Curvature.wedgeInner (a 0) (a 1) (b 0) (b 1) = 0 by
+      simpa [Curvature.modelCurvature4, Curvature.wedgeInner] using
+        (Curvature.modelCurvature4_fin_one 1 (a 0) (a 1) (b 0) (b 1))]
+  simp
+
+/-- The complete cone model is zero over a zero-dimensional base. -/
+theorem coneCurvatureModel_fin_zero
+    (s K : ℝ) (φ ψ : ⋀[ℝ]^2 (EuclideanSpace ℝ (Fin 0) × ℝ)) :
+    coneCurvatureModel s
+        (Curvature.isAlgebraicCurvature_modelCurvature4
+          (W := EuclideanSpace ℝ (Fin 0)) K) φ ψ = 0 := by
+  rw [coneCurvatureModel, coneCurvatureBlock_apply]
+  change s ^ 2 * (coneCurvatureDifferenceOperator
+      (B := fun x y z w : EuclideanSpace ℝ (Fin 0) =>
+        Curvature.modelCurvature4 K x y z w)
+      (Curvature.isAlgebraicCurvature_modelCurvature4
+        (W := EuclideanSpace ℝ (Fin 0)) K)
+      (coneWedgeSplit φ).1 (coneWedgeSplit ψ).1) = 0
+  rw [coneCurvatureDifferenceOperator_fin_zero]
+  simp
+
+/-- The complete cone model is zero over a one-dimensional base. -/
+theorem coneCurvatureModel_fin_one
+    (s K : ℝ) (φ ψ : ⋀[ℝ]^2 (EuclideanSpace ℝ (Fin 1) × ℝ)) :
+    coneCurvatureModel s
+        (Curvature.isAlgebraicCurvature_modelCurvature4
+          (W := EuclideanSpace ℝ (Fin 1)) K) φ ψ = 0 := by
+  rw [coneCurvatureModel, coneCurvatureBlock_apply]
+  change s ^ 2 * (coneCurvatureDifferenceOperator
+      (B := fun x y z w : EuclideanSpace ℝ (Fin 1) =>
+        Curvature.modelCurvature4 K x y z w)
+      (Curvature.isAlgebraicCurvature_modelCurvature4
+        (W := EuclideanSpace ℝ (Fin 1)) K)
+      (coneWedgeSplit φ).1 (coneWedgeSplit ψ).1) = 0
+  rw [coneCurvatureDifferenceOperator_fin_one]
+  simp
 
 /-- Flat-base component probe: setting the supplied base curvature form to zero
 leaves exactly the negative metric-wedge term. -/
