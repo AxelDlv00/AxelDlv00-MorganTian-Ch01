@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Calculus.VectorField
 import Mathlib.Geometry.Manifold.VectorField.LieBracket
+import Mathlib.Geometry.Manifold.VectorBundle.ContMDiffSection
 import Mathlib.Tactic.LinearCombination
 
 /-!
