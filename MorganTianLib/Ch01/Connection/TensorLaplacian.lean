@@ -6,9 +6,12 @@ Released under Apache 2.0 license as described in the file LICENSES/Apache-2.0.t
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import Mathlib.Analysis.InnerProductSpace.Dual
+import Mathlib.Analysis.InnerProductSpace.GramMatrix
 import Mathlib.Analysis.InnerProductSpace.Trace
 import Mathlib.Geometry.Manifold.VectorBundle.CovariantDerivative.Metric
 import Mathlib.Geometry.Manifold.VectorBundle.Tensoriality
+import Mathlib.LinearAlgebra.Matrix.Adjugate
+import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
 # Finite tensor covariant derivatives and the connection Laplacian
@@ -45,9 +48,18 @@ interface. Until a bundled, extension-independent producer lands, this module
 is a provisional direct-import leaf and is deliberately absent from the stable
 `MorganTianLib.Ch01` umbrella. Before S13's Bochner consumer is accepted, that
 producer must be proved and the consumer migrated; otherwise this raw leaf
-remains direct-only. The unconditional constant-scalar laws below use the
-totalized `mvfderiv`/`mfderiv` API and concern only the algebraic tensor
-argument; they do not discharge the producer-level smoothness obligations.
+remains direct-only. The indexed producer below handles arbitrary finite
+`(p,q)` evaluations under an explicit metric-dual regularity witness; its
+`p = 0` specialization supplies the witness-free evaluation-level covariant,
+scalar, and one-form adapters. The witness is kept visible because the
+evaluation-level
+`IsSmoothCovectorSection` predicate does not itself provide smoothness of the
+metric-dual section. The local-frame covector bridge records the dual-action
+`-Γ` sign; inverse-Gram coefficient regularity discharges that premise for the
+canonical local-frame wrapper. The unconditional constant-scalar laws below
+use the totalized `mvfderiv`/`mfderiv` API and concern only the displayed
+algebraic operations; they do not discharge the remaining producer-level
+smoothness obligations.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
 discussion preceding `lapformula`, pp. 39--40, bibliography key
@@ -56,8 +68,11 @@ discussion preceding `lapformula`, pp. 39--40, bibliography key
 `Geometry.Manifold.VectorBundle.CovariantDerivative.Metric`,
 `Geometry.Manifold.VectorBundle.Hom`,
 `Geometry.Manifold.VectorBundle.Tensoriality`,
+`Geometry.Manifold.ContMDiffMFDeriv`,
 `Geometry.Manifold.MFDeriv.NormedSpace`/`Basic` (`mvfderiv_smul`,
 `mfderiv_zero_of_not_mdifferentiableAt`), and
+`Analysis.InnerProductSpace.GramMatrix`,
+`LinearAlgebra.Matrix.Adjugate`/`NonsingularInverse`, and
 `Analysis.InnerProductSpace.Trace` (`LinearMap.trace_eq_sum_inner`). The chart
 component bridge reuses
 `MorganTianLib.Ch01.Connection.christoffel_formula`.
@@ -325,6 +340,45 @@ noncomputable def dualCovariantVector
 def directionalDerivative (X : TangentSection (I := I) (M := M))
     (f : ScalarSection (M := M)) (x : M) : ℝ := d% f x (X x)
 
+omit [FiniteDimensional ℝ E] in
+/-- The directional derivative of a smooth `F`-valued function on the
+manifold along a smooth tangent section is smooth at the evaluation point.
+The proof uses the Hom-bundle regularity theorem for `mfderiv` and then
+evaluates its continuous linear-map fibre on the tangent section.  This is the
+local calculus bridge used by the scalar second-derivative producer below. -/
+theorem contMDiffAt_mvfderiv_apply_along
+    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
+    {f : M → F} {X : ∀ y : M, TangentSpace I y} {x : M}
+    (hf : ContMDiffAt I 𝓘(ℝ, F) ∞ f x)
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞ (T% X) x) :
+    ContMDiffAt I 𝓘(ℝ, F) ∞ (fun y => d% f y (X y)) x := by
+  have hsection :
+      ContMDiffAt I (I.prod 𝓘(ℝ, E →L[ℝ] F)) ∞
+        (fun y => Bundle.TotalSpace.mk' (E →L[ℝ] F)
+          (E := fun y : M => TangentSpace I y →L[ℝ] F) y (d% f y)) x := by
+    rw [contMDiffAt_hom_bundle]
+    refine ⟨contMDiffAt_id, ?_⟩
+    convert hf.mfderiv_const (m := ∞) (by simp) using 1
+    ext y v
+    simp [mvfderiv, inTangentCoordinates, ContinuousLinearMap.inCoordinates]
+    rfl
+  have h := hsection.clm_bundle_apply hX
+  simp only [contMDiffAt_totalSpace] at h
+  exact h.2
+
+/-! The local bridge above is independent of finite-dimensionality of the model
+space. -/
+omit [FiniteDimensional ℝ E] in
+/-- Global smoothness form of
+`contMDiffAt_mvfderiv_apply_along` for the scalar directional derivative. -/
+theorem directionalDerivative_contMDiff
+    {f : ScalarSection (M := M)} {X : TangentSection (I := I) (M := M)}
+    (hf : CMDiff ∞ f) (hX : IsSmoothTangentSection X) :
+    CMDiff ∞ (fun y => directionalDerivative X f y) := by
+  intro x
+  exact contMDiffAt_mvfderiv_apply_along (hf := hf.contMDiffAt)
+    (hX := hX.contMDiffAt)
+
 /-- Metric-compatibility expansion of the contravariant correction.  Under the
 explicit smoothness hypothesis on the metric-dual section, this is the usual
 dual-connection formula; it is the bridge from the `+Γ` slot comment in the
@@ -377,6 +431,89 @@ theorem dualCovariantVector_apply_formula
   rw [directionalDerivative, htheta]
   linear_combination -hcompat'
 
+/-- Pointwise version of `dualCovariantVector_apply_formula`.  Unlike the
+global wrapper, this form asks only for first-order differentiability of the
+metric-dual and test sections at `x`; it is the form used by local-frame
+component calculations. -/
+theorem dualCovariantVector_apply_formula_at
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (X : TangentSection (I := I) (M := M))
+    (θ : CovectorSection (I := I) (M := M))
+    (Z : TangentSection (I := I) (M := M)) (x : M)
+    (hdual : MDiffAt (T% (metricDualSection g θ)) x)
+    (hZ : MDiffAt (T% Z) x) :
+    dualCovariantVector g X θ x (Z x) =
+      directionalDerivative X (fun y => θ y (Z y)) x -
+        θ x (covariantVector g X Z x) := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  letI : FiniteDimensional ℝ (TangentSpace I x) :=
+    VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
+  letI : CompleteSpace (TangentSpace I x) :=
+    FiniteDimensional.complete ℝ (TangentSpace I x)
+  have hmetric :
+      (leviCivitaConnection g).IsMetricCompatible (M := M)
+        (V := TangentSpace I) := by
+    exact isMetricCompatible_leviCivitaConnection g
+  have hcompat := hmetric.mvfderiv_inner_eq (x := x) X hdual hZ
+  have heval :
+      (fun y => inner ℝ (metricDualSection g θ y) (Z y)) =
+        (fun y => θ y (Z y)) := by
+    funext y
+    simp [metricDualSection]
+  rw [heval] at hcompat
+  have hcompat' :
+      d% (fun y => θ y (Z y)) x (X x) =
+        inner ℝ (leviCivitaConnection g (metricDualSection g θ) x (X x))
+            (Z x) +
+          inner ℝ (metricDualSection g θ x)
+            (leviCivitaConnection g Z x (X x)) := by
+    simpa [heval] using hcompat
+  change
+    ((InnerProductSpace.toDual ℝ (TangentSpace I x))
+      (leviCivitaConnection g (metricDualSection g θ) x (X x))) (Z x) = _
+  rw [InnerProductSpace.toDual_apply_apply]
+  have htheta :
+      θ x (covariantVector g X Z x) =
+        inner ℝ (metricDualSection g θ x)
+          (leviCivitaConnection g Z x (X x)) := by
+    simp [metricDualSection, covariantVector]
+  rw [directionalDerivative, htheta]
+  linear_combination -hcompat'
+
+/-- If a covector section and its metric dual are smooth, the dual connection
+along a smooth tangent section is smooth as an evaluation-level covector.
+This is the contravariant regularity bridge used by the conditional mixed
+producer below. -/
+theorem dualCovariantVector_isSmoothCovectorSection
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (X : TangentSection (I := I) (M := M))
+    (θ : CovectorSection (I := I) (M := M))
+    (hθ : IsSmoothCovectorSection θ)
+    (hdual : IsSmoothTangentSection (metricDualSection g θ))
+    (hX : IsSmoothTangentSection X) :
+    IsSmoothCovectorSection (dualCovariantVector g X θ) := by
+  intro Z hZ
+  have hθZ : CMDiff ∞ (fun x => θ x (Z x)) := hθ Z hZ
+  have hconn : IsSmoothTangentSection (covariantVector g X Z) := by
+    intro x
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    exact Connection.contMDiffAt_leviCivitaConnection_apply g
+      hX.contMDiffAt hZ.contMDiffAt
+  have hθconn : CMDiff ∞
+      (fun x => θ x (covariantVector g X Z x)) :=
+    hθ (covariantVector g X Z) hconn
+  have hdir := directionalDerivative_contMDiff hθZ hX
+  have hEq : (fun x => dualCovariantVector g X θ x (Z x)) =
+      directionalDerivative X (fun y => θ y (Z y)) -
+        (fun x => θ x (covariantVector g X Z x)) := by
+    funext x
+    exact dualCovariantVector_apply_formula g X θ Z x hdual hZ
+  rw [hEq]
+  exact hdir.sub hθconn
+
 /-- Function-scalar Leibniz rule for the dual connection, stated on a smooth
 tangent test section.  This is the contravariant counterpart of
 `covariantVector_smul_argument_at`; together they expose the cancellation
@@ -417,10 +554,10 @@ theorem dualCovariantVector_smul_argument_apply
 
 /-- Raw evaluation of the covariant derivative of a mixed tensor along one
 direction. Every tensor argument is corrected with a minus sign in the
-evaluation formula; after passing to genuine tensor components, the dual
-(contravariant) slots therefore carry `+Γ` and the vector (covariant) slots
-carry `-Γ`. The evaluation-level tensoriality hypotheses are intentionally
-kept separate from this definition. -/
+evaluation formula; genuine tensor components would therefore carry `+Γ` in
+dual (contravariant) slots and `-Γ` in vector (covariant) slots. The
+evaluation-level tensoriality hypotheses are intentionally kept separate from
+this definition. -/
 noncomputable def mixedCovariantDerivativeAlong {p q : ℕ}
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (X : TangentSection (I := I) (M := M))
@@ -950,6 +1087,240 @@ def IsSmoothSecondCovariantDerivative {p q : ℕ}
     IsSmoothTangentSection X → IsSmoothTangentSection Z →
     CMDiff ∞ (secondCovariantDerivativeEval g A θ Y X Z)
 
+/-- A smooth mixed evaluation has a smooth first covariant derivative whenever
+each contravariant slot's metric-dual section is supplied as smooth data.
+The indexed premise is vacuous for `p = 0`, while retaining the exact
+regularity obligation for contravariant slots.  This returns the
+evaluation-level predicate `IsSmoothMixedTensorSection`; it does not add
+multilinearity, tensoriality, or a bundled tensor section, nor does it assert
+that the pinned Mathlib release carries an induced tensor-product connection.
+Source: Morgan--Tian, Chapter 1, discussion preceding `lapformula`, pp. 39--40,
+`morganTian2007`. -/
+theorem mixedCovariantDerivativeAlong_isSmooth
+    {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (A : MixedTensorSection (I := I) (M := M) p q)
+    (hA : IsSmoothMixedTensorSection (p := p) (q := q) A)
+    (X : TangentSection (I := I) (M := M))
+    (hX : IsSmoothTangentSection X)
+    (hdual : ∀ (θ : Fin p → CovectorSection (I := I) (M := M)),
+      (∀ i, IsSmoothCovectorSection (θ i)) →
+      ∀ i, IsSmoothTangentSection (metricDualSection g (θ i))) :
+    IsSmoothMixedTensorSection
+      (mixedCovariantDerivativeAlong g X A) := by
+  intro θ Y hθ hY
+  have hbase := hA θ Y hθ hY
+  have hdir : CMDiff ∞ (directionalDerivative X (A θ Y)) := by
+    exact directionalDerivative_contMDiff hbase hX
+  have hdualCov : ∀ i : Fin p,
+      IsSmoothCovectorSection (dualCovariantVector g X (θ i)) := by
+    intro i
+    exact dualCovariantVector_isSmoothCovectorSection g X (θ i)
+      (hθ i) (hdual θ hθ i) hX
+  have htermDual : ∀ i : Fin p,
+      CMDiff ∞ (fun x => A
+        (Function.update θ i (dualCovariantVector g X (θ i))) Y x) := by
+    intro i
+    apply hA
+    · intro j
+      by_cases hij : j = i
+      · subst j
+        simpa [Function.update_apply] using hdualCov i
+      · simpa [Function.update_apply, hij] using hθ j
+    · exact hY
+  have hsumDual : CMDiff ∞ (fun x =>
+      ∑ i, A (Function.update θ i (dualCovariantVector g X (θ i))) Y x) := by
+    exact contMDiff_finsetSum (t := Finset.univ) (f := fun i x =>
+      A (Function.update θ i (dualCovariantVector g X (θ i))) Y x)
+      (by intro i hi; exact htermDual i)
+  have hconn : ∀ i : Fin q,
+      IsSmoothTangentSection (covariantVector g X (Y i)) := by
+    intro i x
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    exact Connection.contMDiffAt_leviCivitaConnection_apply g
+      hX.contMDiffAt (hY i).contMDiffAt
+  have htermVector : ∀ i : Fin q,
+      CMDiff ∞ (fun x => A θ
+        (Function.update Y i (covariantVector g X (Y i))) x) := by
+    intro i
+    apply hA
+    · exact hθ
+    · intro j
+      by_cases hij : j = i
+      · subst j
+        simpa [Function.update_apply] using hconn i
+      · simpa [Function.update_apply, hij] using hY j
+  have hsumVector : CMDiff ∞ (fun x =>
+      ∑ i, A θ (Function.update Y i (covariantVector g X (Y i))) x) := by
+    exact contMDiff_finsetSum (t := Finset.univ) (f := fun i x =>
+      A θ (Function.update Y i (covariantVector g X (Y i))) x)
+      (by intro i hi; exact htermVector i)
+  have hEq : mixedCovariantDerivativeAlong g X A θ Y =
+      (fun x => directionalDerivative X (A θ Y) x -
+        ∑ i, A (Function.update θ i (dualCovariantVector g X (θ i))) Y x -
+        ∑ i, A θ (Function.update Y i (covariantVector g X (Y i))) x) := by
+    funext x
+    simp [mixedCovariantDerivativeAlong, directionalDerivative,
+      Finset.sum_fin_eq_sum_range]
+  rw [hEq]
+  exact (hdir.sub hsumDual).sub hsumVector
+
+/-- Under the indexed metric-dual regularity premise, the source-ordered
+second covariant derivative of any smooth mixed evaluation is smooth.  The
+result is evaluation-level (`IsSmoothSecondCovariantDerivative`), not a
+bundled tensor-section producer.  The two applications of the first-producer
+theorem preserve the order `∇_X (∇_Z A) - ∇_{∇_X Z} A` exactly.  Source:
+Morgan--Tian, Chapter 1, discussion preceding `lapformula`, pp. 39--40,
+`morganTian2007`. -/
+theorem secondCovariantDerivative_isSmooth
+    {p q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (A : MixedTensorSection (I := I) (M := M) p q)
+    (hA : IsSmoothMixedTensorSection (p := p) (q := q) A)
+    (hdual : ∀ (θ : Fin p → CovectorSection (I := I) (M := M)),
+      (∀ i, IsSmoothCovectorSection (θ i)) →
+      ∀ i, IsSmoothTangentSection (metricDualSection g (θ i))) :
+    IsSmoothSecondCovariantDerivative g A := by
+  intro θ Y X Z hθ hY hX hZ
+  have hinner : IsSmoothMixedTensorSection
+      (mixedCovariantDerivativeAlong g Z A) :=
+    mixedCovariantDerivativeAlong_isSmooth g A hA Z hZ hdual
+  have houterMixed : IsSmoothMixedTensorSection
+      (mixedCovariantDerivativeAlong g X
+        (mixedCovariantDerivativeAlong g Z A)) :=
+    mixedCovariantDerivativeAlong_isSmooth g
+      (mixedCovariantDerivativeAlong g Z A) hinner X hX hdual
+  have houter := houterMixed θ Y hθ hY
+  have hconn : IsSmoothTangentSection (covariantVector g X Z) := by
+    intro x
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    exact Connection.contMDiffAt_leviCivitaConnection_apply g
+      hX.contMDiffAt hZ.contMDiffAt
+  have hcorrMixed : IsSmoothMixedTensorSection
+      (mixedCovariantDerivativeAlong g (covariantVector g X Z) A) :=
+    mixedCovariantDerivativeAlong_isSmooth g A hA
+      (covariantVector g X Z) hconn hdual
+  have hcorr := hcorrMixed θ Y hθ hY
+  change CMDiff ∞
+    (mixedCovariantDerivativeAlong g X
+      (mixedCovariantDerivativeAlong g Z A) θ Y -
+      mixedCovariantDerivativeAlong g (covariantVector g X Z) A θ Y)
+  exact houter.sub hcorr
+
+/-- The covariant-only specialization of the indexed first-derivative
+producer for an evaluation-level smooth input. Its metric-dual premise is
+vacuous because there are no contravariant slots. -/
+theorem covariantTensor_mixedCovariantDerivativeAlong_isSmooth
+    {q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (A : CovariantTensorSection (I := I) (M := M) q)
+    (hA : IsSmoothMixedTensorSection (p := 0) (q := q) A)
+    (X : TangentSection (I := I) (M := M))
+    (hX : IsSmoothTangentSection X) :
+    IsSmoothMixedTensorSection
+      (mixedCovariantDerivativeAlong g X A) :=
+  mixedCovariantDerivativeAlong_isSmooth g A hA X hX
+    (fun _θ _hθ i => Fin.elim0 i)
+
+/-- The covariant-only specialization of the indexed second-derivative
+producer for an evaluation-level smooth input. -/
+theorem covariantTensor_secondCovariantDerivative_isSmooth
+    {q : ℕ}
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (A : CovariantTensorSection (I := I) (M := M) q)
+    (hA : IsSmoothMixedTensorSection (p := 0) (q := q) A) :
+    IsSmoothSecondCovariantDerivative g A :=
+  secondCovariantDerivative_isSmooth g A hA
+    (fun _θ _hθ i => Fin.elim0 i)
+
+omit [FiniteDimensional ℝ E] in
+/-- A smooth scalar is a smooth rank-zero covariant tensor evaluation. -/
+theorem scalarTensor_isSmoothMixedTensorSection
+    {f : ScalarSection (M := M)}
+    (hf : ContMDiff I 𝓘(ℝ, ℝ) ∞ f) :
+    IsSmoothMixedTensorSection (I := I) (M := M) (p := 0) (q := 0)
+      (scalarTensor f) := by
+  intro θ Y hθ hY
+  have hθeq : θ = emptyCovectorArgs := Subsingleton.elim _ _
+  have hYeq : Y = emptyTangentArgs := Subsingleton.elim _ _
+  subst θ
+  subst Y
+  exact hf
+
+/-- The scalar rank-zero adapter is an evaluation-level smooth producer for the
+source-ordered second covariant derivative.  Thus, for a smooth scalar `f`,
+the raw evaluator agrees with the iterated directional derivative corrected
+by `∇_X Z`, and is smooth for every pair of smooth tangent directions.  The
+rank-generic covariant producer supplies the regularity proof. -/
+theorem scalarTensor_isSmoothSecondCovariantDerivative
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    {f : ScalarSection (M := M)}
+    (hf : ContMDiff I 𝓘(ℝ, ℝ) ∞ f) :
+    IsSmoothSecondCovariantDerivative g (scalarTensor f) :=
+  covariantTensor_secondCovariantDerivative_isSmooth g (scalarTensor f)
+    (scalarTensor_isSmoothMixedTensorSection hf)
+
+/-- Direct scalar-Hessian regularity wrapper.  This is the rank-zero
+compatibility surface for consumers that use the covariant specialization
+rather than the generic smoothness predicate. -/
+theorem secondCovariantDerivativeCovariant_rank_zero_contMDiff
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    {f : ScalarSection (M := M)} (hf : ContMDiff I 𝓘(ℝ, ℝ) ∞ f)
+    (X Z : TangentSection (I := I) (M := M))
+    (hX : IsSmoothTangentSection X) (hZ : IsSmoothTangentSection Z) :
+    CMDiff ∞ (secondCovariantDerivativeCovariant g (scalarTensor f)
+      emptyTangentArgs X Z) := by
+  exact scalarTensor_isSmoothSecondCovariantDerivative (I := I) (M := M)
+    g hf emptyCovectorArgs emptyTangentArgs X Z
+      (fun i => Fin.elim0 i) (fun i => Fin.elim0 i) hX hZ
+
+/-- Constant scalars instantiate the rank-zero evaluation-level smooth producer. Together
+with `secondCovariantDerivativeCovariant_constant`, this checks both
+regularity and normalization without imposing a positive-dimensional model. -/
+theorem scalarTensor_constant_isSmoothSecondCovariantDerivative
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (c : ℝ) :
+    IsSmoothSecondCovariantDerivative g (scalarTensor (fun _ : M => c)) := by
+  exact scalarTensor_isSmoothSecondCovariantDerivative g contMDiff_const
+
+/-- The first covariant derivative of an evaluation-level smooth one-form is
+smooth when tested on a smooth vector field. This rank-one adapter specializes
+the covariant producer and uses the canonical Levi--Civita connection for the
+correction vector. -/
+theorem oneForm_mixedCovariantDerivativeAlong_contMDiff
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (omega : OneFormSection (I := I) (M := M))
+    (hω : IsSmoothMixedTensorSection (p := 0) (q := 1) omega)
+    (U W : TangentSection (I := I) (M := M))
+    (hU : IsSmoothTangentSection U)
+    (hW : IsSmoothTangentSection W) :
+    CMDiff ∞ (mixedCovariantDerivativeAlong g U omega emptyCovectorArgs
+      (fun _ => W)) := by
+  have h := covariantTensor_mixedCovariantDerivativeAlong_isSmooth
+    (q := 1) g omega hω U hU
+  exact h emptyCovectorArgs (fun _ => W)
+    (fun i => Fin.elim0 i) (fun _ => hW)
+
+/-- A smooth one-form evaluation has a smooth source-ordered second
+covariant derivative.  The proof is the rank-one counterpart of the scalar
+producer above, obtained from the covariant (`p = 0`) specialization of the
+indexed evaluation-level producer.  No induced tensor-product connection is
+introduced by this adapter. -/
+theorem oneForm_isSmoothSecondCovariantDerivative
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (omega : OneFormSection (I := I) (M := M))
+    (hω : IsSmoothMixedTensorSection (p := 0) (q := 1) omega) :
+    IsSmoothSecondCovariantDerivative g omega :=
+  covariantTensor_secondCovariantDerivative_isSmooth (q := 1) g omega hω
+
 /-- The regularity projection for the second derivative. -/
 theorem secondCovariantDerivative_contMDiff {p q : ℕ}
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
@@ -1116,9 +1487,10 @@ noncomputable def secondDirectionHom₂ {p q : ℕ}
     (fun Z hZ => hleft Z hZ) (fun X hX => hright X hX)
 
 /-- Once the two direction-slot tensoriality obligations are discharged, the
-metric trace is produced by the Riesz endomorphism of the resulting bilinear
-form.  Under these explicit obligations the basis sum in
-`connectionLaplacian` is a genuine trace, not a choice-dependent definition. -/
+pointwise metric trace is produced by the Riesz endomorphism of the resulting
+bilinear form. Under these explicit obligations the basis sum in
+`connectionLaplacian` at the displayed tensor arguments is a genuine trace,
+not a choice-dependent pointwise definition. -/
 theorem connectionLaplacian_eq_trace_of_tensorial {p q : ℕ}
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (A : MixedTensorSection (I := I) (M := M) p q)
@@ -1313,6 +1685,322 @@ theorem identityTensorSection_mixedCovariantDerivativeAlong
   rw [hdual_eval, hvector_eval, hform]
   ring
 
+/-- Turn a local trivialization coefficient into a cotangent section.  The
+coefficient is converted to a continuous linear map only after installing the
+canonical finite-dimensional fibre instance; no second cotangent or tensor
+representation is introduced. -/
+noncomputable def frameCovector
+    (t : Bundle.Trivialization E
+      (Bundle.TotalSpace.proj : Bundle.TotalSpace E (TangentSpace I) → M))
+    [MemTrivializationAtlas t]
+    (b : Basis (Fin (Module.finrank ℝ E)) ℝ E)
+    (i : Fin (Module.finrank ℝ E)) : CovectorSection (I := I) (M := M) :=
+  fun x =>
+    letI : T2Space (TangentSpace I x) :=
+      FiberBundle.t2Space E (TangentSpace I) x
+    letI : FiniteDimensional ℝ (TangentSpace I x) :=
+      VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
+    LinearMap.toContinuousLinearMap (t.localFrame_coeff I b i x)
+
+@[simp] theorem frameCovector_apply_frame_of_mem
+    (t : Bundle.Trivialization E
+      (Bundle.TotalSpace.proj : Bundle.TotalSpace E (TangentSpace I) → M))
+    [MemTrivializationAtlas t]
+    (b : Basis (Fin (Module.finrank ℝ E)) ℝ E)
+    {x : M} (hx : x ∈ t.baseSet)
+    (i j : Fin (Module.finrank ℝ E)) :
+    frameCovector (I := I) t b i x (t.localFrame b j x) =
+      if i = j then 1 else 0 := by
+  change (t.localFrame_coeff I b i x) (t.localFrame b j x) = _
+  rw [t.localFrame_coeff_apply_of_mem_baseSet b hx]
+  rw [t.localFrame_apply_of_mem_baseSet b hx]
+  by_cases hij : i = j <;> simp [hij]
+
+-- Keep the user-facing frame statement in its local-frame form; its simp-normal
+-- form uses `basisAt`, which is less useful to component calculations.
+attribute [nolint simpNF] frameCovector_apply_frame_of_mem
+
+omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
+private lemma contMDiffAt_matrix_det_entries
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {A : M → Matrix ι ι ℝ} {x : M}
+    (hentry : ∀ i j, ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+      (fun y => A y i j) x) :
+    ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+      (fun y => (A y).det) x := by
+  simp only [Matrix.det_apply']
+  refine ContMDiffAt.sum (fun σ _ => ?_)
+  refine (contMDiffAt_const.mul ?_)
+  exact ContMDiffAt.prod (fun i _ => hentry (σ i) i)
+
+omit [IsManifold I ∞ M] [FiniteDimensional ℝ E] in
+private lemma contMDiffAt_matrix_inv_entry_entries
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {A : M → Matrix ι ι ℝ} {x : M}
+    (hentry : ∀ i j, ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+      (fun y => A y i j) x)
+    (hdet : (A x).det ≠ 0) (i j : ι) :
+    ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+      (fun y => (A y)⁻¹ i j) x := by
+  have hdet' := contMDiffAt_matrix_det_entries hentry
+  have hinvdet : ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+      (fun y => ((A y).det)⁻¹) x := hdet'.inv₀ hdet
+  have hentry_upd : ∀ r s, ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+      (fun y => (A y).updateRow j (Pi.single i 1) r s) x := by
+    intro r s
+    by_cases hr : r = j
+    · subst r
+      simp only [Matrix.updateRow_self]
+      by_cases hs : s = i
+      · subst s
+        exact contMDiffAt_const
+      · simpa [Pi.single_apply, hs] using
+          (contMDiffAt_const : ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+            (fun _ : M => (0 : ℝ)) x)
+    · simp only [Matrix.updateRow_apply, hr]
+      exact hentry r s
+  have hadjdet := contMDiffAt_matrix_det_entries hentry_upd
+  have hadj : ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+      (fun y => (A y).adjugate i j) x := by
+    simpa only [Matrix.adjugate_apply] using hadjdet
+  have hprod : ContMDiffAt I 𝓘(ℝ, ℝ) ∞
+      (fun y => ((A y).det)⁻¹ * (A y).adjugate i j) x := by
+    convert hinvdet.mul hadj using 1
+    funext y
+    rfl
+  convert hprod using 1
+  funext y
+  rw [Matrix.inv_def, Ring.inverse_eq_inv,
+    Matrix.smul_apply, smul_eq_mul]
+
+/-- In a local frame, the metric-dual of the `a`th frame covector has the
+corresponding inverse-Gram coefficient.  The proof is pointwise, so it uses
+the canonical Riemannian fibre instance only for the Gram non-singularity and
+Riesz identities. -/
+theorem metricDualSection_frameCovector_coeff
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (t : Bundle.Trivialization E
+      (Bundle.TotalSpace.proj : Bundle.TotalSpace E (TangentSpace I) → M))
+    [MemTrivializationAtlas t]
+    (b : Basis (Fin (Module.finrank ℝ E)) ℝ E)
+    {p : M} (hp : p ∈ t.baseSet)
+    (a k : Fin (Module.finrank ℝ E)) :
+    (t.localFrame_coeff I b k p)
+      (metricDualSection g (frameCovector (I := I) t b a) p) =
+      ((Matrix.of fun r s =>
+        g.inner p (t.localFrame b r p) (t.localFrame b s p))⁻¹) a k := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  letI : FiniteDimensional ℝ (TangentSpace I p) :=
+    VectorBundle.finiteDimensional ℝ E (TangentSpace I) p
+  letI : CompleteSpace (TangentSpace I p) :=
+    FiniteDimensional.complete ℝ (TangentSpace I p)
+  let e := t.localFrame b
+  let eps := frameCovector (I := I) t b a
+  let v := metricDualSection g eps p
+  let bp := t.basisAt b hp
+  let G : Matrix (Fin (Module.finrank ℝ E)) (Fin (Module.finrank ℝ E)) ℝ :=
+    Matrix.of fun r s => g.inner p (e r p) (e s p)
+  have hdet : G.det ≠ 0 := by
+    have heq : G = Matrix.gram ℝ (fun r => e r p) := by
+      ext r s
+      rfl
+    rw [heq]
+    apply Matrix.det_gram_ne_zero_iff_linearIndependent.mpr
+    exact (t.isLocalFrameOn_localFrame_baseSet I ∞ b).linearIndependent hp
+  have hsystem : ∀ j : Fin (Module.finrank ℝ E),
+      ∑ r : Fin (Module.finrank ℝ E),
+          G r j * (bp.repr v r) = if a = j then 1 else 0 := by
+    intro j
+    have hinner : g.inner p v (e j p) = if a = j then 1 else 0 := by
+      change inner ℝ
+        ((InnerProductSpace.toDual ℝ (TangentSpace I p)).symm
+          (frameCovector (I := I) t b a p)) (t.localFrame b j p) = _
+      rw [InnerProductSpace.toDual_symm_apply]
+      change frameCovector (I := I) t b a p (t.localFrame b j p) = _
+      rw [frameCovector_apply_frame_of_mem (I := I) t b hp a j]
+    have hvsum := bp.sum_repr v
+    have hvinner := congrArg (fun w => g.inner p w (e j p)) hvsum
+    have hvinner' :
+        ∑ r : Fin (Module.finrank ℝ E),
+          (bp.repr v r) * g.inner p (bp r) (e j p) =
+            g.inner p v (e j p) := by
+      simp only [map_sum, map_smul] at hvinner
+      simpa [inner_smul_left] using hvinner
+    rw [hinner] at hvinner'
+    simpa [bp, e, G, t.localFrame_apply_of_mem_baseSet b hp,
+      mul_comm, mul_left_comm, mul_assoc] using hvinner'
+  let c : Fin (Module.finrank ℝ E) → ℝ := fun r => bp.repr v r
+  let d : Fin (Module.finrank ℝ E) → ℝ := fun j => if a = j then 1 else 0
+  have hM : d = G.transpose.mulVec c := by
+    funext j
+    simpa [c, d, Matrix.mulVec, dotProduct, Matrix.transpose_apply,
+      mul_comm] using (hsystem j).symm
+  have hunitT : IsUnit G.transpose.det := by
+    simpa [Matrix.det_transpose] using (isUnit_iff_ne_zero.mpr hdet)
+  have hleft := Matrix.nonsing_inv_mul G.transpose hunitT
+  have hsol : G.transpose⁻¹.mulVec d = c := by
+    calc
+      G.transpose⁻¹.mulVec d =
+          G.transpose⁻¹.mulVec (G.transpose.mulVec c) := by
+        rw [hM]
+      _ = (G.transpose⁻¹ * G.transpose).mulVec c := by
+        rw [Matrix.mulVec_mulVec]
+      _ = (1 : Matrix _ _ ℝ).mulVec c := by rw [hleft]
+      _ = c := by simp
+  have hsolk := congrFun hsol k
+  dsimp [c, d] at hsolk
+  rw [t.localFrame_coeff_apply_of_mem_baseSet b hp]
+  have hinvtrans : G.transpose⁻¹ = G⁻¹.transpose :=
+    (Matrix.transpose_nonsing_inv G).symm
+  simpa [v, e, eps, G, Matrix.mulVec, dotProduct,
+    hinvtrans, Matrix.transpose_apply] using hsolk.symm
+
+/-- At each chosen point `p ∈ t.baseSet`, the metric-dual of a frame covector
+is smooth in the local trivialization. Local frame coefficients are inverse
+Gram entries; determinant and adjugate calculus supplies their smoothness. -/
+theorem metricDualSection_frameCovector_contMDiffAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (t : Bundle.Trivialization E
+      (Bundle.TotalSpace.proj : Bundle.TotalSpace E (TangentSpace I) → M))
+    [MemTrivializationAtlas t]
+    (b : Basis (Fin (Module.finrank ℝ E)) ℝ E)
+    {p : M} (hp : p ∈ t.baseSet)
+    (a : Fin (Module.finrank ℝ E)) :
+    ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞
+      (T% (metricDualSection g (frameCovector (I := I) t b a))) p := by
+  let e := t.localFrame b
+  let A : M → Matrix (Fin (Module.finrank ℝ E))
+      (Fin (Module.finrank ℝ E)) ℝ :=
+    fun y => Matrix.of fun r s => g.inner y (e r y) (e s y)
+  have hframe : ∀ r : Fin (Module.finrank ℝ E),
+      ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞ (T% (e r)) p := by
+    intro r
+    exact contMDiffAt_localFrame_of_mem (I := I) (n := ∞)
+      (e := t) (b := b) r hp
+  have hentry : ∀ r s : Fin (Module.finrank ℝ E),
+      ContMDiffAt I 𝓘(ℝ, ℝ) ∞ (fun y => A y r s) p := by
+    intro r s
+    have hg : ContMDiffAt I
+        (I.prod 𝓘(ℝ, E →L[ℝ] E →L[ℝ] ℝ)) ∞
+        (fun y => Bundle.TotalSpace.mk' (E →L[ℝ] E →L[ℝ] ℝ)
+          y (g.inner y)) p := g.contMDiff.contMDiffAt
+    have h := hg.clm_bundle_apply₂ (hframe r) (hframe s)
+    simp only [contMDiffAt_totalSpace] at h
+    exact h.2
+  have hdet : (A p).det ≠ 0 := by
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    have heq : A p = Matrix.gram ℝ (fun r => e r p) := by
+      ext r s
+      rfl
+    rw [heq]
+    apply Matrix.det_gram_ne_zero_iff_linearIndependent.mpr
+    exact (t.isLocalFrameOn_localFrame_baseSet I ∞ b).linearIndependent hp
+  have hinv : ∀ k : Fin (Module.finrank ℝ E),
+      ContMDiffAt I 𝓘(ℝ, ℝ) ∞ (fun y => (A y)⁻¹ a k) p := by
+    intro k
+    exact contMDiffAt_matrix_inv_entry_entries hentry hdet a k
+  have hsection : ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞
+      (T% (metricDualSection g (frameCovector (I := I) t b a))) p := by
+    apply (contMDiffAt_iff_localFrame_coeff b hp).mpr
+    intro k
+    have hEq :
+        (fun y => (t.localFrame_coeff I b k y)
+          (metricDualSection g (frameCovector (I := I) t b a) y)) =ᶠ[𝓝 p]
+          (fun y => (A y)⁻¹ a k) := by
+      filter_upwards [t.open_baseSet.mem_nhds hp] with y hy
+      simpa [A] using
+        (metricDualSection_frameCovector_coeff g t b hy a k)
+    exact (hinv k).congr_of_eventuallyEq hEq
+  exact hsection
+
+/-- Differentiability corollary of
+`metricDualSection_frameCovector_contMDiffAt`. -/
+theorem metricDualSection_frameCovector_mdifferentiableAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (t : Bundle.Trivialization E
+      (Bundle.TotalSpace.proj : Bundle.TotalSpace E (TangentSpace I) → M))
+    [MemTrivializationAtlas t]
+    (b : Basis (Fin (Module.finrank ℝ E)) ℝ E)
+    {p : M} (hp : p ∈ t.baseSet)
+    (a : Fin (Module.finrank ℝ E)) :
+    MDiffAt (T% (metricDualSection g
+      (frameCovector (I := I) t b a))) p :=
+  (metricDualSection_frameCovector_contMDiffAt g t b hp a).mdifferentiableAt
+    (by simp)
+
+/-- In a local frame, the metric-dual connection has the dual-action sign
+`-Γ`.  The pointwise premise records the precise differentiability used by the
+metric-compatibility calculation; the canonical wrapper below discharges it
+on the trivialization base set.  This is the exact sign input for a future
+rank-generic frame component expansion. -/
+theorem dualCovariantVector_frameCovector_apply_frame
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (t : Bundle.Trivialization E
+      (Bundle.TotalSpace.proj : Bundle.TotalSpace E (TangentSpace I) → M))
+    [MemTrivializationAtlas t]
+    (b : Basis (Fin (Module.finrank ℝ E)) ℝ E)
+    {p : M} (hp : p ∈ t.baseSet)
+    (i j a : Fin (Module.finrank ℝ E))
+    (hdual : MDiffAt
+      (T% (metricDualSection g (frameCovector (I := I) t b a))) p) :
+    dualCovariantVector g (t.localFrame b i)
+      (frameCovector (I := I) t b a) p (t.localFrame b j p) =
+      - (t.basisAt b hp).repr
+        (covariantVector g (t.localFrame b i) (t.localFrame b j) p) a := by
+  let e := t.localFrame b
+  let eps := frameCovector (I := I) t b a
+  let bp := t.basisAt b hp
+  have hY : MDiffAt (T% (t.localFrame b j)) p :=
+    (contMDiffAt_localFrame_of_mem (I := I) (n := ∞)
+      (e := t) (b := b) j hp).mdifferentiableAt (by simp)
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  have h := dualCovariantVector_apply_formula_at g (e i) eps (e j) p hdual hY
+  have hconst : directionalDerivative (e i)
+      (fun y => eps y (e j y)) p = 0 := by
+    have heq : (fun y => eps y (e j y)) =ᶠ[𝓝 p]
+        (fun _ : M => if a = j then 1 else 0) := by
+      filter_upwards [t.open_baseSet.mem_nhds hp] with y hy
+      exact frameCovector_apply_frame_of_mem (I := I) t b hy a j
+    simp only [directionalDerivative, mvfderiv]
+    rw [heq.mfderiv_eq, mfderiv_const]
+    rfl
+  have hcoeff : eps p (covariantVector g (e i) (e j) p) =
+      bp.repr (covariantVector g (e i) (e j) p) a := by
+    dsimp [eps, frameCovector]
+    change (t.localFrame_coeff I b a p)
+      (covariantVector g (e i) (e j) p) = _
+    rw [t.localFrame_coeff_apply_of_mem_baseSet b hp]
+    rfl
+  rw [h, hconst, hcoeff]
+  ring
+
+/-- The canonical local-frame bridge with its metric-dual differentiability
+premise discharged by `metricDualSection_frameCovector_mdifferentiableAt`.
+The lower-level theorem above remains useful when a different local witness is
+already available. -/
+theorem dualCovariantVector_frameCovector_apply_frame_of_mem
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (t : Bundle.Trivialization E
+      (Bundle.TotalSpace.proj : Bundle.TotalSpace E (TangentSpace I) → M))
+    [MemTrivializationAtlas t]
+    (b : Basis (Fin (Module.finrank ℝ E)) ℝ E)
+    {p : M} (hp : p ∈ t.baseSet)
+    (i j a : Fin (Module.finrank ℝ E)) :
+    dualCovariantVector g (t.localFrame b i)
+      (frameCovector (I := I) t b a) p (t.localFrame b j p) =
+      - (t.basisAt b hp).repr
+        (covariantVector g (t.localFrame b i) (t.localFrame b j) p) a := by
+  exact dualCovariantVector_frameCovector_apply_frame g t b hp i j a
+    (metricDualSection_frameCovector_mdifferentiableAt g t b hp a)
+
 /-- Chart-frame coefficient bridge for the covariant direction action used by
 the mixed evaluator. This is the existing canonical Christoffel theorem
 specialized through `covariantVector`; it exposes the inverse-Gram formula
@@ -1345,6 +2033,80 @@ theorem covariantVector_christoffel_formula
             fderiv ℝ (gij i j) (extChartAt I alpha p) (b l)) := by
   simpa only [covariantVector_apply] using
     (christoffel_formula (I := I) (H := H) g hp hinterior i j k)
+
+/-- The preceding dual-frame sign bridge combined with the canonical
+Christoffel formula.  This single canonical frame-covector component
+statement displays every derivative term and the inverse Gram contraction, so
+a swapped direction or opposite convention cannot be hidden by notation.  The
+explicit `hdual` premise records the local differentiability boundary; the
+`_of_mem` wrapper below discharges it for the canonical frame. -/
+theorem dualCovariantVector_frameCovector_christoffel_formula
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    {alpha p : M} (hp : p ∈ (chartAt H alpha).source)
+    (hinterior : I.IsInteriorPoint p)
+    (i j a : Fin (Module.finrank ℝ E))
+    (hdual : MDiffAt
+      (T% (metricDualSection g (frameCovector (I := I)
+        (trivializationAt E (TangentSpace I) alpha)
+        (Module.finBasis ℝ E) a))) p) :
+    let t := trivializationAt E (TangentSpace I) alpha
+    let b := Module.finBasis ℝ E
+    let e := t.localFrame b
+    let G : Matrix (Fin (Module.finrank ℝ E)) (Fin (Module.finrank ℝ E)) ℝ :=
+      fun r s => g.inner p (e r p) (e s p)
+    let gij (r s : Fin (Module.finrank ℝ E)) (y : E) :=
+      let q := (extChartAt I alpha).symm y
+      g.inner q (e r q) (e s q)
+    dualCovariantVector g (e i) (frameCovector (I := I) t b a) p (e j p) =
+      -(1 / 2 : ℝ) * ∑ l : Fin (Module.finrank ℝ E),
+        G⁻¹ a l * (fderiv ℝ (gij l j) (extChartAt I alpha p) (b i) +
+          fderiv ℝ (gij i l) (extChartAt I alpha p) (b j) -
+          fderiv ℝ (gij i j) (extChartAt I alpha p) (b l)) := by
+  dsimp only
+  let t := trivializationAt E (TangentSpace I) alpha
+  let b := Module.finBasis ℝ E
+  let e := t.localFrame b
+  have hdualframe := dualCovariantVector_frameCovector_apply_frame
+    (I := I) (H := H) g t b hp i j a hdual
+  have hchrist := covariantVector_christoffel_formula (I := I) (H := H)
+      g hp hinterior i j a
+  change dualCovariantVector g (e i) (frameCovector (I := I) t b a) p (e j p) = _
+  rw [hdualframe]
+  rw [hchrist]
+  ring
+
+/-- Canonical chart-frame component formula for the dual action.  The
+metric-dual differentiability premise is discharged from the inverse-Gram
+coefficient theorem, leaving only the chart-domain and interior-point
+hypotheses required by the pinned Christoffel API. -/
+theorem dualCovariantVector_frameCovector_christoffel_formula_of_mem
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    {alpha p : M} (hp : p ∈ (chartAt H alpha).source)
+    (hinterior : I.IsInteriorPoint p)
+    (i j a : Fin (Module.finrank ℝ E)) :
+    let t := trivializationAt E (TangentSpace I) alpha
+    let b := Module.finBasis ℝ E
+    let e := t.localFrame b
+    let G : Matrix (Fin (Module.finrank ℝ E)) (Fin (Module.finrank ℝ E)) ℝ :=
+      fun r s => g.inner p (e r p) (e s p)
+    let gij (r s : Fin (Module.finrank ℝ E)) (y : E) :=
+      let q := (extChartAt I alpha).symm y
+      g.inner q (e r q) (e s q)
+    dualCovariantVector g (e i) (frameCovector (I := I) t b a) p (e j p) =
+      -(1 / 2 : ℝ) * ∑ l : Fin (Module.finrank ℝ E),
+        G⁻¹ a l * (fderiv ℝ (gij l j) (extChartAt I alpha p) (b i) +
+          fderiv ℝ (gij i l) (extChartAt I alpha p) (b j) -
+          fderiv ℝ (gij i j) (extChartAt I alpha p) (b l)) := by
+  let t := trivializationAt E (TangentSpace I) alpha
+  let b := Module.finBasis ℝ E
+  have hbase : p ∈ t.baseSet := by
+    change p ∈ (chartAt H alpha).source
+    exact hp
+  exact dualCovariantVector_frameCovector_christoffel_formula
+    (I := I) (H := H) g hp hinterior i j a
+      (metricDualSection_frameCovector_mdifferentiableAt g t b hbase a)
 
 /-- The raw covariant derivative annihilates the zero evaluation. -/
 theorem mixedCovariantDerivativeAlong_zero {p q : ℕ}
