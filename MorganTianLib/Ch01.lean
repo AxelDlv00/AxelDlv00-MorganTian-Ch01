@@ -43,10 +43,14 @@ cut-locus consumer fixes its stable boundary; it uses Mathlib's
 competing global measure.  The provisional `Connection.TensorLaplacian`
 evaluation layer is likewise direct-only until its bundled,
 extension-independent producer is available for S13's Bochner consumer.
-Later milestones add geodesic, Jacobi, normal-coordinate, and
-manifold-comparison modules without exposing chart plumbing as public API.  The
-S20 geodesic energy/first-variation contract is exported here and depends only
-on the canonical metric/connection layers.
+The S18 geodesic, S19 Hopf--Rinow, S21 Jacobi, and S23 index-form modules remain
+direct-import staging leaves and are deliberately absent from this umbrella.
+Their moving-chart certificates still need the roadmap's chart-independent
+producer/equivalence, and the Jacobi/index-form leaves additionally consume the
+selected-extension curvature facade without its arbitrary-extension
+application theorem.  `Geodesic.Variation` remains exported because its S20
+energy and analytic first-variation contracts depend only on the accepted
+metric and connection layers.
 -/
 
 namespace MorganTianLib
