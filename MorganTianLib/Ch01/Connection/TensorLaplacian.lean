@@ -1253,11 +1253,10 @@ theorem scalarTensor_isSmoothMixedTensorSection
   subst Y
   exact hf
 
-/-- The scalar rank-zero adapter is an evaluation-level smooth producer for the
-source-ordered second covariant derivative.  Thus, for a smooth scalar `f`,
-the raw evaluator agrees with the iterated directional derivative corrected
-by `∇_X Z`, and is smooth for every pair of smooth tangent directions.  The
-rank-generic covariant producer supplies the regularity proof. -/
+/-- The scalar rank-zero adapter is an evaluation-level regularity wrapper for
+the source-ordered second covariant derivative.  For a smooth scalar `f`, it
+supplies `IsSmoothSecondCovariantDerivative`; the explicit rank-zero evaluator
+equation is `secondCovariantDerivativeCovariant_rank_zero`. -/
 theorem scalarTensor_isSmoothSecondCovariantDerivative
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     {f : ScalarSection (M := M)}
@@ -1280,9 +1279,11 @@ theorem secondCovariantDerivativeCovariant_rank_zero_contMDiff
     g hf emptyCovectorArgs emptyTangentArgs X Z
       (fun i => Fin.elim0 i) (fun i => Fin.elim0 i) hX hZ
 
-/-- Constant scalars instantiate the rank-zero evaluation-level smooth producer. Together
-with `secondCovariantDerivativeCovariant_constant`, this checks both
-regularity and normalization without imposing a positive-dimensional model. -/
+/-- Constant scalars instantiate the rank-zero evaluation-level regularity
+producer.  The separate normalization fact is supplied by
+`secondCovariantDerivativeCovariant_constant`; this theorem establishes only
+`IsSmoothSecondCovariantDerivative`, without imposing a positive-dimensional
+model. -/
 theorem scalarTensor_constant_isSmoothSecondCovariantDerivative
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (c : ℝ) :
@@ -1702,6 +1703,8 @@ noncomputable def frameCovector
       VectorBundle.finiteDimensional ℝ E (TangentSpace I) x
     LinearMap.toContinuousLinearMap (t.localFrame_coeff I b i x)
 
+/-- At a point `x` in the trivialization base set, the `i`th frame covector
+evaluates on the `j`th local-frame vector as the Kronecker delta. -/
 @[simp] theorem frameCovector_apply_frame_of_mem
     (t : Bundle.Trivialization E
       (Bundle.TotalSpace.proj : Bundle.TotalSpace E (TangentSpace I) → M))
