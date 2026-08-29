@@ -5,16 +5,17 @@ import Mathlib.Order.Interval.Set.OrdConnected
 /-!
 # Hopf--Rinow interfaces
 
-This module is the S19 boundary between the intrinsic geodesic IVP and the
-complete-manifold consequences used later in Chapter 1.  It deliberately
+This module is the S19 boundary between the staged moving-foot/preferred-chart
+geodesic IVP and the complete-manifold consequences used later in Chapter 1.
+It deliberately
 keeps three inputs separate.
 
 It is a direct-import staging leaf, absent from the stable
 `MorganTianLib.Ch01` umbrella until S18 supplies the chart-independent maximal
 geodesic producer and S19 discharges the continuation/minimizer interfaces.
 
-* `RiemannianMetricComplete` installs the canonical extended Riemannian
-  distance and asks for its `CompleteSpace` instance;
+* `RiemannianMetricComplete` installs the selected extended Riemannian
+  distance induced by `g` and asks for its `CompleteSpace` instance;
 * `[CompleteSpace E]` remains the analytic premise of the local spray/ODE
   construction in `Geodesic`; and
 * `[BoundarylessManifold I M]` is the all-initial-data contract for the local
@@ -32,10 +33,10 @@ treats metric completeness as an ODE premise, and every existence claim names
 its required producer.
 
 The source-facing target is the paragraph preceding Morgan--Tian, Theorem
-1.18, pp. 41--42 (`morganTian2007`); see also do Carmo, Chapter 7, Section 2,
-and Lee, Theorem 6.19.  The minimizing-segment interface is intentionally
-weaker than uniqueness or the no-conjugate-subsegment result, which belong to
-later S24/V1 work.
+1.18, pp. 41--42 (`morganTian2007`); see also do Carmo, Chapter 7, Section 2
+(`doCarmo1992`), and Lee, Theorem 6.19 (`lee2018`).  The minimizing-segment
+interface is intentionally weaker than uniqueness or the no-conjugate-
+subsegment result, which belong to later S24/V1 work.
 -/
 
 noncomputable section
@@ -55,7 +56,8 @@ variable
 
 /-! ## Completeness of the selected distance -/
 
-/-- Metric completeness for the *canonical selected Riemannian distance*.
+/-- Metric completeness for the Riemannian distance induced by the explicit
+metric `g`.
 
 `EMetricSpace.ofRiemannianMetric` is installed only in the body of this
 predicate.  The proposition is therefore independent of any unrelated
@@ -73,11 +75,13 @@ def RiemannianMetricComplete
 
 /-! ## Maximal geodesic and continuation contracts -/
 
-/-- A maximal intrinsic geodesic supplied by the S18 maximal-domain layer.
+/-- A maximal staged moving-foot/preferred-chart geodesic certificate supplied
+by the S18 maximal-domain layer.
 
 The curve is total as a Lean function, but `lifetime` records the times at
-which its geodesic and continuity certificates are valid.  Values outside the
-lifetime are deliberately not used. -/
+which its staged geodesic and continuity certificates are valid.  Values
+outside the lifetime are deliberately not used; the chart-independent
+identification is deferred to S18. -/
 structure MaximalGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) where
@@ -93,7 +97,8 @@ structure MaximalGeodesic
   initial_derivative :
     HasDerivAt (chartReading (I := I) p curve)
       (chartVelocityAt (I := I) p v) 0
-  /-- The intrinsic equation on the lifetime. -/
+  /-- The staged moving-foot/preferred-chart geodesic certificate on the
+  lifetime. -/
   geodesic_on : isGeodesicOn (I := I) g curve lifetime
   /-- Continuity on the lifetime. This compatibility field is retained for
   continuation consumers while the staged S18 certificate is migrated. -/
@@ -191,6 +196,9 @@ structure MaximalGeodesicContinuation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) (v : TangentSpace I p) (G : MaximalGeodesic (I := I) g p v)
     [T3Space M] where
+  /-- Given metric completeness and a finite upper lifetime bound, supplies an
+  open order-connected extension with the same initial data and certificate.
+  The extension remains in the staged chart-based interface. -/
   right :
     RiemannianMetricComplete (I := I) g →
       ∀ b : ℝ, (∀ t ∈ G.lifetime, t ≤ b) →
@@ -204,6 +212,9 @@ structure MaximalGeodesicContinuation
           HasDerivAt (chartReading (I := I) p γ)
             (chartVelocityAt (I := I) p v) 0 ∧
           (∀ t ∈ G.lifetime, γ t = G.curve t)
+  /-- Given metric completeness and a finite lower lifetime bound, supplies an
+  open order-connected extension with the same initial data and certificate.
+  The extension remains in the staged chart-based interface. -/
   left :
     RiemannianMetricComplete (I := I) g →
       ∀ b : ℝ, (∀ t ∈ G.lifetime, b ≤ t) →
@@ -321,13 +332,17 @@ type rather than hiding it in a finite-interval facade. -/
 structure CompleteMaximalGeodesicData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     [T3Space M] [CompleteSpace E] [BoundarylessManifold I M] where
+  /-- Supplies a staged maximal certificate for every initial position and
+  velocity. -/
   solution : ∀ (p : M) (v : TangentSpace I p),
     MaximalGeodesic (I := I) g p v
+  /-- Supplies the corresponding metric-completeness continuation producer for
+  every initial position and velocity. -/
   continuation : ∀ (p : M) (v : TangentSpace I p),
     MaximalGeodesicContinuation (I := I) g p v (solution p v)
 
-/-- Every initial datum has a canonical all-real-time solution once the
-completed S18 producer supplies maximality and continuation. -/
+/-- Every initial datum has an all-real-time solution supplied by the completed
+S18 producer once maximality and continuation are available. -/
 theorem exists_globalGeodesic_of_complete_all
     [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
@@ -419,19 +434,22 @@ structure MinimizingGeodesic
     (x y : M) where
   /-- The smooth path whose endpoints are `x` and `y`. -/
   path : SmoothPath I x y
-  /-- The intrinsic geodesic equation on the unit interval. -/
+  /-- The staged moving-foot/preferred-chart geodesic certificate on the unit
+  interval. -/
   geodesic_on : isGeodesicOn (I := I) g (path : ℝ → M) (Set.Icc 0 1)
   /-- Continuity on the unit interval, retained as compatibility data for the
   staged minimizing-path interface. -/
   continuous_on : ContinuousOn (path : ℝ → M) (Set.Icc 0 1)
-  /-- Constant-speed normalization in the canonical extended distance. -/
+  /-- Constant-speed normalization in the selected Riemannian extended
+  distance induced by `g`. -/
   constant_speed :
     letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
     ∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
       Manifold.riemannianEDist I (path s) (path t) =
         ENNReal.ofReal |s - t| * Manifold.riemannianEDist I x y
-  /-- The path length is exactly the canonical Riemannian distance. -/
+  /-- The path length is exactly the selected Riemannian distance induced by
+  `g`. -/
   length_eq_distance :
     letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
@@ -509,8 +527,9 @@ theorem MinimizingGeodesic.length_eq_riemannianEDist
     ⟨g.toRiemannianMetric⟩
   exact G.length_eq_distance
 
-/-- In the finite canonical metric, the extended constant-speed identity reads
-as the ordinary `dist` identity used by later variation arguments. -/
+/-- In the finite selected Riemannian metric induced by `g`, the extended
+constant-speed identity reads as the ordinary `dist` identity used by later
+variation arguments. -/
 theorem MinimizingGeodesic.dist_eq_constSpeed
     [T3Space M] [PreconnectedSpace M]
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
@@ -546,6 +565,8 @@ structure MinimizingGeodesicData
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     [T3Space M] [CompleteSpace E]
     [BoundarylessManifold I M] where
+  /-- Under metric completeness, supplies a minimizing staged geodesic segment
+  whenever the selected Riemannian extended distance is finite. -/
   exists_segment :
     RiemannianMetricComplete (I := I) g →
       ∀ x y : M,
@@ -579,9 +600,9 @@ theorem exists_minimizingGeodesic_segment
   exists_minimizingGeodesic_of_finite g hcomplete data x y
     (riemannianEDist_lt_top g x y)
 
-/-- Source-facing existence statement for a minimizing geodesic on a connected
-component.  The length equality is stated against the canonical
-`riemannianEDist`; the real `dist` form is provided by
+/-- Source-facing existence statement for a minimizing staged geodesic on a
+connected component.  The length equality is stated against the selected
+Riemannian `riemannianEDist`; the real `dist` form is provided by
 `MinimizingGeodesic.dist_eq_constSpeed`. -/
 theorem exists_minimizingGeodesic
     [T3Space M] [PreconnectedSpace M] [CompleteSpace E]
@@ -669,7 +690,7 @@ def euclideanStraightLine (x y : F) :
     rw [contMDiff_iff_contDiff]
     exact ContinuousAffineMap.contDiff _
 
-/-- The Euclidean straight line realizes the canonical path length. -/
+/-- The Euclidean straight line realizes the selected Mathlib path length. -/
 theorem euclideanStraightLine_length (x y : F) :
     (euclideanStraightLine x y).eLength = edist x y := by
   change Manifold.pathELength 𝓘(ℝ, F) (ContinuousAffineMap.lineMap x y) 0 1 = edist x y
@@ -695,7 +716,8 @@ theorem euclideanStraightLine_speed (x y : F) (s t : ℝ) :
 /-! The generic Euclidean witness specializes without additional manifold
 assumptions to the one-dimensional and zero-dimensional model spaces. -/
 
-/-- One-dimensional Euclidean straight lines retain the canonical length. -/
+/-- One-dimensional Euclidean straight lines retain the selected Mathlib path
+length. -/
 theorem euclideanStraightLine_one_dimensional (x y : ℝ) :
     (euclideanStraightLine x y).eLength = edist x y :=
   euclideanStraightLine_length x y

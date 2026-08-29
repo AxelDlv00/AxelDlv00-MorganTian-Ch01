@@ -1,8 +1,6 @@
-import MorganTianLib.Ch01.Connection.Christoffel
+import MorganTianLib.Ch01.Connection
 import Mathlib.Geometry.Manifold.IntegralCurve.ExistUnique
 import Mathlib.Geometry.Manifold.VectorBundle.Tangent
-import Mathlib.Analysis.Calculus.Deriv.Add
-import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Analysis.Calculus.Deriv.Prod
 
 /-!
@@ -137,7 +135,7 @@ private def chartSpraySecond
       ∑ j : Fin (Module.finrank ℝ E),
         chartChristoffel (I := I) g alpha y i j k * b.repr v i * b.repr v j) • b k
 
-/-- The canonical-connection contraction `Gamma(v,w)` in the chart centred at
+/-- The bundled-connection contraction `Gamma(v,w)` in the chart centred at
 `alpha`.
 
 The first velocity supplies the direction (the first lower Christoffel slot),
@@ -166,7 +164,7 @@ private def chartChristoffelContraction
     (alpha : M) (y v w : E) : E :=
   chartConnectionContraction (I := I) g alpha y v w
 
-/-- The public Christoffel contraction is the canonical connection contraction.
+/-- The public Christoffel contraction is the bundled connection contraction.
 -/
 private theorem chartChristoffelContraction_eq_connection
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
@@ -293,9 +291,10 @@ theorem HasChartGeodesicEquationOn.mono
   intro t ht
   exact hgamma t (hs ht)
 
-/-- Local existence for prescribed position and velocity in the canonical
-chart.  The interval is deliberately returned as a symmetric open interval;
-the intrinsic maximal-domain construction belongs to the next geodesic slice.
+/-- Local existence for prescribed position and velocity in the selected chart
+`chartAt H p`.  The interval is deliberately returned as a symmetric open
+interval; the intrinsic maximal-domain construction belongs to the next
+geodesic slice.
 
 The velocity is represented in the chart trivialisation by `chartVelocityAt`.
 The only analytic completeness input is `[CompleteSpace E]`; boundarylessness
@@ -537,7 +536,7 @@ theorem localChartGeodesic_eventuallyEq_of_initial_data
   classical
   simp [chartChristoffelContraction, chartConnectionContraction]
 
-/-- The canonical connection contraction vanishes on two zero velocities. -/
+/-- The bundled connection contraction vanishes on two zero velocities. -/
 @[simp] theorem chartConnectionContraction_zero
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (alpha : M) (y : E) :
@@ -557,25 +556,29 @@ theorem exists_localChartGeodesicAt_boundaryless [CompleteSpace E]
       (∀ t ∈ Ioo (-ε) ε, ContinuousAt γ t) :=
   exists_localChartGeodesicAt g p v BoundarylessManifold.isInteriorPoint
 
-/-- Covariant acceleration `D_t (gamma')`, read in the canonical chart at the
-current foot and transported back to the tangent fibre.
+/-- A chart-level acceleration adapter for `D_t (gamma')`, read in the selected
+chart `chartAt H (gamma t)` at the current foot and transported back to the
+tangent fibre.
 
 The connection term is evaluated with
-  `Connection.leviCivitaConnection g`; this is the coordinate realization of
-  the canonical connection and introduces neither a second connection nor an
-  implicit metric. Its intrinsic interpretation requires the chart-source and
-  regularity witnesses carried by `IsGeodesicAt`. -/
+  `Connection.leviCivitaConnection g`; this is a coordinate realization of
+  the bundled connection and introduces neither a second connection nor an
+  implicit metric.  It is not asserted to be chart independent here; that
+  interpretation requires the chart-source and regularity witnesses carried
+  by `IsGeodesicAt` and the S18 producer/equivalence theorem. -/
 def covariantAcceleration
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) : TangentSpace I (gamma t) :=
   (trivializationAt E (TangentSpace I) (gamma t)).symmL ℝ (gamma t)
     (chartAcceleration (I := I) g (gamma t) gamma t)
 
-/-- A curve is geodesic at `t` when it has the required second-order
-regularity and its Levi--Civita covariant acceleration vanishes. The leading
-chart-source conjunct is compatibility bookkeeping and follows for the
-current-foot chart; it is retained while the staged constructors migrate to
-the future chart-independent S18 producer. -/
+/-- The staged moving-foot/preferred-chart geodesic certificate at `t`.
+
+It records the required second-order regularity and the vanishing of the
+chart-level acceleration adapter.  The leading chart-source conjunct is
+compatibility bookkeeping for the current-foot chart.  Identification with a
+chart-independent covariant-derivative predicate is deferred to the S18
+producer/equivalence theorem. -/
 def IsGeodesicAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) : Prop :=
@@ -584,23 +587,28 @@ def IsGeodesicAt
     HasChartGeodesicRegularityAt (I := I) (gamma t) gamma t ∧
     covariantAcceleration (I := I) g gamma t = 0
 
-/-- The intrinsic geodesic predicate for the explicit metric `g`.
+/-- The staged moving-foot/preferred-chart geodesic certificate for the
+explicit metric `g`.
 
-This is Morgan--Tian Definition 1.17: `D_t (gamma') = 0` for the canonical
-Levi--Civita connection. -/
+This quantifies `IsGeodesicAt` over all times and is the chart-based
+realization of the equation in Morgan--Tian Definition 1.17.  Its
+identification with the chart-independent intrinsic predicate is deferred to
+the S18 chart-independent producer/equivalence theorem. -/
 def isGeodesic
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) : Prop :=
   ∀ t, IsGeodesicAt (I := I) g gamma t
 
-/-! ## Interval-level intrinsic predicate -/
+/-! ## Interval-level staged geodesic certificate -/
 
-/-- The moving-foot geodesic predicate restricted to a set of times.
+/-- The staged moving-foot/preferred-chart geodesic certificate restricted to a
+set of times.
 
 This small interval contract belongs to the local geodesic layer.  The
 Hopf--Rinow module consumes it, but does not own it: keeping the predicate here
 lets lower-level Jacobi and variation consumers depend on `Geodesic` without
-pulling in completeness or minimizer interfaces. -/
+pulling in completeness or minimizer interfaces.  It remains chart based until
+the S18 chart-independent producer/equivalence theorem lands. -/
 def isGeodesicOn
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (s : Set ℝ) : Prop :=
@@ -628,8 +636,8 @@ theorem isGeodesicOn_univ_iff
   · intro h t _
     exact h t
 
-/-- Constant curves are geodesics; this is the zero-velocity regression for
-the canonical coordinate equation. -/
+/-- Constant curves satisfy the staged geodesic certificate; this is the
+zero-velocity regression for the selected-chart coordinate equation. -/
 theorem isGeodesic_const
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (p : M) :
@@ -669,8 +677,10 @@ theorem isGeodesic_const
     rw [covariantAcceleration, chartAcceleration, hsecond, hderiv]
     simp only [chartConnectionContraction_zero, add_zero, map_zero]
 
-/-- The intrinsic equation at a time is equivalent to the Morgan--Tian
-coordinate equation in the chart centred at the foot. -/
+/-- The current-foot/preferred-chart certificate at a time is equivalent to its
+coordinate equation in that selected chart.  This is a chart-level transport
+result; the chart-independent Morgan--Tian identification is deferred to the
+S18 producer/equivalence theorem. -/
 theorem isGeodesicAt_iff_chartEquation
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (gamma : ℝ → M) (t : ℝ) :
@@ -690,7 +700,8 @@ theorem isGeodesicAt_iff_chartEquation
     refine ⟨hsource, hcont, hreg, ?_⟩
     simp only [covariantAcceleration, hzero, map_zero]
 
-/-- Coordinate form of Morgan--Tian's geodesic equation,
+/-- Coordinate form of the staged chart equation corresponding to
+Morgan--Tian's geodesic equation,
 `u''^k + Gamma^k_ij u'^i u'^j = 0`. -/
 theorem isGeodesicAt_iff_coordinate_formula
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
