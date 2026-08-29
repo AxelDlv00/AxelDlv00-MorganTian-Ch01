@@ -23,9 +23,14 @@ smoothness and local uniqueness, but no joint smooth-flow theorem.
 
 The overlap kinematics include the second-order chain rule for the moving
 transition derivative.  This is the calculus input for the Christoffel
-transformation law; that metric-dependent identity and the resulting gluing
-remain separate S18 work.  The Euclidean model regression at the end of the
-module checks the coefficient and affine straight-line branches concretely.
+transformation law.  `HasChristoffelTransitionAt` records that metric-dependent
+identity as an explicit producer contract, and the conditional transfer
+theorems consume it without asserting it prematurely.  The resulting
+unconditional gluing remains separate S18 work.  Under that same explicit
+contract, the boundaryless local IVP can be packaged as a bundled
+`GeodesicSolution`; no metric completeness is used.  The Euclidean model
+regression at the end of the module checks the coefficient and affine
+straight-line branches concretely.
 The same regression section contains a private one-dimensional nonconstant
 metric probe, so the derivative terms and the sign of the Christoffel term are
 checked independently of the flat model.
@@ -912,6 +917,47 @@ theorem chartVelocityInChart_transition {alpha beta p : M}
         Trivialization.continuousLinearMapAt_apply_of_mem ℝ
         (trivializationAt E (TangentSpace I) alpha) hα]
 
+/-! ### Christoffel transition contract
+
+The preceding lemmas are the coordinate calculus needed to compare two chart
+readings.  The metric part of that comparison is kept as an explicit contract
+until the bundled Levi--Civita coefficient transformation is proved.  This
+keeps downstream transfer theorems honest while giving that proof one stable
+public target.
+-/
+
+/-- The Christoffel contraction transformation law for an overlapping pair of
+charts.
+
+Here `geodesicChartTransition alpha beta` maps `alpha`-coordinates to
+`beta`-coordinates and `tangentCoordChange I alpha beta x` is its first
+derivative at `x`.  The displayed orientation is
+
+`D tau (Gamma_alpha(v,w)) = Gamma_beta(D tau v,D tau w) + D^2 tau(v,w)`.
+
+The equation is the coordinate form of the connection transformation used in
+Morgan--Tian's equation (1.1) and Definition 1.17 (printed p. 41,
+`morganTian2007`).  It is a proposition, rather than an axiom or a silently
+chosen coefficient, so the eventual metric proof can be supplied independently.
+Chart-source and interior-point hypotheses are deliberately arguments of the
+calculus consumers below; this proposition records only the coefficient
+identity and does not totalize an overlap outside its legitimate chart domain.
+-/
+def HasChristoffelTransitionAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (alpha beta x : M) : Prop :=
+  ∀ v w : E,
+    tangentCoordChange I alpha beta x
+        (chartChristoffelContraction (I := I) g alpha
+          (extChartAt I alpha x) v w) =
+      chartChristoffelContraction (I := I) g beta
+          (extChartAt I beta x)
+          (tangentCoordChange I alpha beta x v)
+          (tangentCoordChange I alpha beta x w) +
+        fderiv ℝ (fderiv ℝ (geodesicChartTransition (I := I) alpha beta))
+          (extChartAt I alpha x) v w
+
 /-- The second-order regularity needed by the coordinate geodesic equation.
 
 The eventual first-derivative clause is intentional: Mathlib's `deriv` is
@@ -991,6 +1037,229 @@ def HasChartGeodesicEquationAt
     (alpha : M) (gamma : ℝ → M) (t : ℝ) : Prop :=
   HasChartGeodesicRegularityAt (I := I) alpha gamma t ∧
     chartAcceleration (I := I) g alpha gamma t = 0
+
+/-! ### Conditional acceleration transport
+
+The next lemmas are the analytic consumers of
+`HasChristoffelTransitionAt`.  The eventual derivative equality is kept in
+the interface because `deriv` is totalized: a future regularity theorem must
+prove it on a neighbourhood before this transport can be applied. -/
+
+omit [FiniteDimensional ℝ E] in
+/-- On a neighbourhood of an overlapping point, identify the totalized
+derivative of the beta chart reading with the differentiated transition of the
+alpha reading.
+
+The `hregular` premise records exactly the local information needed by the
+first-order chart-transition theorem at nearby times.  In particular, it does
+not infer interior points or continuity from a pointwise equation. -/
+theorem chartReading_transition_deriv_eq_of_eventually_regular
+    {alpha beta : M} {gamma : ℝ → M} {t : ℝ}
+    (hcont : ContinuousAt gamma t)
+    (hα : gamma t ∈ (chartAt H alpha).source)
+    (hβ : gamma t ∈ (chartAt H beta).source)
+    (hreg : HasChartGeodesicRegularityAt (I := I) alpha gamma t)
+    (hregular : ∀ᶠ s in 𝓝 t,
+      ContinuousAt gamma s ∧ I.IsInteriorPoint (gamma s)) :
+    deriv (chartReading (I := I) beta gamma) =ᶠ[𝓝 t]
+      (fun s ↦
+        (fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+          (chartReading (I := I) alpha gamma s))
+          (deriv (chartReading (I := I) alpha gamma) s)) := by
+  have hmem : ∀ᶠ s in 𝓝 t,
+      gamma s ∈ (chartAt H alpha).source ∧ gamma s ∈ (chartAt H beta).source := by
+    have hn : (chartAt H alpha).source ∩ (chartAt H beta).source ∈ 𝓝 (gamma t) :=
+      ((chartAt H alpha).open_source.inter (chartAt H beta).open_source).mem_nhds
+        ⟨hα, hβ⟩
+    exact hcont.preimage_mem_nhds hn
+  filter_upwards [hmem, hregular, hreg.2.2.1] with s hs hlocal hfirst
+  have hβfirst := chartReading_transition_hasDerivAt (I := I)
+    hlocal.1 hs.1 hs.2 hlocal.2 hfirst
+  have hτ := geodesicChartTransition_fderiv (I := I) hs.1 hs.2 hlocal.2
+  have hτ' : tangentCoordChange I alpha beta (gamma s) =
+      fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+        (chartReading (I := I) alpha gamma s) := by
+    symm
+    simpa only [chartReading] using hτ
+  have hτ'' := congrArg (fun L : E →L[ℝ] E =>
+      L (deriv (chartReading (I := I) alpha gamma) s)) hτ'
+  exact (hβfirst.congr_deriv hτ'').deriv
+
+/-- Transport the coordinate acceleration across an overlapping chart pair,
+assuming the Christoffel transition law and the derivative equality for the
+second chart reading.
+
+The first chart's regularity supplies the applied second-order chain rule.  The
+explicit eventual equality identifies that chain-rule function with the
+totalized derivative of the beta reading, and hence identifies the beta
+acceleration.  This theorem is the precise fixed-chart-to-moving-chart
+interface needed by the later metric transformation proof; it does not claim
+that `HasChristoffelTransitionAt` is already available for every metric.
+
+Source anchor: Morgan--Tian, Definition 1.17 and equation (1.1), printed p. 41
+(`morganTian2007`). -/
+theorem chartAcceleration_transition_of_eventuallyEq
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    {alpha beta : M} {gamma : ℝ → M} {t : ℝ}
+    (hcont : ContinuousAt gamma t)
+    (hα : gamma t ∈ (chartAt H alpha).source)
+    (hβ : gamma t ∈ (chartAt H beta).source)
+    (hx : I.IsInteriorPoint (gamma t))
+    (hreg : HasChartGeodesicRegularityAt (I := I) alpha gamma t)
+    (hderiv : deriv (chartReading (I := I) beta gamma) =ᶠ[𝓝 t]
+      (fun s ↦
+        (fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+          (chartReading (I := I) alpha gamma s))
+          (deriv (chartReading (I := I) alpha gamma) s)))
+    (htransition : HasChristoffelTransitionAt (I := I) g alpha beta
+      (gamma t)) :
+    chartAcceleration (I := I) g beta gamma t =
+      tangentCoordChange I alpha beta (gamma t)
+        (chartAcceleration (I := I) g alpha gamma t) := by
+  have hchain := chartReading_transition_deriv_fderiv_apply_hasDerivAt
+    (I := I) hα hβ hx hreg.2.1 hreg.2.2.2.hasDerivAt
+  have hsecond := (hchain.congr_of_eventuallyEq hderiv).deriv
+  have hvelocity := hderiv.self_of_nhds
+  have hposition := (chartReading_transition_eventuallyEq (I := I) hcont hα hβ).self_of_nhds
+  have hτ := geodesicChartTransition_fderiv (I := I) hα hβ hx
+  have hτ' : fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+      (chartReading (I := I) alpha gamma t) =
+      tangentCoordChange I alpha beta (gamma t) := by
+    simpa only [chartReading] using hτ
+  have hαcoord : chartReading (I := I) alpha gamma t =
+      extChartAt I alpha (gamma t) := rfl
+  have hβcoord : geodesicChartTransition (I := I) alpha beta
+      (chartReading (I := I) alpha gamma t) = extChartAt I beta (gamma t) := by
+    unfold geodesicChartTransition chartReading
+    change extChartAt I beta ((extChartAt I alpha).symm
+      (extChartAt I alpha (gamma t))) = extChartAt I beta (gamma t)
+    rw [(extChartAt I alpha).left_inv
+      (by simpa only [extChartAt_source] using hα)]
+  have hvelocity' : deriv (chartReading (I := I) beta gamma) t =
+      tangentCoordChange I alpha beta (gamma t)
+        (deriv (chartReading (I := I) alpha gamma) t) := by
+    calc
+      deriv (chartReading (I := I) beta gamma) t =
+          (fun s ↦
+            (fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+              (chartReading (I := I) alpha gamma s))
+              (deriv (chartReading (I := I) alpha gamma) s)) t := hvelocity
+      _ = tangentCoordChange I alpha beta (gamma t)
+          (deriv (chartReading (I := I) alpha gamma) t) := by
+        change (fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+          (chartReading (I := I) alpha gamma t))
+            (deriv (chartReading (I := I) alpha gamma) t) = _
+        rw [hτ']
+  have hposition' : chartReading (I := I) beta gamma t =
+      extChartAt I beta (gamma t) := by
+    calc
+      chartReading (I := I) beta gamma t =
+          (geodesicChartTransition (I := I) alpha beta ∘
+            chartReading (I := I) alpha gamma) t := hposition
+      _ = geodesicChartTransition (I := I) alpha beta
+          (chartReading (I := I) alpha gamma t) := rfl
+      _ = extChartAt I beta (gamma t) := hβcoord
+  unfold chartAcceleration
+  rw [hsecond, hvelocity', hposition', hαcoord]
+  have hlaw := htransition
+    (deriv (chartReading (I := I) alpha gamma) t)
+    (deriv (chartReading (I := I) alpha gamma) t)
+  rw [map_add]
+  rw [hlaw]
+  rw [hτ]
+  abel
+
+/-- Transfer a solved chart geodesic equation to an overlapping chart.
+
+The pointwise transition identity is supplied by `htransition`; the
+`hregular` filter records the nearby continuity and interior hypotheses needed
+to identify the beta reading's totalized derivatives.  Thus this theorem is a
+conditional bridge from the fixed-chart IVP to the moving-foot contract, with
+no unproved chart-independence hidden in the conclusion.
+
+Source anchor: Morgan--Tian, Definition 1.17 and equation (1.1), printed p. 41
+(`morganTian2007`). -/
+theorem HasChartGeodesicEquationAt.transfer_of_christoffel_transition
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    {alpha beta : M} {gamma : ℝ → M} {t : ℝ}
+    (hcont : ContinuousAt gamma t)
+    (hα : gamma t ∈ (chartAt H alpha).source)
+    (hβ : gamma t ∈ (chartAt H beta).source)
+    (hx : I.IsInteriorPoint (gamma t))
+    (hregular : ∀ᶠ s in 𝓝 t,
+      ContinuousAt gamma s ∧ I.IsInteriorPoint (gamma s))
+    (hαeq : HasChartGeodesicEquationAt (I := I) g alpha gamma t)
+    (htransition : HasChristoffelTransitionAt (I := I) g alpha beta
+      (gamma t)) :
+    HasChartGeodesicEquationAt (I := I) g beta gamma t := by
+  have hderiv := chartReading_transition_deriv_eq_of_eventually_regular
+    (I := I) hcont hα hβ hαeq.1 hregular
+  have hmem : ∀ᶠ s in 𝓝 t,
+      gamma s ∈ (chartAt H alpha).source ∧ gamma s ∈ (chartAt H beta).source := by
+    have hn : (chartAt H alpha).source ∩ (chartAt H beta).source ∈ 𝓝 (gamma t) :=
+      ((chartAt H alpha).open_source.inter (chartAt H beta).open_source).mem_nhds
+        ⟨hα, hβ⟩
+    exact hcont.preimage_mem_nhds hn
+  have hchain := chartReading_transition_deriv_fderiv_apply_hasDerivAt
+    (I := I) hα hβ hx hαeq.1.2.1 hαeq.1.2.2.2.hasDerivAt
+  have hsecond := hchain.congr_of_eventuallyEq hderiv
+  have hfirst_beta : HasDerivAt (chartReading (I := I) beta gamma)
+      (deriv (chartReading (I := I) beta gamma) t) t := by
+    have hbase := chartReading_transition_hasDerivAt (I := I) hcont hα hβ hx
+      hαeq.1.2.1
+    have hτ := geodesicChartTransition_fderiv (I := I) hα hβ hx
+    have hτ' : tangentCoordChange I alpha beta (gamma t) =
+        fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+          (chartReading (I := I) alpha gamma t) := by
+      symm
+      simpa only [chartReading] using hτ
+    have hv : tangentCoordChange I alpha beta (gamma t)
+          (deriv (chartReading (I := I) alpha gamma) t) =
+        deriv (chartReading (I := I) beta gamma) t := by
+      calc
+        _ = (fun s ↦
+            (fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+              (chartReading (I := I) alpha gamma s))
+              (deriv (chartReading (I := I) alpha gamma) s)) t := by
+          rw [hτ']
+        _ = deriv (chartReading (I := I) beta gamma) t :=
+          (hderiv.self_of_nhds).symm
+    exact hbase.congr_deriv hv
+  have hfirst_beta_eventually : ∀ᶠ s in 𝓝 t,
+      HasDerivAt (chartReading (I := I) beta gamma)
+        (deriv (chartReading (I := I) beta gamma) s) s := by
+    filter_upwards [hmem, hregular, hαeq.1.2.2.1, hderiv] with s hs hlocal hfirst hds
+    have hbase := chartReading_transition_hasDerivAt (I := I) hlocal.1 hs.1 hs.2
+      hlocal.2 hfirst
+    have hτ := geodesicChartTransition_fderiv (I := I) hs.1 hs.2 hlocal.2
+    have hτ' : tangentCoordChange I alpha beta (gamma s) =
+        fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+          (chartReading (I := I) alpha gamma s) := by
+      symm
+      simpa only [chartReading] using hτ
+    have hv : tangentCoordChange I alpha beta (gamma s)
+          (deriv (chartReading (I := I) alpha gamma) s) =
+        deriv (chartReading (I := I) beta gamma) s := by
+      calc
+        _ = (fderiv ℝ (geodesicChartTransition (I := I) alpha beta)
+            (chartReading (I := I) alpha gamma s))
+              (deriv (chartReading (I := I) alpha gamma) s) := by
+          rw [hτ']
+        _ = deriv (chartReading (I := I) beta gamma) s := hds.symm
+    exact hbase.congr_deriv hv
+  have hmem_beta : ∀ᶠ s in 𝓝 t,
+      gamma s ∈ (chartAt H beta).source := by
+    filter_upwards [hmem] with s hs
+    exact hs.2
+  have hreg_beta : HasChartGeodesicRegularityAt (I := I) beta gamma t := by
+    refine ⟨hmem_beta, hfirst_beta, hfirst_beta_eventually, ?_⟩
+    exact hsecond.differentiableAt
+  refine ⟨hreg_beta, ?_⟩
+  have hacc := chartAcceleration_transition_of_eventuallyEq
+    (I := I) g hcont hα hβ hx hαeq.1 hderiv htransition
+  rw [hacc, hαeq.2, map_zero]
 
 /-- The chart equation on a set of times. -/
 def HasChartGeodesicEquationOn
@@ -1599,6 +1868,71 @@ structure GeodesicSolution
     HasDerivAt (chartReading (I := I) p curve) (chartVelocityAt (I := I) p v) 0
   chart_smooth : ContDiffOn ℝ ∞ (chartReading (I := I) p curve) domain
   equation : IsGeodesicCurveOn (I := I) g curve domain
+
+/-- Conditional local nonemptiness for the intrinsic solution family.
+
+Assume that the canonical bundled Levi--Civita coefficients satisfy
+`HasChristoffelTransitionAt` for every pair of chart centres and every point.
+Then the boundaryless local fixed-chart IVP can be transported to the moving
+foot at each time and packaged as a `GeodesicSolution`.  The only completeness
+hypothesis is the model-space `[CompleteSpace E]` required by Mathlib's local
+integral-curve theorem; metric completeness is neither assumed nor inferred.
+
+The transition law remains an explicit premise.  Its proof from
+`Connection.leviCivitaConnection` is the separate metric slice of S18.
+
+Source anchor: Morgan--Tian, Definition 1.17 and the coordinate/initial-value
+paragraph on printed p. 41 (`morganTian2007`). -/
+theorem nonempty_localGeodesicSolution_of_christoffel_transition
+    [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E
+      (TangentSpace I : M → Type _))
+    (p : M) (v : TangentSpace I p)
+    (htransition : ∀ alpha beta x : M,
+      HasChristoffelTransitionAt (I := I) g alpha beta x) :
+    Nonempty (GeodesicSolution (I := I) g p v) := by
+  obtain ⟨ε, hε, gamma, hposition, hvelocity, hequation, hinterior,
+      hsmooth, hcontinuous⟩ :=
+    exists_localChartGeodesicAt_smooth_boundaryless (I := I) g p v
+  have hzero : (0 : ℝ) ∈ Ioo (-ε) ε := by
+    constructor <;> linarith
+  have hcurve : IsGeodesicCurveOn (I := I) g gamma (Ioo (-ε) ε) := by
+    refine ⟨?_, ?_⟩
+    · intro t ht
+      exact (hcontinuous t ht).continuousWithinAt
+    · intro t ht
+      have hα : gamma t ∈ (chartAt H p).source := (hequation t ht).1
+      have hβ : gamma t ∈ (chartAt H (gamma t)).source :=
+        mem_chart_source H (gamma t)
+      have hregular : ∀ᶠ s in 𝓝 t,
+          ContinuousAt gamma s ∧ I.IsInteriorPoint (gamma s) := by
+        filter_upwards [Ioo_mem_nhds ht.1 ht.2] with s hs
+        exact ⟨hcontinuous s hs, BoundarylessManifold.isInteriorPoint⟩
+      have hmoving :=
+        HasChartGeodesicEquationAt.transfer_of_christoffel_transition
+          (I := I) g (hcontinuous t ht) hα hβ
+          BoundarylessManifold.isInteriorPoint hregular (hequation t ht).2
+          (htransition p (gamma t) (gamma t))
+      refine ⟨hβ, hcontinuous t ht, hmoving.1, ?_⟩
+      have hacc :
+          deriv (deriv (chartReading (I := I) (gamma t) gamma)) t +
+            chartChristoffelContraction (I := I) g (gamma t)
+              (chartReading (I := I) (gamma t) gamma t)
+              (deriv (chartReading (I := I) (gamma t) gamma) t)
+              (deriv (chartReading (I := I) (gamma t) gamma) t) = 0 := by
+        simpa [chartAcceleration, chartChristoffelContraction] using hmoving.2
+      rw [connectionAcceleration, hacc, map_zero]
+  refine ⟨{
+    domain := Ioo (-ε) ε
+    isOpen_domain := isOpen_Ioo
+    isPreconnected_domain := isPreconnected_Ioo
+    zero_mem_domain := hzero
+    curve := gamma
+    initial_position := hposition
+    initial_velocity := hvelocity
+    chart_smooth := hsmooth
+    equation := hcurve
+  }⟩
 
 /-- The union of the domains of all currently supplied geodesic solutions with
 the same initial data.  This is only a domain substrate: without the
@@ -2920,6 +3254,20 @@ noncomputable def geodesicSolution_affine_riemannianMetricVectorSpace
     [FiniteDimensional ℝ F] (p v : F) :
     (geodesicSolution_affine_riemannianMetricVectorSpace p v).curve 0 = p := by
   simp [geodesicSolution_affine_riemannianMetricVectorSpace]
+
+/-- The affine Euclidean witness starts with its prescribed tangent velocity.
+
+This named projection complements the initial-position regression and keeps the
+chart-trivialized velocity convention visible to downstream IVP consumers. -/
+theorem geodesicSolution_affine_riemannianMetricVectorSpace_initial_velocity
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (p v : F) :
+    HasDerivAt
+      (chartReading (I := 𝓘(ℝ, F)) p
+        (geodesicSolution_affine_riemannianMetricVectorSpace p v).curve)
+      (chartVelocityAt (I := 𝓘(ℝ, F)) p
+        (v : TangentSpace (𝓘(ℝ, F)) p)) 0 :=
+  (geodesicSolution_affine_riemannianMetricVectorSpace p v).initial_velocity
 
 /-- The affine Euclidean witness forces the maximal-domain substrate to be all
 of time. -/
