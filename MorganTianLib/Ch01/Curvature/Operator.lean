@@ -250,14 +250,34 @@ theorem wedgeInnerOperator_wedge_self_nonneg
   rw [wedgeInnerOperator_ιMulti, wedgeInner_self]
   exact wedgeSq_nonneg x y
 
+/-- The decomposable exterior-square generator of a linearly independent pair
+is nonzero.  The pinned Basic exterior-power API does not state this bridge,
+so it is derived intrinsically by evaluating the metric wedge form: a zero
+bivector would have zero self-pairing, contradicting the strict Gram
+criterion. -/
+theorem ιMulti_ne_zero_of_linearIndependent
+    {W : Type*} [NormedAddCommGroup W] [InnerProductSpace ℝ W]
+    {x y : W} (hxy : LinearIndependent ℝ ![x, y]) :
+    ιMulti ℝ 2 ![x, y] ≠ 0 := by
+  intro hzero
+  have hpos : 0 < wedgeSq x y :=
+    (wedgeSq_pos_iff_linearIndependent x y).mpr hxy
+  have hmetric := wedgeInnerOperator_ιMulti x y x y
+  rw [hzero] at hmetric
+  simp only [map_zero] at hmetric
+  rw [wedgeInner_self] at hmetric
+  linarith
+
 /-- Nonnegative curvature operator, expressed as nonnegativity of the induced
 bilinear form on every exterior-square argument. -/
 def HasNonnegativeCurvatureOperator (hB : IsAlgebraicCurvature B) : Prop :=
   ∀ φ : ⋀[ℝ]^2 V, 0 ≤ curvatureOperator hB φ φ
 
-/-- Positive curvature operator.  The implication to sectional positivity below
-retains explicit nonzero-generator and nonzero-Gram hypotheses because the
-pinned Basic exterior-power API has no wedge/nondegeneracy equivalence. -/
+/-- Positive curvature operator.  The raw transfer lemma below accepts
+explicit nonzero-generator and nonzero-Gram hypotheses because the pinned
+Basic exterior-power API has no wedge/nondegeneracy equivalence; its
+genuine-plane corollary derives both hypotheses from linear independence using
+the metric wedge form. -/
 def HasPositiveCurvatureOperator (hB : IsAlgebraicCurvature B) : Prop :=
   ∀ φ : ⋀[ℝ]^2 V, φ ≠ 0 → 0 < curvatureOperator hB φ φ
 
@@ -281,6 +301,24 @@ theorem sectionalCurvature_pos_of_hasPositiveCurvatureOperator
     0 < sectionalCurvature B x y := by
   rw [sectionalCurvature_eq_curvatureOperator hB]
   exact div_pos (h _ hφ) ((wedgeSq_nonneg x y).lt_of_ne (Ne.symm hw))
+
+/-- A positive curvature operator is positive on every genuine two-plane.  The
+strict Gram criterion supplies both the nonzero decomposable bivector and the
+positive denominator, so callers need only provide linear independence of the
+two generators.
+
+This is the intrinsic algebraic positivity implication in Morgan--Tian
+Definition 1.7 (`morganTian2007`), with the Gram normalization from Definition
+1.6. -/
+theorem sectionalCurvature_pos_of_hasPositiveCurvatureOperator_of_linearIndependent
+    {W : Type*} [NormedAddCommGroup W] [InnerProductSpace ℝ W]
+    {B : W → W → W → W → ℝ} (hB : IsAlgebraicCurvature B)
+    (h : HasPositiveCurvatureOperator hB) {x y : W}
+    (hxy : LinearIndependent ℝ ![x, y]) :
+    0 < sectionalCurvature B x y := by
+  apply sectionalCurvature_pos_of_hasPositiveCurvatureOperator hB h
+  · exact ιMulti_ne_zero_of_linearIndependent hxy
+  · exact ((wedgeSq_pos_iff_linearIndependent x y).mpr hxy).ne'
 
 /-! ### Model and low-dimensional regressions -/
 

@@ -7,6 +7,7 @@ import MorganTianLib.Ch01.Geodesic
 import MorganTianLib.Ch01.Geodesic.HopfRinow
 import MorganTianLib.Ch01.Geodesic.Variation
 import MorganTianLib.Ch01.Curvature
+import MorganTianLib.Ch01.Models.Cone
 import MorganTianLib.Ch01.Curvature.Manifold
 import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Curvature.Plane
