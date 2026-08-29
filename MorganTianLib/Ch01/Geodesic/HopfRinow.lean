@@ -42,6 +42,15 @@ Chapter 7, Section 2, and Lee (`lee2018`), Theorem 6.19.  The
 minimizing-segment interface is intentionally
 weaker than uniqueness or the no-conjugate-subsegment result, which belong to
 later S24/V1 work.
+
+The finite-distance branch is component-local: `Metric` supplies finite
+piecewise-smooth and `C^1` path witnesses for endpoints in
+`connectedComponent x`, and the minimizing-geodesic adapters consume that
+explicit hypothesis without installing global preconnectedness.  This is a
+path/metric bridge only; it does not construct the unresolved compactness
+producer.  The endpoint lemma is stated at a finite right endpoint; a
+left-endpoint adapter and the geodesic speed estimate remain part of the
+future continuation producer.
 -/
 
 noncomputable section
@@ -152,6 +161,115 @@ theorem completeSpace_of_RiemannianMetricComplete
     @CompleteSpace M inferInstance := by
   exact hcomplete
 
+/-! ### Endpoint limits
+
+The following analytic lemma is the endpoint part of the complete-manifold
+argument.  It is deliberately stated for an arbitrary extended metric space:
+the geodesic speed estimate that will eventually discharge its Lipschitz
+premise belongs to the S18 continuation producer. -/
+
+section EndpointCauchy
+
+variable {X : Type*} [EMetricSpace X] [CompleteSpace X]
+
+/-- A one-sided extended-distance Lipschitz bound forces a curve to converge
+at a finite right endpoint.  The proof uses the extended-metric Cauchy
+criterion, so it remains valid without a finite ambient metric and does not
+silently turn metric completeness into the model-space ODE premise.
+
+This is the endpoint-Cauchy ingredient in Morgan--Tian's complete-manifold
+paragraph preceding Theorem 1.18 (`morganTian2007`); compare do Carmo
+(`doCarmo1992`), Chapter 7, and Lee (`lee2018`), Theorem 6.19.  The
+geodesic-to-Lipschitz estimate and the subsequent local-IVP gluing remain
+explicit S18 producer work. -/
+theorem exists_tendsto_of_endpoint_lipschitz
+    {γ : ℝ → X} {a b C : ℝ} (hab : a < b) (hC : 0 ≤ C)
+    (hlip : ∀ s ∈ Ioo a b, ∀ t ∈ Ioo a b, s ≤ t →
+      edist (γ s) (γ t) ≤ ENNReal.ofReal (C * (t - s))) :
+    ∃ p₀ : X, Tendsto γ (𝓝[Ioo a b] b) (𝓝 p₀) := by
+  have hne : (𝓝[Ioo a b] b).NeBot := by
+    rw [← mem_closure_iff_nhdsWithin_neBot, closure_Ioo hab.ne]
+    exact ⟨hab.le, le_rfl⟩
+  letI : (𝓝[Ioo a b] b).NeBot := hne
+  have hcauchy : Cauchy (Filter.map γ (𝓝[Ioo a b] b)) := by
+    rw [EMetric.cauchy_iff]
+    refine ⟨(Filter.map_neBot : (Filter.map γ (𝓝[Ioo a b] b)).NeBot).ne, ?_⟩
+    intro ε hε
+    by_cases htop : ε = ⊤
+    · subst ε
+      refine ⟨γ '' Ioo a b, image_mem_map ?_, ?_⟩
+      · exact self_mem_nhdsWithin
+      · rintro _ ⟨s, hs, rfl⟩ _ ⟨t, ht, rfl⟩
+        rcases le_total s t with hst | hts
+        · exact (hlip s hs t ht hst).trans_lt ENNReal.ofReal_lt_top
+        · rw [edist_comm]
+          exact (hlip t ht s hs hts).trans_lt ENNReal.ofReal_lt_top
+    · have hε0 : 0 < ε.toReal := ENNReal.toReal_pos (ne_of_gt hε) htop
+      let δ : ℝ := ε.toReal / (2 * C + 1)
+      have hδ0 : 0 < δ := by
+        dsimp [δ]
+        positivity
+      have hden : 0 < 2 * C + 1 := by linarith
+      have hδbound : C * δ < ε.toReal := by
+        dsimp [δ]
+        calc
+          C * (ε.toReal / (2 * C + 1)) = (C * ε.toReal) / (2 * C + 1) := by ring
+          _ < ε.toReal := by
+            apply (div_lt_iff₀ hden).2
+            nlinarith [mul_nonneg hC hε0.le]
+      let r : ℝ := δ / 2
+      have hr0 : 0 < r := by dsimp [r]; linarith
+      let U : Set ℝ := Ioo a b ∩ Ioo (b - r) (b + r)
+      refine ⟨γ '' U, image_mem_map ?_, ?_⟩
+      · exact inter_mem self_mem_nhdsWithin
+          (mem_nhdsWithin_of_mem_nhds (Ioo_mem_nhds (by linarith) (by linarith)))
+      · rintro _ ⟨s, hsU, rfl⟩ _ ⟨t, htU, rfl⟩
+        change s ∈ Ioo a b ∩ Ioo (b - r) (b + r) at hsU
+        change t ∈ Ioo a b ∩ Ioo (b - r) (b + r) at htU
+        have hs : s ∈ Ioo a b := hsU.1
+        have ht : t ∈ Ioo a b := htU.1
+        have hsδ : s ∈ Ioo (b - r) (b + r) := hsU.2
+        have htδ : t ∈ Ioo (b - r) (b + r) := htU.2
+        have hdist : |s - t| ≤ δ := by
+          rcases le_total s t with hst | hts
+          · rw [abs_of_nonpos (sub_nonpos.mpr hst)]
+            have hsum : t - s < 2 * r := by
+              nlinarith [hsδ.1, htδ.2]
+            dsimp [r] at hsum ⊢
+            nlinarith [hsum]
+          · rw [abs_of_nonneg (sub_nonneg.mpr hts)]
+            have hsum : s - t < 2 * r := by
+              nlinarith [htδ.1, hsδ.2]
+            dsimp [r] at hsum ⊢
+            nlinarith [hsum]
+        rcases le_total s t with hst | hts
+        · have hbound := hlip s hs t ht hst
+          have hreal : C * (t - s) < ε.toReal := by
+            have hdiff : t - s = |s - t| := by
+              rw [abs_of_nonpos (sub_nonpos.mpr hst)]
+              ring
+            rw [hdiff]
+            exact (mul_le_mul_of_nonneg_left hdist hC).trans_lt hδbound
+          exact hbound.trans_lt (by
+            rw [← ENNReal.ofReal_toReal htop,
+              ENNReal.ofReal_lt_ofReal_iff hε0]
+            exact hreal)
+        · rw [edist_comm]
+          have hbound := hlip t ht s hs hts
+          have hreal : C * (s - t) < ε.toReal := by
+            have hdiff : s - t = |s - t| :=
+              (abs_of_nonneg (sub_nonneg.mpr hts)).symm
+            rw [hdiff]
+            exact (mul_le_mul_of_nonneg_left hdist hC).trans_lt hδbound
+          exact hbound.trans_lt (by
+            rw [← ENNReal.ofReal_toReal htop,
+              ENNReal.ofReal_lt_ofReal_iff hε0]
+            exact hreal)
+  obtain ⟨p₀, hp₀⟩ := CompleteSpace.complete hcauchy
+  exact ⟨p₀, hp₀⟩
+
+end EndpointCauchy
+
 omit [FiniteDimensional ℝ E] in
 /-- On a preconnected manifold the selected extended distance is finite. -/
 theorem canonicalRiemannianEDist_lt_top
@@ -161,6 +279,20 @@ theorem canonicalRiemannianEDist_lt_top
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   exact riemannianEDist_lt_top g x y
+
+omit [FiniteDimensional ℝ E] in
+/-- Component-local canonical-distance finiteness for the explicit selected
+Riemannian metric.  The theorem retains the same bundle representation as
+`RiemannianMetricComplete` and introduces no global preconnectedness class. -/
+theorem canonicalRiemannianEDist_lt_top_of_mem_connectedComponent
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (hy : y ∈ connectedComponent x) :
+    canonicalRiemannianEDist (I := I) g x y < ⊤ := by
+  change
+    (letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩;
+      Manifold.riemannianEDist I x y) < ⊤
+  exact riemannianEDist_lt_top_of_mem_connectedComponent g x y hy
 
 omit [FiniteDimensional ℝ E] in
 /-- Under the selected Mathlib extended metric, ambient `edist` is exactly the
@@ -181,6 +313,32 @@ theorem edist_eq_canonicalRiemannianEDist
     continuousRiemannianBundle g
   letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
   exact edist_eq_riemannianEDist g x y
+
+omit [FiniteDimensional ℝ E] in
+/-- Selected-metric endpoint convergence from an explicit canonical-distance
+Lipschitz bound.  Metric completeness is installed through exactly the
+`EMetricSpace.ofRiemannianMetric` instance used by
+`RiemannianMetricComplete`; `[CompleteSpace E]` is absent because this theorem
+does not invoke the local geodesic ODE. -/
+theorem exists_tendsto_of_canonical_endpoint_lipschitz
+    [T3Space M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (hcomplete : RiemannianMetricComplete (I := I) g)
+    {γ : ℝ → M} {a b C : ℝ} (hab : a < b) (hC : 0 ≤ C)
+    (hlip : ∀ s ∈ Ioo a b, ∀ t ∈ Ioo a b, s ≤ t →
+      canonicalRiemannianEDist (I := I) g (γ s) (γ t) ≤
+        ENNReal.ofReal (C * (t - s))) :
+    ∃ p₀ : M, Tendsto γ (𝓝[Ioo a b] b) (𝓝 p₀) := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
+    continuousRiemannianBundle g
+  letI : EMetricSpace M := EMetricSpace.ofRiemannianMetric I M
+  haveI : CompleteSpace M := completeSpace_of_RiemannianMetricComplete g hcomplete
+  apply exists_tendsto_of_endpoint_lipschitz hab hC
+  intro s hs t ht hst
+  rw [edist_eq_canonicalRiemannianEDist g]
+  exact hlip s hs t ht hst
 
 /-! ## Intrinsic predicates on a lifetime -/
 
@@ -1663,6 +1821,21 @@ theorem exists_minimizingGeodesic_segment
   exists_minimizingGeodesic_of_finite g hcomplete data x y
     (canonicalRiemannianEDist_lt_top g x y)
 
+/-- A finite-distance minimizer is available for endpoints in one connected
+component once the compactness producer is supplied.  The component-local
+finiteness proof comes from `Metric` and does not install a global
+`PreconnectedSpace` assumption.  This keeps disconnected components and the
+producer boundary explicit in the source-facing Hopf--Rinow API. -/
+theorem exists_minimizingGeodesic_segment_of_mem_connectedComponent
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (hcomplete : RiemannianMetricComplete (I := I) g)
+    (data : MinimizingGeodesicData (I := I) g) (x y : M)
+    (hy : y ∈ connectedComponent x) :
+    Nonempty (MinimizingGeodesic (I := I) g x y) := by
+  exact exists_minimizingGeodesic_of_finite g hcomplete data x y
+    (canonicalRiemannianEDist_lt_top_of_mem_connectedComponent g x y hy)
+
 /-- Source-facing existence statement for a minimizing geodesic on a connected
 component.  The length equality is stated against the canonical
 `riemannianEDist`; the real `dist` form is provided by
@@ -1682,6 +1855,28 @@ theorem exists_minimizingGeodesic
       canonicalPathELength (I := I) g γ 0 1 =
         canonicalRiemannianEDist (I := I) g x y := by
   rcases exists_minimizingGeodesic_segment g hcomplete data x y with ⟨G⟩
+  refine ⟨G.path, G.path.source, G.path.target, G.geodesic_on,
+    G.constant_speed, G.length_eq_distance⟩
+
+/-- Source-facing minimizing-geodesic data for endpoints in a connected
+component.  The constant-speed and canonical-length identities are inherited
+from the same `MinimizingGeodesic` producer used by the global theorem. -/
+theorem exists_minimizingGeodesic_of_mem_connectedComponent
+    [T3Space M] [CompleteSpace E] [BoundarylessManifold I M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (hcomplete : RiemannianMetricComplete (I := I) g)
+    (data : MinimizingGeodesicData (I := I) g) (x y : M)
+    (hy : y ∈ connectedComponent x) :
+    ∃ γ : ℝ → M,
+      γ 0 = x ∧ γ 1 = y ∧
+      isGeodesicOn (I := I) g γ (Set.Icc (0 : ℝ) 1) ∧
+      (∀ s ∈ Set.Icc (0 : ℝ) 1, ∀ t ∈ Set.Icc (0 : ℝ) 1,
+        canonicalRiemannianEDist (I := I) g (γ s) (γ t) =
+          ENNReal.ofReal |s - t| * canonicalRiemannianEDist (I := I) g x y) ∧
+      canonicalPathELength (I := I) g γ 0 1 =
+        canonicalRiemannianEDist (I := I) g x y := by
+  rcases exists_minimizingGeodesic_segment_of_mem_connectedComponent
+      g hcomplete data x y hy with ⟨G⟩
   refine ⟨G.path, G.path.source, G.path.target, G.geodesic_on,
     G.constant_speed, G.length_eq_distance⟩
 
@@ -1756,6 +1951,15 @@ theorem finite_distance_component_probe
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
     (x y : M) : canonicalRiemannianEDist (I := I) g x y < ⊤ :=
   canonicalRiemannianEDist_lt_top g x y
+
+omit [FiniteDimensional ℝ E] in
+/-- The finite-distance regression now also accepts the precise connected
+component hypothesis used by the minimizer producer. -/
+theorem finite_distance_connectedComponent_probe
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (hy : y ∈ connectedComponent x) :
+    canonicalRiemannianEDist (I := I) g x y < ⊤ := by
+  exact canonicalRiemannianEDist_lt_top_of_mem_connectedComponent g x y hy
 
 /-- Disconnected manifolds use the finite-distance branch explicitly: a pair
 in different extended-distance components is not silently fed to the

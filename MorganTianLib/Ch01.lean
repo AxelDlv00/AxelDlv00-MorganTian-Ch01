@@ -50,6 +50,8 @@ S19 Hopf--Rinow boundary is exported through the direct
 model-space ODE completeness, and boundarylessness independent, and exposes
 the selected-distance completeness bridge, open/order-connected
 maximal-lifetime contract, source-facing geodesic-completeness wrapper,
+the generic and selected-metric right-endpoint Cauchy lemmas under an explicit
+extended-distance Lipschitz premise,
 proof-backed affine geodesic/restriction transport, finite subsegment
 length-realization, affine path-length and translation compatibility, and an
 explicit candidate-versus-competitor inequality.  The universal continuation
@@ -58,7 +60,10 @@ regression checks that quantifier independently of the selected producer.  Its
 maximal-domain and compactness producers remain explicit inputs; the regressions
 cover
 subsingleton, Euclidean, bounded-lifetime, disconnected-component, and
-incomplete-metric cases without asserting uniqueness.  The S20 geodesic
+incomplete-metric cases without asserting uniqueness.  The metric layer also
+exports component-local finite-path and finite-distance witnesses, and the
+Hopf--Rinow layer provides component-local minimizer adapters that retain the
+explicit producer input.  The S20 geodesic
 energy/first-variation contract depends only on the canonical metric/connection
 layers.  Later milestones add Jacobi, normal-coordinate, and
 manifold-comparison modules without exposing chart plumbing as public API.
