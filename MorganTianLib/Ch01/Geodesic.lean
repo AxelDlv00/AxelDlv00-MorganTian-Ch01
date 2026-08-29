@@ -2245,6 +2245,7 @@ theorem chartAcceleration_affine_riemannianMetricVectorSpace_zero
     exact chartChristoffelContraction_riemannianMetricVectorSpace_zero
       (alpha := alpha) (y := a + s • v) (v := v) (w := v)
 
+
 /-! ### Nonconstant metric sign regression
 
 The flat Euclidean calculation above cannot distinguish the sign of the
@@ -2519,6 +2520,85 @@ private theorem chartChristoffelContraction_nonconstantMetric_ne_zero :
   rw [chartChristoffelContraction_nonconstantMetric]
   norm_num
 
+private def nonconstantMetricSignProbeCurve (t : ℝ) : ℝ :=
+  1 + t + (1 / 4 : ℝ) * t ^ 2
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Equation-level nonconstant-metric sign regression.
+
+At time zero the probe has position `1`, velocity `1`, and second derivative
+`1 / 2`, exactly the Christoffel contraction computed above.  Consequently
+the reversed equation `u'' - Gamma(u',u') = 0` holds at the probe time while
+the canonical Morgan--Tian residual `u'' + Gamma(u',u')` is nonzero. -/
+private theorem nonconstantMetric_sign_probe :
+    chartAcceleration (I := 𝓘(ℝ, ℝ)) nonconstantMetric (0 : ℝ)
+        nonconstantMetricSignProbeCurve 0 = 1 ∧
+      deriv (deriv (chartReading (I := 𝓘(ℝ, ℝ)) (0 : ℝ)
+        nonconstantMetricSignProbeCurve)) 0 -
+          chartChristoffelContraction (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+            (0 : ℝ) (1 : ℝ) (1 : ℝ) (1 : ℝ) = 0 ∧
+      chartAcceleration (I := 𝓘(ℝ, ℝ)) nonconstantMetric (0 : ℝ)
+        nonconstantMetricSignProbeCurve 0 ≠ 0 := by
+  have hread :
+      chartReading (I := 𝓘(ℝ, ℝ)) (0 : ℝ)
+          nonconstantMetricSignProbeCurve = nonconstantMetricSignProbeCurve := by
+    funext t
+    simp [chartReading, nonconstantMetricSignProbeCurve]
+  have hfirst (t : ℝ) :
+      HasDerivAt nonconstantMetricSignProbeCurve
+        (1 + (1 / 2 : ℝ) * t) t := by
+    have h := (hasDerivAt_const (x := t) (c := (1 : ℝ))).add
+      ((hasDerivAt_id t).add
+        (((hasDerivAt_id t).pow 2).const_mul (1 / 4 : ℝ)))
+    unfold nonconstantMetricSignProbeCurve
+    change HasDerivAt (fun x : ℝ => 1 + (x + (1 / 4 : ℝ) * x ^ 2)) _ t at h
+    convert h using 1
+    · funext x
+      ring
+    · simp
+      ring
+  have hderiv : deriv nonconstantMetricSignProbeCurve =
+      (fun t : ℝ => 1 + (1 / 2 : ℝ) * t) := by
+    funext t
+    exact (hfirst t).deriv
+  have hsecond : deriv (deriv nonconstantMetricSignProbeCurve) 0 =
+      (1 / 2 : ℝ) := by
+    rw [hderiv]
+    have h := ((hasDerivAt_id (0 : ℝ)).const_mul (1 / 2 : ℝ)).const_add 1
+    change HasDerivAt (fun x : ℝ => 1 + (1 / 2 : ℝ) * x) _ 0 at h
+    simpa only [mul_one] using h.deriv
+  have hsecond_read :
+      deriv (deriv (chartReading (I := 𝓘(ℝ, ℝ)) (0 : ℝ)
+        nonconstantMetricSignProbeCurve)) 0 = (1 / 2 : ℝ) := by
+    rw [hread]
+    exact hsecond
+  have hfirst_read :
+      deriv (chartReading (I := 𝓘(ℝ, ℝ)) (0 : ℝ)
+        nonconstantMetricSignProbeCurve) 0 = (1 : ℝ) := by
+    rw [hread, hderiv]
+    norm_num
+  have hread_zero :
+      chartReading (I := 𝓘(ℝ, ℝ)) (0 : ℝ)
+        nonconstantMetricSignProbeCurve 0 = (1 : ℝ) := by
+    simp [hread, nonconstantMetricSignProbeCurve]
+  have hcontraction :
+      chartChristoffelContraction (I := 𝓘(ℝ, ℝ)) nonconstantMetric
+        (0 : ℝ) (1 : ℝ) (1 : ℝ) (1 : ℝ) = (1 / 2 : ℝ) :=
+    chartChristoffelContraction_nonconstantMetric
+  have hcanonical :
+      chartAcceleration (I := 𝓘(ℝ, ℝ)) nonconstantMetric (0 : ℝ)
+        nonconstantMetricSignProbeCurve 0 ≠ 0 := by
+    unfold chartAcceleration
+    rw [hsecond_read, hread_zero, hfirst_read, hcontraction]
+    norm_num
+  refine ⟨?_, ?_, hcanonical⟩
+  · unfold chartAcceleration
+    rw [hsecond_read, hread_zero, hfirst_read, hcontraction]
+    norm_num
+  · rw [hsecond_read]
+    rw [hcontraction]
+    exact sub_self _
+
  /-! ### Global zero-velocity solution regression
 
 The general nonempty maximal-domain witness still needs the fixed-to-moving
@@ -2589,6 +2669,7 @@ theorem maximalGeodesicDomain_zero_velocity_hasUnboundedLifetime
         (v := (0 : TangentSpace I p))) := by
   rw [maximalGeodesicDomain_zero_velocity (I := I) g p]
   exact hasUnboundedLifetime_univ
+
 
 /-- The local geodesic contract is equivalent to the Morgan--Tian coordinate
 equation in the chart centred at the foot.  This is an unfolding in the same
@@ -2697,6 +2778,173 @@ theorem isGeodesicAt_iff_coordinate_formula
           (deriv (chartReading (I := I) (gamma t) gamma) t) = 0 := by
   rw [isGeodesicAt_iff_chartEquation]
   rfl
+
+/-! ### Euclidean affine geodesic regression
+
+The coefficient and acceleration calculations above are fixed-chart probes.
+The following theorem closes the corresponding source-facing model branch: in
+the model manifold every extended chart is the identity, so the same affine
+path satisfies the moving-foot regularity and Levi--Civita equation at every
+time.  It does not assert the still-pending general chart-invariance theorem. -/
+
+/-- An affine path in the canonical Euclidean model satisfies the complete
+source-facing geodesic predicate.
+
+This is the nonzero-velocity companion to `isGeodesic_const_riemannianMetricVectorSpace`.
+It records the full Morgan--Tian geodesic predicate, rather than only the
+coordinate acceleration, and is used below to build a global solution witness.
+
+Source anchor: Morgan--Tian, Definition 1.17 and equation (1.1), printed p. 41
+(`morganTian2007`). -/
+theorem isGeodesic_affine_riemannianMetricVectorSpace
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (p v : F) :
+    isGeodesic (I := 𝓘(ℝ, F)) (M := F)
+      ({ riemannianMetricVectorSpace F with
+          contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top })
+      (fun s : ℝ => p + s • v) := by
+  let g : Bundle.ContMDiffRiemannianMetric (𝓘(ℝ, F)) ∞ F
+      (TangentSpace (𝓘(ℝ, F)) : F → Type _) :=
+    { riemannianMetricVectorSpace F with
+        contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }
+  have hderiv (alpha : F) (s : ℝ) :
+      HasDerivAt
+        (chartReading (I := 𝓘(ℝ, F)) alpha (fun r : ℝ => p + r • v)) v s := by
+    change HasDerivAt (fun r : ℝ => p + r • v) v s
+    have h := (hasDerivAt_const (x := s) (c := p)).add
+      ((hasDerivAt_id s).smul_const v)
+    have hfun : (fun x : ℝ => p) + (fun y : ℝ => id y • v) =
+        (fun r : ℝ => p + r • v) := by
+      funext r
+      rfl
+    rw [hfun] at h
+    simpa using h
+  have hderiv_fun (alpha : F) :
+      deriv (chartReading (I := 𝓘(ℝ, F)) alpha
+        (fun r : ℝ => p + r • v)) = (fun _ : ℝ => v) := by
+    funext s
+    exact (hderiv alpha s).deriv
+  refine ⟨?_, ?_⟩
+  · exact continuous_const.add (continuous_id.smul continuous_const)
+  · intro t
+    rw [isGeodesicAt_iff_coordinate_formula]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · simpa only using (mem_chart_source F (p + t • v))
+    · exact continuousAt_const.add (continuousAt_id.smul continuousAt_const)
+    · refine ⟨?_, ?_, ?_, ?_⟩
+      · filter_upwards [] with s
+        simp
+      · have h := (hderiv (p + t • v) t).congr_deriv
+          (congrFun (hderiv_fun (p + t • v)) t).symm
+        exact h
+      · filter_upwards [] with s
+        have h := (hderiv (p + t • v) s).congr_deriv
+            (congrFun (hderiv_fun (p + t • v)) s).symm
+        exact h
+      · rw [hderiv_fun]
+        exact differentiableAt_const (c := v)
+    · change chartAcceleration (I := 𝓘(ℝ, F)) g (p + t • v)
+        (fun s : ℝ => p + s • v) t = 0
+      simpa [g] using
+        (chartAcceleration_affine_riemannianMetricVectorSpace_zero
+          (alpha := p + t • v) (a := p) (v := v) t)
+
+/-- A straight affine path supplies a global bundled solution in the
+Euclidean model, for arbitrary initial position and velocity.
+
+The witness is deliberately stated on `Set.univ`: it exercises the
+nonempty/global branch of the solution-domain API without claiming the
+unconditional overlap-gluing theorem for a general Riemannian metric.
+
+Source anchor: Morgan--Tian, Definition 1.17 and the coordinate initial-value
+paragraph on printed p. 41 (`morganTian2007`). -/
+noncomputable def geodesicSolution_affine_riemannianMetricVectorSpace
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (p v : F) :
+    GeodesicSolution (I := 𝓘(ℝ, F))
+      ({ riemannianMetricVectorSpace F with
+          contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top })
+      p (v : TangentSpace (𝓘(ℝ, F)) p) := by
+  let g : Bundle.ContMDiffRiemannianMetric (𝓘(ℝ, F)) ∞ F
+      (TangentSpace (𝓘(ℝ, F)) : F → Type _) :=
+    { riemannianMetricVectorSpace F with
+        contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }
+  let gamma : ℝ → F := fun s ↦ p + s • v
+  have hcurve : IsGeodesicCurveOn (I := 𝓘(ℝ, F)) g gamma (Set.univ : Set ℝ) := by
+    apply (isGeodesic_iff_isGeodesicOn_univ (I := 𝓘(ℝ, F)) g gamma).mp
+    simpa [g, gamma] using isGeodesic_affine_riemannianMetricVectorSpace p v
+  have hvelocity : chartVelocityAt (I := 𝓘(ℝ, F)) p
+      (v : TangentSpace (𝓘(ℝ, F)) p) = v := by
+    unfold chartVelocityAt
+    rw [TangentBundle.trivializationAt_apply]
+    simp
+  have hinitial_velocity :
+      HasDerivAt (chartReading (I := 𝓘(ℝ, F)) p gamma)
+        (chartVelocityAt (I := 𝓘(ℝ, F)) p
+          (v : TangentSpace (𝓘(ℝ, F)) p)) 0 := by
+    have hread : chartReading (I := 𝓘(ℝ, F)) p gamma =
+        (fun s : ℝ ↦ p + s • v) := by
+      funext s
+      simp [chartReading, gamma]
+    rw [hread, hvelocity]
+    have h := (hasDerivAt_const (x := (0 : ℝ)) (c := p)).add
+      ((hasDerivAt_id (0 : ℝ)).smul_const v)
+    have hfun : (fun x : ℝ ↦ p) + (fun y : ℝ ↦ id y • v) =
+        (fun s : ℝ ↦ p + s • v) := by
+      funext s
+      rfl
+    rw [hfun] at h
+    simpa only [zero_add, one_smul] using h
+  have hsmooth :
+      ContDiffOn ℝ ∞ (chartReading (I := 𝓘(ℝ, F)) p gamma)
+        (Set.univ : Set ℝ) := by
+    change ContDiffOn ℝ ∞ (fun s : ℝ ↦ p + s • v) (Set.univ : Set ℝ)
+    exact (contDiff_const.add (contDiff_id.smul contDiff_const)).contDiffOn
+  refine ⟨Set.univ, isOpen_univ, isPreconnected_univ, Set.mem_univ 0,
+    gamma, ?_, ?_, hsmooth, ?_⟩
+  · simp [gamma]
+  · simpa [hvelocity] using hinitial_velocity
+  · simpa [g, gamma] using hcurve
+
+/-- The affine Euclidean witness is defined on all real times. -/
+@[simp] theorem geodesicSolution_affine_riemannianMetricVectorSpace_domain
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (p v : F) :
+    (geodesicSolution_affine_riemannianMetricVectorSpace p v).domain =
+      (Set.univ : Set ℝ) := by
+  simp [geodesicSolution_affine_riemannianMetricVectorSpace]
+
+/-- The affine Euclidean witness starts at its prescribed position. -/
+@[simp] theorem geodesicSolution_affine_riemannianMetricVectorSpace_initial_position
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (p v : F) :
+    (geodesicSolution_affine_riemannianMetricVectorSpace p v).curve 0 = p := by
+  simp [geodesicSolution_affine_riemannianMetricVectorSpace]
+
+/-- The affine Euclidean witness forces the maximal-domain substrate to be all
+of time. -/
+theorem maximalGeodesicDomain_affine_riemannianMetricVectorSpace
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (p v : F) :
+    maximalGeodesicDomain (I := 𝓘(ℝ, F))
+      (g := ({ riemannianMetricVectorSpace F with
+        contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }))
+      (p := p) (v := (v : TangentSpace (𝓘(ℝ, F)) p)) = (Set.univ : Set ℝ) := by
+  exact maximalGeodesicDomain_eq_univ_of_global_solution
+    (geodesicSolution_affine_riemannianMetricVectorSpace p v)
+    (geodesicSolution_affine_riemannianMetricVectorSpace_domain p v)
+
+/-- The affine Euclidean maximal-domain regression has an unbounded lifetime. -/
+theorem maximalGeodesicDomain_affine_riemannianMetricVectorSpace_hasUnboundedLifetime
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [FiniteDimensional ℝ F] (p v : F) :
+    HasUnboundedLifetime
+      (maximalGeodesicDomain (I := 𝓘(ℝ, F))
+        (g := ({ riemannianMetricVectorSpace F with
+          contMDiff := (riemannianMetricVectorSpace F).contMDiff.of_le le_top }))
+        (p := p) (v := (v : TangentSpace (𝓘(ℝ, F)) p))) := by
+  rw [maximalGeodesicDomain_affine_riemannianMetricVectorSpace p v]
+  exact hasUnboundedLifetime_univ
 
 /-! ### Affine reparameterization
 

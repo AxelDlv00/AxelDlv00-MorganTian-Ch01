@@ -696,24 +696,6 @@ theorem contMDiff_leviCivitaConnection
     ⟨g.toRiemannianMetric⟩
   exact contMDiffCovariantDerivative_bundled (I := I)
 
-/-- Point-local smoothness of the Levi--Civita derivative of two smooth vector
-fields.
-
-This is the local regularity form used by coordinate consumers.  Unlike the
-bundled `ContMDiffCovariantDerivative` predicate, it only asks that the two
-input fields be smooth at the point under consideration. -/
-theorem contMDiffAt_leviCivitaConnection_apply
-    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    {X Y : ∀ x : M, TangentSpace I x} {x : M}
-    (hX : CMDiffAt ∞ (T% X) x) (hY : CMDiffAt ∞ (T% Y) x) :
-    CMDiffAt ∞
-      (T% (fun y ↦ leviCivitaConnection g Y y (X y))) x := by
-  letI : RiemannianBundle (TangentSpace I : M → Type _) :=
-    ⟨g.toRiemannianMetric⟩
-  change CMDiffAt ∞
-    (T% (fun y ↦ bundledCovariantDerivative (I := I) Y y (X y))) x
-  exact contMDiffAt_bundledCovariantDerivative_apply hX hY
-
 /-- The source-ordered Koszul formula for the Levi--Civita connection.
 
 The order is Morgan--Tian's: the final bracket terms are
@@ -767,6 +749,22 @@ theorem leviCivitaConnection_eq_at_of_isMetricCompatible_of_torsion_eq_zero
   exact (koszul_of_compatible_of_torsion_extend (I := I)
     isMetricCompatible_bundledCovariantDerivative torsion_bundledCovariantDerivative X₀ hY hZ).trans
       (koszul_of_compatible_of_torsion_extend (I := I) hmetric htorsion X₀ hY hZ).symm
+
+/-- Local smoothness of the canonical connection applied to two smooth tangent
+fields.  This is the pointwise regularity bridge used by curvature consumers;
+the connection and all bundle instances remain the canonical bundled ones. -/
+theorem contMDiffAt_leviCivitaConnection_apply
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    {X Y : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞ (T% Y) p) :
+    ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞
+      (T% (fun q => leviCivitaConnection g Y q (X q))) p := by
+  letI : RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  change ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞
+      (T% (fun q => bundledCovariantDerivative (I := I) Y q (X q))) p
+  exact contMDiffAt_bundledCovariantDerivative_apply hX hY
 
 end Connection
 end Ch01
