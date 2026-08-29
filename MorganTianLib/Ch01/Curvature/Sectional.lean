@@ -444,6 +444,46 @@ theorem sectionalCurvature_eq_zero_of_not_linearIndependent
     le_antisymm (not_lt.mp hnpos) (wedgeSq_nonneg x y)
   simp [sectionalCurvature, hnum]
 
+/-! ### Plane-wise constant curvature -/
+
+/-- Constant sectional curvature can be tested on genuine two-planes.  More
+precisely, an algebraic curvature form has diagonal model value `lam` on every
+linearly independent pair exactly when its Gram-normalized sectional quotient
+is `lam` on every such pair.  The dependent pairs omitted from the right-hand
+side have both zero numerator and zero Gram determinant, by the algebraic
+curvature symmetries and the strict Gram criterion.
+
+This is the pair-level converse needed by the intrinsic quotient in
+`Curvature.Plane`; it is the fibrewise form of Morgan--Tian Definition 1.6
+(`morganTian2007`), with the Gram normalization cross-checked against do Carmo,
+Chapter 4, Section 3 (`doCarmo1992`). -/
+theorem hasConstantCurvature_iff_sectionalCurvature
+    {B : W → W → W → W → ℝ} (hB : IsAlgebraicCurvature B) (lam : ℝ) :
+    HasConstantCurvature B lam ↔
+      ∀ x y, LinearIndependent ℝ ![x, y] → sectionalCurvature B x y = lam := by
+  constructor
+  · intro hconst x y hxy
+    have hpos : 0 < wedgeSq x y :=
+      (wedgeSq_pos_iff_linearIndependent x y).mpr hxy
+    unfold sectionalCurvature
+    rw [hconst x y]
+    exact mul_div_cancel_right₀ lam hpos.ne'
+  · intro hsec x y
+    by_cases hxy : LinearIndependent ℝ ![x, y]
+    · have hpos : 0 < wedgeSq x y :=
+        (wedgeSq_pos_iff_linearIndependent x y).mpr hxy
+      have hquot := hsec x y hxy
+      unfold sectionalCurvature at hquot
+      exact (div_eq_iff hpos.ne').mp hquot
+    · have hnum : B x y x y = 0 :=
+        curvature_diag_eq_zero_of_not_linearIndependent hB hxy
+      have hden : wedgeSq x y = 0 := by
+        apply le_antisymm
+        · exact not_lt.mp (fun hpos => hxy
+            ((wedgeSq_pos_iff_linearIndependent x y).mp hpos))
+        · exact wedgeSq_nonneg x y
+      rw [hnum, hden, mul_zero]
+
 /-- For an algebraic curvature form, diagonal constant curvature is equivalent
 to the full tensor identity in Morgan--Tian's frozen slot order
 (`morganTian2007`, Definition 1.6). -/
