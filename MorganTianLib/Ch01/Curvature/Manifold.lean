@@ -30,11 +30,12 @@ are not claimed here.  Chart computations are kept in the separate provisional
 
 The first pair skew law and smooth-section regularity are proved in this file;
 `MorganTianLib.Ch01.Curvature.Provisional.curvature_bianchi` supplies the first
-Bianchi identity.  The source anchor is Morgan--Tian Claim 1.5, retained arXiv printed
+Bianchi identity.  The focused `Curvature.Symmetries` module consumes this
+field API for metric last-pair skew and pair interchange on smooth local
+fields.  The source anchor is Morgan--Tian Claim 1.5, retained arXiv printed
 pp. 37--38; the repository bibliography key is `morganTian2007`.
-The metric last-pair and pair-interchange consequences remain reserved for the
-metric tensor-covariant-derivative milestone; the differential/second Bianchi
-identity is explicitly outside this module.
+The differential/second Bianchi identity and the first-order canonical producer
+replacement remain outside this module.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField

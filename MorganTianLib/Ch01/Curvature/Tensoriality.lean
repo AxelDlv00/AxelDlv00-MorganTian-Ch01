@@ -14,11 +14,11 @@ as `TensorialAt` witnesses.
 
 The layer proves the three `(1,3)` slots, the imported field-level germ-locality
 contract, and the first Bianchi identity in both the operator and
-source-ordered `(0,4)` forms.  Metric last-pair skew and pair interchange
-remain downstream of the metric-compatible tensor-covariant-derivative API;
-the differential/second Bianchi identity is outside this module.  The source
-anchor is `morganTian2007`, Definition 1.4 and Claim 1.5, retained arXiv
-printed pp. 37--38.
+source-ordered `(0,4)` forms.  Metric last-pair skew and pair interchange are
+owned by the focused `Curvature.Symmetries` module; this file deliberately
+remains the lower-level field/tensoriality boundary.  The differential/second
+Bianchi identity is outside both modules.  The source anchor is `morganTian2007`,
+Definition 1.4 and Claim 1.5, retained arXiv printed pp. 37--38.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField
@@ -304,6 +304,56 @@ private lemma curvatureField_smul_right_const_at
   unfold curvatureField
   rw [hfirst, hsecond, hthird]
   module
+
+/-! ### Smooth local field adapters
+
+These wrappers expose the smooth-at statements used by the intrinsic
+symmetry layer while keeping the selected-extension facade below separate.
+The hypotheses are written with the public `ContMDiffAt` type rather than the
+private abbreviation used by the proof above. -/
+
+theorem curvatureField_add_left_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {X Y Z W : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hW : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% W) p) :
+    curvatureField (Connection.leviCivitaConnection g) (X + Y) Z W p =
+      curvatureField (Connection.leviCivitaConnection g) X Z W p +
+        curvatureField (Connection.leviCivitaConnection g) Y Z W p := by
+  exact curvatureField_add_left_at g hX hY hW
+
+theorem curvatureField_add_right_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {X Y Z W : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hZ : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Z) p)
+    (hW : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% W) p) :
+    curvatureField (Connection.leviCivitaConnection g) X Y (Z + W) p =
+      curvatureField (Connection.leviCivitaConnection g) X Y Z p +
+        curvatureField (Connection.leviCivitaConnection g) X Y W p := by
+  exact curvatureField_add_right_at g hX hY hZ hW
+
+theorem curvatureField_smul_left_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {c : ℝ} {X Y W : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hW : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% W) p) :
+    curvatureField (Connection.leviCivitaConnection g) (c • X) Y W p =
+      c • curvatureField (Connection.leviCivitaConnection g) X Y W p := by
+  exact curvatureField_smul_left_at g hX hY hW
+
+theorem curvatureField_smul_right_const_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {c : ℝ} {X Y W : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hW : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% W) p) :
+    curvatureField (Connection.leviCivitaConnection g) X Y (c • W) p =
+      c • curvatureField (Connection.leviCivitaConnection g) X Y W p := by
+  exact curvatureField_smul_right_const_at g hX hY hW
 
 /-! ### Provisional selected-extension pointwise slot laws
 
@@ -684,6 +734,8 @@ theorem curvature4_tensorial_fourth
     change curvature4 g p X Y Z ((W + W') p) = _
     rw [Pi.add_apply, curvature4_add_fourth]
 
+end Provisional
+
 /-! ### First Bianchi identity -/
 
 private lemma curvatureField_bianchi_local
@@ -897,6 +949,21 @@ private lemma curvatureField_bianchi_local
     rw [mlieBracket_swap_apply]
   rw [hBswap, hCswap, hj]
   module
+
+/-- Smooth local first Bianchi identity for the canonical connection-produced
+curvature field. -/
+theorem curvatureField_bianchi_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {X Y Z : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hZ : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Z) p) :
+    curvatureField (Connection.leviCivitaConnection g) X Y Z p +
+      curvatureField (Connection.leviCivitaConnection g) Y Z X p +
+      curvatureField (Connection.leviCivitaConnection g) Z X Y p = 0 := by
+  exact curvatureField_bianchi_local g hX hY hZ
+
+namespace Provisional
 
 /-- The provisional selected-extension first Bianchi identity in the source
 curvature order:
