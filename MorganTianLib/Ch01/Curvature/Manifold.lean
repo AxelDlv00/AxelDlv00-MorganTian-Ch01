@@ -14,10 +14,12 @@ and the provisional four-tensor keeps the source order
 kept visible: Mathlib's bundled covariant derivative axioms constrain values on
 differentiable sections, so a fully pointwise tensor constructor needs a later
 jet/locality layer.  The extension-based pointwise definition below is a
-provisional producer: its replacement trigger is the section-level
-tensoriality/application theorem for arbitrary smooth local extensions.  The
-exported locality theorem records the exact differentiability hypotheses under
-which a germ-local change of extension is valid.
+provisional producer: its replacement trigger is a first-order
+`TensorialAt`/rank-generic producer together with the section-level application
+theorem for arbitrary smooth local extensions.  The exported locality theorem
+records the exact differentiability hypotheses under which a germ-local change
+of extension is valid; the smooth-at bridge in `Curvature.Symmetries` does not
+by itself fire that trigger.
 
 This is the `morganTian2007` Definition 1.4 construction.  The companion
 `Curvature/Tensoriality.lean` module proves the currently available pointwise
@@ -31,10 +33,10 @@ are not claimed here.  Chart computations are kept in the separate provisional
 The first pair skew law and smooth-section regularity are proved in this file;
 `MorganTianLib.Ch01.Curvature.Provisional.curvature_bianchi` supplies the first
 Bianchi identity.  The focused `Curvature.Symmetries` module consumes this
-field API for metric last-pair skew, pair interchange, and the source-ordered
-differential Bianchi adapter.  The source anchor is Morgan--Tian Claim 1.5,
-retained arXiv printed pp. 37--38; the repository bibliography key is
-`morganTian2007`.
+field API for smooth-at metric last-pair skew and pair interchange, together
+with a globally smooth source-ordered differential Bianchi adapter.  The
+source anchor is Morgan--Tian Claim 1.5, retained arXiv printed pp. 37--38;
+the repository bibliography key is `morganTian2007`.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField
@@ -52,6 +54,14 @@ variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
+
+/-- Smoothness at a point for a tangent-bundle vector field.
+
+This is the shared regularity predicate used by the pointwise curvature
+symmetry and tensoriality adapters.  Its `T%` presentation is the one
+consumed by Mathlib's covariant-derivative and Lie-bracket APIs. -/
+abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
+  ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
 
 /-- The covariant derivative of a vector field `Y` in the direction `X`.
 

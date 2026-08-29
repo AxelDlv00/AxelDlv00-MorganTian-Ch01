@@ -14,11 +14,13 @@ as `TensorialAt` witnesses.
 
 The layer proves the three `(1,3)` slots, the imported field-level germ-locality
 contract, and the first Bianchi identity in both the operator and
-source-ordered `(0,4)` forms.  Metric last-pair skew, pair interchange, and
-the differential Bianchi adapter are owned by the focused
-`Curvature.Symmetries` module; this file deliberately remains the lower-level
-field/tensoriality boundary.  The source anchor is `morganTian2007`,
-Definition 1.4 and Claim 1.5, retained arXiv printed pp. 37--38.
+source-ordered `(0,4)` forms.  Smooth-at metric last-pair skew, pair
+interchange, and the globally smooth differential Bianchi adapter are owned by
+the focused `Curvature.Symmetries` module.  The first-order `TensorialAt`/
+rank-generic producer and arbitrary-extension application boundary remains
+open, so this file deliberately stays a lower-level selected-extension
+field/tensoriality layer.  The source anchor is `morganTian2007`, Definition
+1.4 and Claim 1.5, retained arXiv printed pp. 37--38.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField
@@ -36,9 +38,6 @@ variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
-
-private abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
-  ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
 
 private lemma smoothAt_eventually_mdifferentiableAt
     {X : (x : M) → TangentSpace I x} {p : M} (hX : SmoothAt X p) :

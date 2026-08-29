@@ -16,6 +16,8 @@ The sign and derivative-slot convention follows Morgan--Tian Claim 1.5,
 `morganTian2007`, printed pp. 37--38.  The proof uses the pinned Mathlib
 `mfderiv`/`mvfderiv` interfaces and the manifold Lie-bracket product and
 Jacobi APIs; local smooth extensions are supplied by `FiberBundle.extend`.
+The shared `Curvature.SmoothAt` predicate is defined by the lower-level
+`Curvature.Manifold` module.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField
@@ -32,10 +34,6 @@ variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
-
-/-- Smoothness at a point for a tangent-bundle vector field. -/
-abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
-  ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
 
 /- The finite-dimensional hypothesis is not needed for this local conversion. -/
 omit [FiniteDimensional ℝ EM] in

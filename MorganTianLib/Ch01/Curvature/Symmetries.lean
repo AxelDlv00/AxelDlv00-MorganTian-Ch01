@@ -1,3 +1,16 @@
+/-
+Copyright (c) 2025 Patrick Massot. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSES/Apache-2.0.txt.
+Authors: Patrick Massot, Michael Rothgang, Heather Macbeth
+
+This file has been modified from the upstream Mathlib source.  The
+`SmoothTensorialAt` local-frame construction and its extension/value bridge
+are adapted from Mathlib PR #36432 at revision
+aeed612d5de9984b148b5d17a2cde81bf0ac6fa8.  The adaptation specializes that
+construction to smooth tangent-bundle curvature sections and adds the
+Chapter 1 curvature-specific extension/value bridges.
+-/
+
 import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Curvature.Sectional
 import MorganTianLib.Ch01.Curvature.ScalarCommutator
@@ -26,6 +39,13 @@ connection is introduced here.  The algebraic pair-interchange lemma is kept
 separate from the analytic metric-skew proof, so downstream users can consume
 it with an explicitly checked last-pair theorem.
 
+The metric-skew and pair-interchange results below use the shared `SmoothAt`
+predicate at the evaluation point.  The source-ordered differential Bianchi
+adapter is intentionally stronger: all five fields in that theorem are
+globally `CMDiff ∞`.  These smooth-field bridges do not discharge the still-open
+first-order `TensorialAt`/rank-generic producer and arbitrary-extension
+application trigger for the selected-extension facade.
+
 The metric calculation uses
 `CovariantDerivative.IsMetricCompatible.mvfderiv_inner_eq` from
 `Mathlib.Geometry.Manifold.VectorBundle.CovariantDerivative.Metric`; the
@@ -44,7 +64,7 @@ Mathlib's `TensorialAt` from
 `Mathlib.Geometry.Manifold.VectorBundle.Tensoriality`; its local-frame
 pointwise lemma and the `curvatureField_eq_of_value_eq` corollary provide the
 extension/germ bridge while retaining the exact bundled `RiemannianBundle`
-metric.  The weaker first-order `TensorialAt` producer and a public
+metric.  The first-order `TensorialAt`/rank-generic producer and a public
 chart-component bridge remain separate follow-up boundaries.
 -/
 
@@ -63,12 +83,6 @@ variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
-
-/-- Smoothness at a point for a tangent-bundle vector field.  The bundled
-`T%` presentation is the one consumed by Mathlib's covariant-derivative and
-Lie-bracket APIs. -/
-abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
-  ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
 
 /-! ### Field-level source-ordered tensors -/
 
@@ -117,8 +131,8 @@ theorem curvature4Field_smooth
     (v := curvatureField cov X Y W) (w := Z) hR (hZ p)
 
 /-- The covariant derivative of the `(1,3)` curvature operator in direction `U`.
-The four correction terms are the Leibniz corrections in the three operator
-slots and the differentiated output. -/
+The first term differentiates the output; the remaining three terms are the
+Leibniz corrections in its operator slots. -/
 noncomputable def covariantDerivCurvatureField
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (U X Y Z : (x : M) → TangentSpace I x) : (x : M) → TangentSpace I x :=
@@ -272,7 +286,7 @@ theorem covariantDifferential4Field_apply_metric
 
 omit [IsManifold I ∞ M] [FiniteDimensional ℝ EM] in
 /-- Equality of scalar manifold derivatives follows from equality of germs. -/
-theorem mvfderiv_eq_of_eventuallyEq_scalar {f₁ f₂ : M → ℝ} {q : M}
+private theorem mvfderiv_eq_of_eventuallyEq_scalar {f₁ f₂ : M → ℝ} {q : M}
     (h : f₁ =ᶠ[𝓝 q] f₂) :
     (d% f₁ q) = (d% f₂ q) := by
   have hm : mfderiv I 𝓘(ℝ, ℝ) f₁ q = mfderiv I 𝓘(ℝ, ℝ) f₂ q :=
@@ -777,7 +791,8 @@ theorem pointwise
 /-! A value-level compatibility adapter.  This is useful for fixed-slot
 curvature operations, but is not a canonical curvature producer: the
 `FiberBundle.extend` evaluator is exposed only after the smooth
-extension-independence theorem above has been proved. -/
+extension-independence theorem above has been proved, and remains behind the
+first-order producer/application trigger recorded in `ROADMAP.md`. -/
 
 /-- Evaluate a smooth pointwise tensorial operation on the canonical local
 extension, producing a fibrewise linear map. -/
@@ -959,10 +974,11 @@ theorem curvature4Field_eq_of_value_eq
 
 /-! ### Algebraic consequences -/
 
-/-- Once the metric last-pair skew has been checked, the existing first-pair
-skew and first Bianchi laws make the selected pointwise four-tensor an
-algebraic curvature form.  This is the bridge consumed by the exterior-square
-and plane adapters. -/
+/-- The smooth-field metric last-pair skew, together with the existing
+first-pair skew and first Bianchi laws, yields an algebraic-curvature
+compatibility witness for the selected pointwise four-tensor.  This witness is
+consumed by the exterior-square and plane adapters, but does not replace the
+still-open first-order producer/application boundary. -/
 theorem provisional_isAlgebraicCurvature
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M)
@@ -1502,7 +1518,8 @@ theorem covariantDifferential4Field_pair_swap_smooth
 arguments may be replaced by eventually equal germs, and the derivative
 direction may be replaced by a section with the same value at the base point.
 This is the explicit smooth-field locality boundary; a weaker first-order
-`TensorialAt` producer remains a separate follow-up. -/
+`TensorialAt`/rank-generic producer and arbitrary-extension application
+theorem remain a separate follow-up. -/
 theorem covariantDifferential4Field_eq_of_germ
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM
       (TangentSpace I : M → Type _))
@@ -1590,8 +1607,9 @@ theorem covariantDifferential4Field_eq_of_germ
 /-- Morgan--Tian's differential (second) Bianchi identity (Claim 1.5,
 `morganTian2007`, printed pp. 37--38).  The derivative direction is the final
 slot, so the displayed cyclic order is exactly
-`R_{ijkl,h} + R_{ijlh,k} + R_{ijhk,l}`.  This declaration is the smooth-field
-adapter; the first-order bundled tensor producer remains a separate S07
+`R_{ijkl,h} + R_{ijlh,k} + R_{ijhk,l}`.  This declaration is a globally smooth
+field adapter (`CMDiff ∞` on all five fields); the first-order bundled tensor
+producer and arbitrary-extension application theorem remain a separate S07
 boundary. -/
 theorem covariantDifferential4Field_second_bianchi_smooth
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM
