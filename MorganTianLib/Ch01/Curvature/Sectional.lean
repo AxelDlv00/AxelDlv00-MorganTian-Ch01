@@ -406,9 +406,11 @@ Morgan--Tian Definition 1.6 (`morganTian2007`) from an orthonormal basis to a
 spanning pair as in do Carmo, Chapter 4, Section 3 (`doCarmo1992`).  This
 definition itself does not assert plane or generator independence; those
 properties require `hB : IsAlgebraicCurvature B`, for example in
-`sectionalCurvature_changeBasis`.  When the Gram determinant is zero, Lean's
-field convention gives the value `0`; the witness-indexed degenerate theorem
-proves that the numerator vanishes in that case. -/
+`sectionalCurvature_changeBasis`.  The intrinsic quotient layer in
+`Curvature.Plane` descends this law to genuine two-planes.  When the Gram
+determinant is zero, Lean's field convention gives the value `0`; the
+witness-indexed degenerate theorem proves that the numerator vanishes in that
+case. -/
 def sectionalCurvature (B : W → W → W → W → ℝ) (x y : W) : ℝ :=
   B x y x y / wedgeSq x y
 
@@ -473,7 +475,8 @@ theorem wedgeSq_changeBasis (a b c d : ℝ) (x y : W) :
   ring
 
 /-- `GL₂` change-of-generators invariance for the quotient.  This is the
-intrinsic spanning-pair result; no quotient-of-planes choice is made. -/
+intrinsic spanning-pair result used by the quotient-of-planes API in
+`Curvature.Plane`. -/
 theorem sectionalCurvature_changeBasis (hB : IsAlgebraicCurvature B)
     (a b c d : ℝ) (x y : W) (hdet : a * d - b * c ≠ 0) :
     (B (a • x + b • y) (c • x + d • y)

@@ -5,8 +5,10 @@ import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Geodesic.Variation
 import MorganTianLib.Ch01.Curvature
+import MorganTianLib.Ch01.Models.Cone
 import MorganTianLib.Ch01.Curvature.Manifold
 import MorganTianLib.Ch01.Curvature.Tensoriality
+import MorganTianLib.Ch01.Curvature.Plane
 import MorganTianLib.Ch01.Curvature.Operator
 import MorganTianLib.Ch01.Curvature.SectionalProvisional
 import MorganTianLib.Ch01.Curvature.OperatorProvisional
@@ -25,8 +27,9 @@ curvature model, and the provisional selected-extension manifold curvature
 layer (including its proved tensorial and first-Bianchi subset).  The intrinsic
 arbitrary-extension producer remains a named S06 replacement target; the
 private chart calculation is kept out of this umbrella.  The public curvature
-consumers include the algebraic sectional-curvature layer and the symmetric
-second-exterior-power operator.  Their direct-only tangent adapters are exported
+consumers include the algebraic sectional-curvature and intrinsic-plane layers
+and the symmetric second-exterior-power operator.  Their direct-only tangent
+adapters are exported
 by `Curvature.SectionalProvisional` and `Curvature.OperatorProvisional`; every
 plane or operator property retains an explicit algebraic-curvature witness
 until the S07 metric symmetry boundary is proved, and these adapters do not
