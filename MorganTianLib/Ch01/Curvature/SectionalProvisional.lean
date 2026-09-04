@@ -15,10 +15,12 @@ results.
 
 The producer is intentionally not promoted to a canonical Riemannian
 curvature tensor.  Every theorem that uses plane or operator symmetries takes
-an explicit IsAlgebraicCurvatureAt witness, leaving the pending metric
-last-pair and pair-interchange proof visible at the API boundary.  The
-selected-extension construction and its replacement trigger are documented in
-Curvature.Manifold and the S06/S07 rows of ROADMAP.md.
+an explicit `IsAlgebraicCurvatureAt` witness.  The smooth-at metric symmetry
+theorems do not discharge the pending first-order `TensorialAt`/rank-generic
+producer and arbitrary-extension application trigger, so the selected-
+extension construction remains visible at the API boundary.  The replacement
+decision is documented in `Curvature.Manifold` and the S06/S07 rows of
+`ROADMAP.md`.
 
 The source convention is Morgan--Tian Definition 1.6
 (`morganTian2007`), with the Gram normalization cross-checked against do
@@ -128,8 +130,9 @@ noncomputable def sectionalCurvatureAt
 extension producer.  The generic Bianchi field here cycles the first three
 slots; in source `(0,4)` order, `Provisional.curvature4_bianchi` cycles the
 first, second, and fourth slots, with `IsAlgebraicCurvature.antisymm_last`
-relating the two forms.  The witness is intentionally an input until S07
-proves the metric last-pair symmetry of `Provisional.curvature4`. -/
+relating the two forms.  The witness is intentionally an input until the
+first-order producer/application trigger is met; the smooth-field symmetry
+theorems do not make this selected-extension facade canonical. -/
 def IsAlgebraicCurvatureAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) : Prop :=
@@ -305,8 +308,8 @@ theorem sectionalCurvatureAt_eq_zero_of_not_linearIndependent
 
 /-- Pointwise constant sectional curvature can be tested on the intrinsic
 tangent two-plane quotient.  The explicit algebraic-curvature witness remains
-part of the statement until the selected-extension producer acquires the
-metric last-pair symmetry required by S07.
+part of the statement until the S07 first-order producer/application trigger
+replaces the selected-extension facade.
 
 This is the tangent-space form of Morgan--Tian Definition 1.6
 (`morganTian2007`): independent representatives have a strictly positive Gram

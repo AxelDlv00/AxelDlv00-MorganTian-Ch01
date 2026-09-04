@@ -8,6 +8,7 @@ import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Models.Cone
 import MorganTianLib.Ch01.Curvature.Manifold
 import MorganTianLib.Ch01.Curvature.Tensoriality
+import MorganTianLib.Ch01.Curvature.Symmetries
 import MorganTianLib.Ch01.Curvature.Plane
 import MorganTianLib.Ch01.Curvature.Operator
 import MorganTianLib.Ch01.Curvature.SectionalProvisional
@@ -24,18 +25,26 @@ The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
 existence, the canonical metric, distance, volume, and Levi--Civita connection
 coherence layers, the public Christoffel equation bridge, the connection-free
 curvature model, and the provisional selected-extension manifold curvature
-layer (including its proved tensorial and first-Bianchi subset).  The intrinsic
-arbitrary-extension producer remains a named S06 replacement target; the
-private chart calculation is kept out of this umbrella.  The public curvature
-consumers include the algebraic sectional-curvature and intrinsic-plane layers
-and the symmetric second-exterior-power operator.  Their direct-only tangent
-adapters are exported
-by `Curvature.SectionalProvisional` and `Curvature.OperatorProvisional`; every
+layer (including its proved tensorial and first-Bianchi subset).  The focused
+`Curvature.Symmetries` layer adds metric last-pair skew and pair interchange for
+fields smooth at the evaluation point (`SmoothAt`), together with selected-
+extension algebraic consequences.  Its source-ordered differential Bianchi
+adapter is stated for globally smooth fields (`CMDiff ∞`) on all five slots.
+The `SmoothTensorialAt` local-frame adapter proves extension independence for
+smooth local curvature evaluations; these smooth-field bridges do not discharge
+the still-open first-order Mathlib `TensorialAt`/rank-generic producer and
+arbitrary-extension application trigger, which remains open and is not exported
+as a completed producer.
+The public
+curvature consumers include the algebraic sectional-curvature and
+intrinsic-plane layers and the symmetric second-exterior-power operator.
+Their direct-only tangent adapters are exported by
+`Curvature.SectionalProvisional` and `Curvature.OperatorProvisional`; every
 plane or operator property retains an explicit algebraic-curvature witness
-until the S07 metric symmetry boundary is proved, and these adapters do not
-replace the producer.  It also exposes the algebraic curvature-convention
-kernel and the standalone scalar, vector/operator, traced Riccati, and
-normalized determinant/density comparison layers.  The A2 chart-density and
+until that first-order producer/application trigger is met; the compatibility
+witness itself does not replace the producer.  It also exposes the algebraic
+curvature-convention kernel and the standalone scalar, vector/operator, traced
+Riccati, and normalized determinant/density comparison layers.  The A2 chart-density and
 normalized change-of-variables substrate is available only through the direct
 `MorganTianLib.Ch01.Volume.ChangeOfVariables` import until the named N1
 cut-locus consumer fixes its stable boundary; it uses Mathlib's

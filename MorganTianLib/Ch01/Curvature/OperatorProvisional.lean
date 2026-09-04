@@ -10,9 +10,11 @@ construction remains in Curvature.Operator; the declarations here consume
 the pointwise sectional adapter and retain its explicit
 IsAlgebraicCurvatureAt witness.
 
-No metric symmetry is inferred from the selected-extension producer.  The
-operator and positivity statements are therefore conditional until the
-S07 metric last-pair and pair-interchange boundary is proved.
+No canonical producer is inferred from the selected-extension facade.  The
+operator and positivity statements retain their explicit witness until the
+S07 first-order `TensorialAt`/rank-generic producer and arbitrary-extension
+application trigger is met; the smooth-at metric symmetry results alone do not
+replace that boundary.
 -/
 
 noncomputable section
@@ -35,9 +37,9 @@ variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
 
 /-- The curvature operator at a point, once the selected-extension curvature has
-been supplied with its full algebraic-curvature witness.  The witness is
-explicit because the current producer has not yet proved metric last-pair
-skew/pair interchange. -/
+been supplied with its full algebraic-curvature witness.  The witness remains
+explicit because the current selected-extension facade has not yet been
+replaced by the required first-order producer/application API. -/
 noncomputable def curvatureOperatorAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (hR : IsAlgebraicCurvatureAt g p) :
@@ -128,8 +130,8 @@ hypotheses required by
 `sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator`; the exact bundled
 metric is installed only locally to identify the exterior-square Gram form.
 
-The algebraic-curvature witness remains explicit until the S07 producer
-boundary proves the missing metric symmetries. -/
+The algebraic-curvature witness remains explicit until the S07 first-order
+producer/application trigger replaces the selected-extension facade. -/
 theorem sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator_of_linearIndependent
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (hR : IsAlgebraicCurvatureAt g p)
