@@ -3,6 +3,8 @@ import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
+import MorganTianLib.Ch01.Geodesic
+import MorganTianLib.Ch01.Geodesic.HopfRinow
 import MorganTianLib.Ch01.Geodesic.Variation
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Models.Cone
@@ -42,11 +44,29 @@ cut-locus consumer fixes its stable boundary; it uses Mathlib's
 `LinearMap.normDet` and `μHE[finrank ℝ E]` directly and does not install a
 competing global measure.  The provisional `Connection.TensorLaplacian`
 evaluation layer is likewise direct-only until its bundled,
-extension-independent producer is available for S13's Bochner consumer.
-Later milestones add geodesic, Jacobi, normal-coordinate, and
-manifold-comparison modules without exposing chart plumbing as public API.  The
-S20 geodesic energy/first-variation contract is exported here and depends only
-on the canonical metric/connection layers.
+extension-independent producer is available for S13's Bochner consumer.  The
+S19 Hopf--Rinow boundary is exported through the direct
+`Geodesic.HopfRinow` import.  It keeps selected-metric completeness,
+model-space ODE completeness, and boundarylessness independent, and exposes
+the selected-distance completeness bridge, open/order-connected
+maximal-lifetime contract, source-facing geodesic-completeness wrapper,
+the generic and selected-metric right-endpoint Cauchy lemmas under an explicit
+extended-distance Lipschitz premise,
+proof-backed affine geodesic/restriction transport, finite subsegment
+length-realization, affine path-length and translation compatibility, and an
+explicit candidate-versus-competitor inequality.  The universal continuation
+form quantifies over every supplied maximal witness, while a subsingleton
+regression checks that quantifier independently of the selected producer.  Its
+maximal-domain and compactness producers remain explicit inputs; the regressions
+cover
+subsingleton, Euclidean, bounded-lifetime, disconnected-component, and
+incomplete-metric cases without asserting uniqueness.  The metric layer also
+exports component-local finite-path and finite-distance witnesses, and the
+Hopf--Rinow layer provides component-local minimizer adapters that retain the
+explicit producer input.  The S20 geodesic
+energy/first-variation contract depends only on the canonical metric/connection
+layers.  Later milestones add Jacobi, normal-coordinate, and
+manifold-comparison modules without exposing chart plumbing as public API.
 -/
 
 namespace MorganTianLib

@@ -14,12 +14,12 @@ module also records the source-facing notion of a smooth path on `[0, 1]` and
 its finite piecewise-smooth closure, whose length is the sum of Mathlib
 `pathELength`s.  Quantitative inverse-chart replacements, a compact monotone
 subdivision, and endpoint-flat concatenation prove that both source-facing
-length infima equal Mathlib's canonical `C^1` infimum.  On a preconnected
-manifold the distance is finite: the points reachable by finite
-piecewise-smooth paths form a nonempty clopen set, using smooth inverse-chart
-segments locally.  Only the separating extended-metric constructor needs
-`T3Space`; only the finiteness and real-distance results need
-`PreconnectedSpace`.
+length infima equal Mathlib's canonical `C^1` infimum.  The points reachable by
+finite piecewise-smooth paths form a nonempty clopen set, so the module proves
+component-local finite-path and finite-distance witnesses as well as their
+preconnected specializations.  Only the separating extended-metric constructor
+needs `T3Space`; no global connectedness, completeness, or boundarylessness is
+introduced by the component-local results.
 
 Source: Morgan--Tian, *Ricci Flow and the Poincare Conjecture*, Chapter 1,
 Definition 1.1 and the metric-ball discussion on p. 35.
@@ -1162,15 +1162,17 @@ theorem smoothPathEDist_eq_riemannianEDist
   (smoothPathEDist_eq_piecewiseSmoothPathEDist x y).trans
     (piecewiseSmoothPathEDist_eq_riemannianEDist x y)
 
-/-- Any two points of a preconnected manifold are joined by a finite
+/-- Points in the same connected component are joined by a finite
 piecewise-smooth path of finite Riemannian length.
 
-This upgrades the regularity of `exists_contMDiff_path` without adding
-finite-dimensionality, completeness, boundarylessness, or separation
-assumptions. -/
-theorem exists_piecewiseSmooth_path [PreconnectedSpace M]
+The reachable set of finite-length paths is clopen.  Taking the connected
+component of the initial point therefore gives the precise component-local
+statement, without imposing a global `PreconnectedSpace` instance.  This
+strengthens the finite-distance branch used by the Hopf--Rinow interfaces
+while adding no completeness, boundarylessness, or separation assumption. -/
+theorem exists_piecewiseSmooth_path_of_mem_connectedComponent
     (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
-    (x y : M) :
+    (x y : M) (hy : y ∈ connectedComponent x) :
     letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
       ⟨g.toRiemannianMetric⟩
     ∃ p : PiecewiseSmoothPath I x y, p.eLength < ⊤ := by
@@ -1206,13 +1208,30 @@ theorem exists_piecewiseSmooth_path [PreconnectedSpace M]
       SmoothPath.eLength_reverse]
     exact ENNReal.add_lt_top.2 ⟨hp, hq⟩
   have hs_clopen : IsClopen s := ⟨isOpen_compl_iff.mp hs_compl_open, hs_open⟩
-  have hs_nonempty : s.Nonempty := by
-    refine ⟨x, ?_⟩
+  have hx : x ∈ s := by
     change ∃ p : PiecewiseSmoothPath I x x, p.eLength < ⊤
     exact ⟨.nil x, by simp [PiecewiseSmoothPath.eLength]⟩
-  have hs_univ : s = Set.univ := hs_clopen.eq_univ hs_nonempty
-  have hy : y ∈ s := by rw [hs_univ]; exact Set.mem_univ y
-  exact hy
+  have hcomponent : connectedComponent x ⊆ s :=
+    hs_clopen.connectedComponent_subset hx
+  exact hcomponent hy
+
+/-! Any two points of a preconnected manifold are joined by a finite
+piecewise-smooth path of finite Riemannian length.
+
+This is the global specialization of
+`exists_piecewiseSmooth_path_of_mem_connectedComponent`; it retains the
+existing source-facing API while making the component hypothesis explicit in
+the more general theorem. -/
+theorem exists_piecewiseSmooth_path [PreconnectedSpace M]
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    ∃ p : PiecewiseSmoothPath I x y, p.eLength < ⊤ := by
+  have hy : y ∈ connectedComponent x := by
+    rw [PreconnectedSpace.connectedComponent_eq_univ]
+    exact Set.mem_univ y
+  exact exists_piecewiseSmooth_path_of_mem_connectedComponent g x y hy
 
 /-- On a preconnected manifold the auxiliary piecewise-smooth path-length
 infimum is finite, under the same assumption boundary as
@@ -1226,6 +1245,20 @@ theorem piecewiseSmoothPathEDist_lt_top [PreconnectedSpace M]
   letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
     ⟨g.toRiemannianMetric⟩
   rcases exists_piecewiseSmooth_path g x y with ⟨p, hp⟩
+  exact (iInf_le (fun q : PiecewiseSmoothPath I x y ↦ q.eLength) p).trans_lt hp
+
+/-- The auxiliary piecewise-smooth path-length infimum is finite on a
+connected component.  This is the component-local counterpart of
+`piecewiseSmoothPathEDist_lt_top`. -/
+theorem piecewiseSmoothPathEDist_lt_top_of_mem_connectedComponent
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (hy : y ∈ connectedComponent x) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    piecewiseSmoothPathEDist I x y < ⊤ := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  rcases exists_piecewiseSmooth_path_of_mem_connectedComponent g x y hy with ⟨p, hp⟩
   exact (iInf_le (fun q : PiecewiseSmoothPath I x y ↦ q.eLength) p).trans_lt hp
 
 /-! ## Extended and finite Riemannian distance -/
@@ -1247,6 +1280,21 @@ theorem riemannianEDist_lt_top [PreconnectedSpace M]
   rcases exists_piecewiseSmooth_path g x y with ⟨p, hp⟩
   exact p.riemannianEDist_le_eLength.trans_lt hp
 
+/-- The canonical Riemannian extended distance is finite for points in the
+same connected component.  No global `PreconnectedSpace`, completeness,
+boundarylessness, or finite-dimensionality instance is introduced by this
+component-local bridge. -/
+theorem riemannianEDist_lt_top_of_mem_connectedComponent
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (hy : y ∈ connectedComponent x) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    Manifold.riemannianEDist I x y < ⊤ := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  rcases exists_piecewiseSmooth_path_of_mem_connectedComponent g x y hy with ⟨p, hp⟩
+  exact p.riemannianEDist_le_eLength.trans_lt hp
+
 /-- Any two points of a preconnected manifold are joined by a `C^1` path of
 finite Riemannian length.  This is the path witness underlying
 `riemannianEDist_lt_top`, not a path-connectedness assumption. -/
@@ -1262,6 +1310,24 @@ theorem exists_contMDiff_path [PreconnectedSpace M]
   letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
     continuousRiemannianBundle g
   exact Manifold.exists_lt_of_riemannianEDist_lt (riemannianEDist_lt_top g x y)
+
+/-- Points in one connected component have a `C^1` path of finite
+Riemannian length.  The path is obtained from Mathlib's canonical infimum
+after the component-local finiteness theorem, so this declaration does not
+assert a geodesic or a minimizing-segment producer. -/
+theorem exists_contMDiff_path_of_mem_connectedComponent
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ E (TangentSpace I : M → Type _))
+    (x y : M) (hy : y ∈ connectedComponent x) :
+    letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+      ⟨g.toRiemannianMetric⟩
+    ∃ γ : ℝ → M, γ 0 = x ∧ γ 1 = y ∧ CMDiff[Set.Icc 0 1] 1 γ ∧
+      Manifold.pathELength I γ 0 1 < ⊤ := by
+  letI : Bundle.RiemannianBundle (TangentSpace I : M → Type _) :=
+    ⟨g.toRiemannianMetric⟩
+  letI : IsContinuousRiemannianBundle E (TangentSpace I : M → Type _) :=
+    continuousRiemannianBundle g
+  exact Manifold.exists_lt_of_riemannianEDist_lt
+    (riemannianEDist_lt_top_of_mem_connectedComponent g x y hy)
 
 /-- Under Mathlib's topology-preserving extended-metric constructor, ambient
 `edist` is exactly the Riemannian path-length infimum. -/
