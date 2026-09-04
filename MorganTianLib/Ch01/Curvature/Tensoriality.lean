@@ -308,8 +308,8 @@ private lemma curvatureField_smul_right_const_at
 
 These wrappers expose the smooth-at statements used by the intrinsic
 symmetry layer while keeping the selected-extension facade below separate.
-The hypotheses are written with the public `ContMDiffAt` type rather than the
-private abbreviation used by the proof above. -/
+The hypotheses are written with the explicit public `ContMDiffAt` type rather
+than a local abbreviation. -/
 
 /-- Smooth local additivity in the first curvature field slot. -/
 theorem curvatureField_add_left_smoothAt
