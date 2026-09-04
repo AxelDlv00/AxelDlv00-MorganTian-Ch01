@@ -1,6 +1,7 @@
 import MorganTianLib.Ch01.MetricExistence
 import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
+import MorganTianLib.Ch01.Volume.PolarIntegral
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Geodesic.Variation
@@ -40,7 +41,11 @@ normalized change-of-variables substrate is available only through the direct
 `MorganTianLib.Ch01.Volume.ChangeOfVariables` import until the named N1
 cut-locus consumer fixes its stable boundary; it uses Mathlib's
 `LinearMap.normDet` and `μHE[finrank ℝ E]` directly and does not install a
-competing global measure.  The provisional `Connection.TensorLaplacian`
+competing global measure.  The manifold-free Haar polar integration layer is
+also exported: it uses Mathlib's `Measure.toSphere` and `volumeIoiPow` for the
+same canonical Euclidean normalization, with the nontriviality boundary for
+the polar homeomorphism stated explicitly.  The provisional
+`Connection.TensorLaplacian`
 evaluation layer is likewise direct-only until its bundled,
 extension-independent producer is available for S13's Bochner consumer.
 Later milestones add geodesic, Jacobi, normal-coordinate, and
