@@ -47,6 +47,10 @@ Later milestones add geodesic, Jacobi, normal-coordinate, and
 manifold-comparison modules without exposing chart plumbing as public API.  The
 S20 geodesic energy/first-variation contract is exported here and depends only
 on the canonical metric/connection layers.
+The S20 contract remains partial: its current variation leaf exposes the real
+speed/energy inequalities, their canonical `Manifold.pathELength` adapters, and
+the first-variation boundary, while the intrinsic geodesic converse, minimizer,
+and path-metric identification remain at S18/S19.
 -/
 
 namespace MorganTianLib
