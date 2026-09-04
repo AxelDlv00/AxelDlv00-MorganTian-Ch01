@@ -1,3 +1,4 @@
+import MorganTianLib.Ch01.ManifoldCalculus
 import MorganTianLib.Ch01.Curvature.Manifold
 
 /-!
@@ -14,11 +15,11 @@ as `TensorialAt` witnesses.
 
 The layer proves the three `(1,3)` slots, the imported field-level germ-locality
 contract, and the first Bianchi identity in both the operator and
-source-ordered `(0,4)` forms.  Metric last-pair skew and pair interchange
-remain downstream of the metric-compatible tensor-covariant-derivative API;
-the differential/second Bianchi identity is outside this module.  The source
-anchor is `morganTian2007`, Definition 1.4 and Claim 1.5, retained arXiv
-printed pp. 37--38.
+source-ordered `(0,4)` forms.  Metric last-pair skew and pair interchange are
+owned by the focused `Curvature.Symmetries` module; this file deliberately
+remains the lower-level field/tensoriality boundary.  The differential/second
+Bianchi identity is outside both modules.  The source anchor is `morganTian2007`,
+Definition 1.4 and Claim 1.5, retained arXiv printed pp. 37--38.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField
@@ -30,22 +31,14 @@ namespace MorganTianLib
 namespace Ch01
 namespace Curvature
 
+open ManifoldCalculus
+
 section Tensoriality
 
 variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
-
-private abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
-  ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
-
-private lemma smoothAt_eventually_mdifferentiableAt
-    {X : (x : M) → TangentSpace I x} {p : M} (hX : SmoothAt X p) :
-    ∀ᶠ q in 𝓝 p, MDiffAt (T% X) q := by
-  have hX1 := hX.of_le (show (1 : ℕ∞ω) ≤ ∞ by simp)
-  have hn := (contMDiffAt_iff_contMDiffAt_nhds (n := 1) (by simp)).mp hX1
-  exact hn.mono fun q hq => hq.mdifferentiableAt one_ne_zero
 
 private lemma covariantField_mdifferentiableAt_lc
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
@@ -305,12 +298,74 @@ private lemma curvatureField_smul_right_const_at
   rw [hfirst, hsecond, hthird]
   module
 
+/-! ### Smooth local field adapters
+
+These wrappers expose the smooth-at statements used by the intrinsic
+symmetry layer while keeping the selected-extension facade below separate.
+The hypotheses are written with the public `ContMDiffAt` type rather than the
+private abbreviation used by the proof above. -/
+
+/-- For smooth local tangent fields, the curvature commutator is additive in
+its first slot.  The explicit `ContMDiffAt ... ∞` hypotheses provide the two
+first-slot fields and the final field used by the nested derivatives. -/
+theorem curvatureField_add_left_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {X Y Z W : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hW : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% W) p) :
+    curvatureField (Connection.leviCivitaConnection g) (X + Y) Z W p =
+      curvatureField (Connection.leviCivitaConnection g) X Z W p +
+        curvatureField (Connection.leviCivitaConnection g) Y Z W p := by
+  exact curvatureField_add_left_at g hX hY hW
+
+/-- For smooth local tangent fields, the curvature commutator is additive in
+its third `(1,3)` slot.  All four displayed fields are required to satisfy the
+explicit `ContMDiffAt ... ∞` hypotheses used by the local derivative proof. -/
+theorem curvatureField_add_right_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {X Y Z W : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hZ : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Z) p)
+    (hW : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% W) p) :
+    curvatureField (Connection.leviCivitaConnection g) X Y (Z + W) p =
+      curvatureField (Connection.leviCivitaConnection g) X Y Z p +
+        curvatureField (Connection.leviCivitaConnection g) X Y W p := by
+  exact curvatureField_add_right_at g hX hY hZ hW
+
+/-- A constant scalar factors out of the first curvature slot for smooth local
+tangent fields.  The explicit `ContMDiffAt ... ∞` hypotheses supply the local
+regularity needed by the nested derivatives. -/
+theorem curvatureField_smul_left_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {c : ℝ} {X Y W : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hW : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% W) p) :
+    curvatureField (Connection.leviCivitaConnection g) (c • X) Y W p =
+      c • curvatureField (Connection.leviCivitaConnection g) X Y W p := by
+  exact curvatureField_smul_left_at g hX hY hW
+
+/-- A constant scalar factors out of the third `(1,3)` curvature slot for
+smooth local tangent fields.  The explicit `ContMDiffAt ... ∞` hypotheses are
+part of this smooth-local adapter's contract. -/
+theorem curvatureField_smul_right_const_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {c : ℝ} {X Y W : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hW : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% W) p) :
+    curvatureField (Connection.leviCivitaConnection g) X Y (c • W) p =
+      c • curvatureField (Connection.leviCivitaConnection g) X Y W p := by
+  exact curvatureField_smul_right_const_at g hX hY hW
+
 /-! ### Provisional selected-extension pointwise slot laws
 
 The following declarations concern `Curvature.Provisional.curvature` and
 `Curvature.Provisional.curvature4`.  They establish fiberwise laws for the
-selected-extension facade; they do not establish the pending arbitrary-smooth-
-extension application theorem. -/
+selected-extension facade; they do not establish the pending first-order
+(`MDiffAt`/arbitrary differentiable-extension) application theorem. -/
 
 namespace Provisional
 
@@ -684,6 +739,8 @@ theorem curvature4_tensorial_fourth
     change curvature4 g p X Y Z ((W + W') p) = _
     rw [Pi.add_apply, curvature4_add_fourth]
 
+end Provisional
+
 /-! ### First Bianchi identity -/
 
 private lemma curvatureField_bianchi_local
@@ -897,6 +954,21 @@ private lemma curvatureField_bianchi_local
     rw [mlieBracket_swap_apply]
   rw [hBswap, hCswap, hj]
   module
+
+/-- Smooth local first Bianchi identity for the canonical connection-produced
+curvature field. -/
+theorem curvatureField_bianchi_smoothAt
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    {X Y Z : (x : M) → TangentSpace I x} {p : M}
+    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p)
+    (hY : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Y) p)
+    (hZ : ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% Z) p) :
+    curvatureField (Connection.leviCivitaConnection g) X Y Z p +
+      curvatureField (Connection.leviCivitaConnection g) Y Z X p +
+      curvatureField (Connection.leviCivitaConnection g) Z X Y p = 0 := by
+  exact curvatureField_bianchi_local g hX hY hZ
+
+namespace Provisional
 
 /-- The provisional selected-extension first Bianchi identity in the source
 curvature order:

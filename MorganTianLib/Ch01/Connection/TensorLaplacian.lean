@@ -3,6 +3,7 @@ Copyright (c) 2026 Axel Dlv. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSES/Apache-2.0.txt.
 -/
 
+import MorganTianLib.Ch01.ManifoldCalculus
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import Mathlib.Analysis.InnerProductSpace.Dual
@@ -340,43 +341,18 @@ noncomputable def dualCovariantVector
 def directionalDerivative (X : TangentSection (I := I) (M := M))
     (f : ScalarSection (M := M)) (x : M) : ℝ := d% f x (X x)
 
+/-! The shared local bridge is independent of finite-dimensionality of the
+model space. -/
 omit [FiniteDimensional ℝ E] in
-/-- The directional derivative of a smooth `F`-valued function on the
-manifold along a smooth tangent section is smooth at the evaluation point.
-The proof uses the Hom-bundle regularity theorem for `mfderiv` and then
-evaluates its continuous linear-map fibre on the tangent section.  This is the
-local calculus bridge used by the scalar second-derivative producer below. -/
-theorem contMDiffAt_mvfderiv_apply_along
-    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-    {f : M → F} {X : ∀ y : M, TangentSpace I y} {x : M}
-    (hf : ContMDiffAt I 𝓘(ℝ, F) ∞ f x)
-    (hX : ContMDiffAt I (I.prod 𝓘(ℝ, E)) ∞ (T% X) x) :
-    ContMDiffAt I 𝓘(ℝ, F) ∞ (fun y => d% f y (X y)) x := by
-  have hsection :
-      ContMDiffAt I (I.prod 𝓘(ℝ, E →L[ℝ] F)) ∞
-        (fun y => Bundle.TotalSpace.mk' (E →L[ℝ] F)
-          (E := fun y : M => TangentSpace I y →L[ℝ] F) y (d% f y)) x := by
-    rw [contMDiffAt_hom_bundle]
-    refine ⟨contMDiffAt_id, ?_⟩
-    convert hf.mfderiv_const (m := ∞) (by simp) using 1
-    ext y v
-    simp [mvfderiv, inTangentCoordinates, ContinuousLinearMap.inCoordinates]
-    rfl
-  have h := hsection.clm_bundle_apply hX
-  simp only [contMDiffAt_totalSpace] at h
-  exact h.2
-
-/-! The local bridge above is independent of finite-dimensionality of the model
-space. -/
-omit [FiniteDimensional ℝ E] in
-/-- Global smoothness form of
-`contMDiffAt_mvfderiv_apply_along` for the scalar directional derivative. -/
+/-- Global smoothness form of the shared
+`ManifoldCalculus.contMDiffAt_mvfderiv_apply_along` theorem for the scalar
+directional derivative. -/
 theorem directionalDerivative_contMDiff
     {f : ScalarSection (M := M)} {X : TangentSection (I := I) (M := M)}
     (hf : CMDiff ∞ f) (hX : IsSmoothTangentSection X) :
     CMDiff ∞ (fun y => directionalDerivative X f y) := by
   intro x
-  exact contMDiffAt_mvfderiv_apply_along (hf := hf.contMDiffAt)
+  exact ManifoldCalculus.contMDiffAt_mvfderiv_apply_along (hf := hf.contMDiffAt)
     (hX := hX.contMDiffAt)
 
 /-- Metric-compatibility expansion of the contravariant correction.  Under the

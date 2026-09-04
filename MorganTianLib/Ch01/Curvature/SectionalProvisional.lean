@@ -2,6 +2,7 @@ import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Push
 import MorganTianLib.Ch01.Curvature.Manifold
 import MorganTianLib.Ch01.Curvature.Plane
+import MorganTianLib.Ch01.Curvature.Symmetries
 
 /-!
 # Provisional tangent sectional curvature
@@ -14,11 +15,12 @@ this file owns only the bundled tangent metric adapters and their pointwise
 results.
 
 The producer is intentionally not promoted to a canonical Riemannian
-curvature tensor.  Every theorem that uses plane or operator symmetries takes
-an explicit IsAlgebraicCurvatureAt witness, leaving the pending metric
-last-pair and pair-interchange proof visible at the API boundary.  The
-selected-extension construction and its replacement trigger are documented in
-Curvature.Manifold and the S06/S07 rows of ROADMAP.md.
+curvature tensor.  Every theorem that uses plane or operator symmetries keeps
+an explicit `IsAlgebraicCurvatureAt` witness for compatibility and dependency
+transparency; `Curvature.Provisional.curvature4_isAlgebraicCurvature`
+now supplies that witness for the selected producer.  The first-order
+canonical producer replacement remains open, as documented in
+`Curvature.Manifold` and the S06/S07 rows of `ROADMAP.md`.
 
 The source convention is Morgan--Tian Definition 1.6
 (`morganTian2007`), with the Gram normalization cross-checked against do
@@ -128,17 +130,27 @@ noncomputable def sectionalCurvatureAt
 extension producer.  The generic Bianchi field here cycles the first three
 slots; in source `(0,4)` order, `Provisional.curvature4_bianchi` cycles the
 first, second, and fourth slots, with `IsAlgebraicCurvature.antisymm_last`
-relating the two forms.  The witness is intentionally an input until S07
-proves the metric last-pair symmetry of `Provisional.curvature4`. -/
+relating the two forms.  The witness remains an explicit argument in this
+direct-only facade for compatibility; `Curvature.Symmetries` supplies it for
+the selected producer. -/
 def IsAlgebraicCurvatureAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) : Prop :=
   IsAlgebraicCurvature (fun x y z w => Provisional.curvature4 g p x y z w)
 
+/-- The selected-extension producer satisfies the full algebraic-curvature
+contract by the metric symmetry proof in `Curvature.Symmetries`.  The tangent
+facade keeps witnesses explicit in its theorem arguments so that callers can
+also substitute another reviewed curvature form when developing a model. -/
+theorem isAlgebraicCurvatureAt_provisional
+    (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
+    (p : M) : IsAlgebraicCurvatureAt g p := by
+  exact Provisional.curvature4_isAlgebraicCurvature g p
+
 /-- Sectional curvature on an intrinsic tangent two-plane.  The quotient is
 descended through `Curvature.SectionalPlane` using the existing plain
-bilinear metric adapter; the selected-extension producer remains guarded by
-the explicit pointwise algebraic-curvature witness. -/
+bilinear metric adapter; the direct-only facade keeps the pointwise
+algebraic-curvature witness explicit. -/
 noncomputable def sectionalCurvatureAtPlane
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (hR : IsAlgebraicCurvatureAt g p) :
@@ -305,8 +317,8 @@ theorem sectionalCurvatureAt_eq_zero_of_not_linearIndependent
 
 /-- Pointwise constant sectional curvature can be tested on the intrinsic
 tangent two-plane quotient.  The explicit algebraic-curvature witness remains
-part of the statement until the selected-extension producer acquires the
-metric last-pair symmetry required by S07.
+part of this direct-only statement for API compatibility; it is discharged for
+the selected producer by `Curvature.Symmetries`.
 
 This is the tangent-space form of Morgan--Tian Definition 1.6
 (`morganTian2007`): independent representatives have a strictly positive Gram
@@ -353,7 +365,8 @@ theorem hasConstantSectionalCurvatureAt_iff_sectionalCurvatureAtPlane
       rw [hnum, hden, mul_zero]
 
 /-- Pointwise diagonal constant curvature is equivalent to the full
-source-ordered tensor identity, assuming the explicit algebraic witness. -/
+source-ordered tensor identity, assuming the explicit algebraic witness.  The
+selected producer's witness is supplied by `Curvature.Symmetries`. -/
 theorem hasConstantSectionalCurvatureAt_iff_tensor
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (hR : IsAlgebraicCurvatureAt g p) (lam : ℝ) :

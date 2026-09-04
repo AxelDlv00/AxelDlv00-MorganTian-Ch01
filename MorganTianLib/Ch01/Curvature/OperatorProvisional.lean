@@ -7,12 +7,16 @@ import MorganTianLib.Ch01.Curvature.SectionalProvisional
 This direct-only module connects the generic second-exterior-power operator
 to the selected-extension tangent curvature producer.  The generic
 construction remains in Curvature.Operator; the declarations here consume
-the pointwise sectional adapter and retain its explicit
-IsAlgebraicCurvatureAt witness.
+the pointwise sectional adapter and retain an explicit
+`IsAlgebraicCurvatureAt` witness for compatibility and dependency
+transparency.  `Curvature.Provisional.curvature4_isAlgebraicCurvature`
+discharges that witness for the selected producer, while the first-order
+canonical producer replacement remains open.
 
-No metric symmetry is inferred from the selected-extension producer.  The
-operator and positivity statements are therefore conditional until the
-S07 metric last-pair and pair-interchange boundary is proved.
+The smooth-field metric symmetry boundary is proved in
+`Curvature.Symmetries`; the operator statements remain direct-only and
+conditional in this module until the first-order canonical producer replaces
+the selected-extension facade.
 -/
 
 noncomputable section
@@ -35,9 +39,9 @@ variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
 
 /-- The curvature operator at a point, once the selected-extension curvature has
-been supplied with its full algebraic-curvature witness.  The witness is
-explicit because the current producer has not yet proved metric last-pair
-skew/pair interchange. -/
+been supplied with its full algebraic-curvature witness.  The witness remains
+explicit in this direct-only facade; `Curvature.Symmetries` supplies it for the
+selected producer. -/
 noncomputable def curvatureOperatorAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (hR : IsAlgebraicCurvatureAt g p) :
@@ -128,8 +132,9 @@ hypotheses required by
 `sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator`; the exact bundled
 metric is installed only locally to identify the exterior-square Gram form.
 
-The algebraic-curvature witness remains explicit until the S07 producer
-boundary proves the missing metric symmetries. -/
+The algebraic-curvature witness remains explicit in this direct-only facade;
+the smooth-field symmetry proof and selected-producer witness are in
+`Curvature.Symmetries`. -/
 theorem sectionalCurvatureAt_pos_of_hasPositiveCurvatureOperator_of_linearIndependent
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (hR : IsAlgebraicCurvatureAt g p)

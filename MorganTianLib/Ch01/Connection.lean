@@ -9,6 +9,7 @@ from Mathlib PR #36036 at revision 31613e7e48c4559a8be4de48121c911d74586744.
 The adaptation makes the metric an explicit argument, keeps construction
 helpers private, and completes the Chapter 1 public API and regularity proof.
 -/
+import MorganTianLib.Ch01.ManifoldCalculus
 import Mathlib.Analysis.Calculus.ContDiff.FiniteDimension
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
@@ -500,35 +501,6 @@ private theorem contMDiffAt_of_inner
   exact Filter.eventually_of_mem (t.open_baseSet.mem_nhds hx) fun _ hy ↦
     orthonormalFrame_coeff_eq_inner (I := I) t b hy W i
 
-set_option backward.isDefEq.respectTransparency false in
-omit [RiemannianBundle (TangentSpace I : M → Type _)]
-  [IsContMDiffRiemannianBundle I ∞ E (TangentSpace I : M → Type _)]
-  [FiniteDimensional ℝ E] in
-private theorem contMDiffAt_mvfderiv_section
-    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-    {f : M → F} {x : M} (hf : CMDiffAt ∞ f x) :
-    CMDiffAt ∞
-      (fun y ↦ Bundle.TotalSpace.mk' (E →L[ℝ] F)
-        (E := fun y : M ↦ TangentSpace I y →L[ℝ] F) y (d% f y)) x := by
-  rw [contMDiffAt_hom_bundle]
-  refine ⟨contMDiffAt_id, ?_⟩
-  convert hf.mfderiv_const (m := ∞) (by simp) using 1
-  ext y v
-  simp [mvfderiv, inTangentCoordinates, ContinuousLinearMap.inCoordinates]
-  rfl
-
-omit [RiemannianBundle (TangentSpace I : M → Type _)]
-  [IsContMDiffRiemannianBundle I ∞ E (TangentSpace I : M → Type _)]
-  [FiniteDimensional ℝ E] in
-private theorem contMDiffAt_mvfderiv_apply
-    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-    {f : M → F} {X : ∀ y : M, TangentSpace I y} {x : M}
-    (hf : CMDiffAt ∞ f x) (hX : CMDiffAt ∞ (T% X) x) :
-    CMDiffAt ∞ (fun y ↦ d% f y (X y)) x := by
-  have h := (contMDiffAt_mvfderiv_section hf).clm_bundle_apply hX
-  simp only [contMDiffAt_totalSpace] at h
-  exact h.2
-
 omit [FiniteDimensional ℝ E] in
 private theorem contMDiffAt_inner
     {U V : ∀ y : M, TangentSpace I y}
@@ -548,7 +520,7 @@ private theorem contMDiffAt_koszulAux
   apply ContMDiffAt.div_const
   repeat apply ContMDiffAt.add
   all_goals try apply ContMDiffAt.neg
-  all_goals try apply contMDiffAt_mvfderiv_apply
+  all_goals try apply ManifoldCalculus.contMDiffAt_mvfderiv_apply_along
   all_goals try assumption
   · exact contMDiffAt_inner hY hZ
   · exact contMDiffAt_inner hZ hX
@@ -557,25 +529,15 @@ private theorem contMDiffAt_koszulAux
   · exact contMDiffAt_inner hZ (hY.mlieBracket_vectorField hX (by simp))
   · exact contMDiffAt_inner hX (hZ.mlieBracket_vectorField hY (by simp))
 
-omit [RiemannianBundle (TangentSpace I : M → Type _)]
-  [IsContMDiffRiemannianBundle I ∞ E (TangentSpace I : M → Type _)]
-  [FiniteDimensional ℝ E] in
-private theorem eventually_mdifferentiableAt_of_contMDiffAt
-    (hX : CMDiffAt ∞ (T% X) x) :
-    ∀ᶠ y in nhds x, MDiffAt (T% X) y := by
-  have hX' := hX.of_le (show (1 : ℕ∞ω) ≤ ∞ by simp)
-  have hnhds := (contMDiffAt_iff_contMDiffAt_nhds (n := 1) (by simp)).mp hX'
-  exact hnhds.mono fun _ hy ↦ hy.mdifferentiableAt one_ne_zero
-
 private theorem contMDiffAt_bundledCovariantDerivative_apply_inner
     (hX : CMDiffAt ∞ (T% X) x) (hY : CMDiffAt ∞ (T% Y) x)
     (hZ : CMDiffAt ∞ (T% Z) x) :
     CMDiffAt ∞
       (fun y ↦ inner ℝ (bundledCovariantDerivative (I := I) Y y (X y)) (Z y)) x := by
   apply (contMDiffAt_koszulAux hX hY hZ).congr_of_eventuallyEq
-  filter_upwards [eventually_mdifferentiableAt_of_contMDiffAt hX,
-    eventually_mdifferentiableAt_of_contMDiffAt hY,
-    eventually_mdifferentiableAt_of_contMDiffAt hZ] with y hXy hYy hZy
+  filter_upwards [ManifoldCalculus.smoothAt_eventually_mdifferentiableAt hX,
+    ManifoldCalculus.smoothAt_eventually_mdifferentiableAt hY,
+    ManifoldCalculus.smoothAt_eventually_mdifferentiableAt hZ] with y hXy hYy hZy
   exact bundledCovariantDerivative_apply_inner (I := I) hXy hYy hZy
 
 private theorem contMDiffAt_bundledCovariantDerivative_apply

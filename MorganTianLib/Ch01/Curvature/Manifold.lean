@@ -14,10 +14,12 @@ and the provisional four-tensor keeps the source order
 kept visible: Mathlib's bundled covariant derivative axioms constrain values on
 differentiable sections, so a fully pointwise tensor constructor needs a later
 jet/locality layer.  The extension-based pointwise definition below is a
-provisional producer: its replacement trigger is the section-level
-tensoriality/application theorem for arbitrary smooth local extensions.  The
-exported locality theorem records the exact differentiability hypotheses under
-which a germ-local change of extension is valid.
+provisional producer: its replacement trigger is a first-order
+(`MDiffAt`/arbitrary differentiable-extension) section-level
+tensoriality/application theorem.  `Curvature.Symmetries` supplies a separate
+smooth-local `ContMDiffAt ... ∞` extension/value bridge; the exported locality
+theorem here records the exact differentiability hypotheses under which a
+germ-local change of extension is valid.
 
 This is the `morganTian2007` Definition 1.4 construction.  The companion
 `Curvature/Tensoriality.lean` module proves the currently available pointwise
@@ -30,11 +32,12 @@ are not claimed here.  Chart computations are kept in the separate provisional
 
 The first pair skew law and smooth-section regularity are proved in this file;
 `MorganTianLib.Ch01.Curvature.Provisional.curvature_bianchi` supplies the first
-Bianchi identity.  The source anchor is Morgan--Tian Claim 1.5, retained arXiv printed
+Bianchi identity.  The focused `Curvature.Symmetries` module consumes this
+field API for metric last-pair skew and pair interchange on smooth local
+fields.  The source anchor is Morgan--Tian Claim 1.5, retained arXiv printed
 pp. 37--38; the repository bibliography key is `morganTian2007`.
-The metric last-pair and pair-interchange consequences remain reserved for the
-metric tensor-covariant-derivative milestone; the differential/second Bianchi
-identity is explicitly outside this module.
+The differential/second Bianchi identity and the first-order canonical producer
+replacement remain outside this module.
 -/
 
 open Bundle FiberBundle Filter Function Manifold Matrix Module VectorField
@@ -393,7 +396,8 @@ namespace Provisional
 vectors by the local smooth extensions supplied by `FiberBundle.extend`.  Its
 field commutator has the Morgan--Tian order `R X Y W`.  This producer is not
 the canonical intrinsic API: replace it after section-level tensoriality and
-the arbitrary smooth-extension application theorem are available. -/
+the first-order (`MDiffAt`/arbitrary differentiable-extension) application
+theorem is available. -/
 noncomputable def curvature
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     (p : M) (X Y W : TangentSpace I p) : TangentSpace I p :=
