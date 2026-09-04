@@ -1,6 +1,7 @@
 import MorganTianLib.Ch01.MetricExistence
 import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
+import MorganTianLib.Ch01.ManifoldCalculus
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
 import MorganTianLib.Ch01.Geodesic.Variation
@@ -22,10 +23,11 @@ import MorganTianLib.Ch01.Comparison.VectorSturm
 # Chapter 1: preliminaries from Riemannian geometry
 
 The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
-existence, the canonical metric, distance, volume, and Levi--Civita connection
-coherence layers, the public Christoffel equation bridge, the connection-free
-curvature model, and the provisional selected-extension manifold curvature
-layer (including its proved tensorial and first-Bianchi subset).  The focused
+existence, the canonical metric, distance, volume, shared manifold-calculus
+regularity, and Levi--Civita connection coherence layers, the public
+Christoffel equation bridge, the connection-free curvature model, and the
+provisional selected-extension manifold curvature layer (including its proved
+tensorial and first-Bianchi subset).  The focused
 `Curvature.Symmetries` layer adds metric last-pair skew and pair interchange for
 smooth local fields, proves smooth extension independence at a point, and
 discharges the selected-extension algebraic-curvature witness.  The intrinsic

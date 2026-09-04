@@ -1,6 +1,5 @@
-import Mathlib.Analysis.Calculus.VectorField
+import MorganTianLib.Ch01.ManifoldCalculus
 import Mathlib.Geometry.Manifold.VectorField.LieBracket
-import Mathlib.Geometry.Manifold.VectorBundle.ContMDiffSection
 import Mathlib.Tactic.LinearCombination
 
 /-!
@@ -27,24 +26,12 @@ namespace Ch01
 namespace Curvature
 namespace ScalarCommutator
 
+open ManifoldCalculus
+
 variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
-
-/-- Smoothness at a point for a tangent-bundle vector field. -/
-abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
-  ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
-
-/- The finite-dimensional hypothesis is not needed for this local conversion. -/
-omit [FiniteDimensional ℝ EM] in
-/-- A smooth section is differentiable on a neighborhood of the base point. -/
-lemma smoothAt_eventually_mdifferentiableAt
-    {X : (x : M) → TangentSpace I x} {p : M} (hX : SmoothAt X p) :
-    ∀ᶠ q in 𝓝 p, MDiffAt (T% X) q := by
-  have hX1 := hX.of_le (show (1 : ℕ∞ω) ≤ ∞ by exact ENat.LEInfty.out)
-  have hn := (contMDiffAt_iff_contMDiffAt_nhds (n := 1) (by simp)).mp hX1
-  exact hn.mono fun q hq => hq.mdifferentiableAt one_ne_zero
 
 omit [FiniteDimensional ℝ EM] in
 /-- A smooth scalar is differentiable on a neighborhood of the base point. -/
@@ -73,31 +60,6 @@ lemma mlieBracket_smoothAt
   exact ContMDiffAt.mlieBracket_vectorField (m := (⊤ : ℕ∞))
     (n := (⊤ : ℕ∞)) hA hB hmn
 
-omit [FiniteDimensional ℝ EM] in
-/-- Applying a manifold derivative to a smooth tangent field preserves local
-smoothness. -/
-lemma contMDiffAt_mvfderiv_apply_along
-    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-    {f : M → F} {X : (x : M) → TangentSpace I x} {p : M}
-    (hf : ContMDiffAt I 𝓘(ℝ, F) ∞ f p) (hX : SmoothAt X p) :
-    ContMDiffAt I 𝓘(ℝ, F) ∞ (fun y => d% f y (X y)) p := by
-  have hsection : ContMDiffAt I (I.prod 𝓘(ℝ, EM →L[ℝ] F)) ∞
-      (fun y => Bundle.TotalSpace.mk' (EM →L[ℝ] F)
-        (E := fun y : M => TangentSpace I y →L[ℝ] F) y (d% f y)) p := by
-    letI : ChartedSpace (ModelProd H (EM →L[ℝ] F))
-        (Bundle.TotalSpace (EM →L[ℝ] F)
-          (fun y : M => TangentSpace I y →L[ℝ] F)) :=
-      FiberBundle.chartedSpace
-    rw [contMDiffAt_hom_bundle]
-    refine ⟨contMDiffAt_id, ?_⟩
-    convert hf.mfderiv_const (m := ∞) (by simp) using 1
-    ext y v
-    simp [mvfderiv, inTangentCoordinates, ContinuousLinearMap.inCoordinates]
-    rfl
-  have h := hsection.clm_bundle_apply hX
-  simp only [contMDiffAt_totalSpace] at h
-  exact h.2
-
 /-- Jacobi and the bracket product rule cancel the scalar second-derivative
 commutator after testing against any smooth tangent field. -/
 lemma scalar_bracket_commutator_mul_at
@@ -125,33 +87,24 @@ lemma scalar_bracket_commutator_mul_at
   let Y_XV : (x : M) → TangentSpace I x := VectorField.mlieBracket I Y XV
   let XY_V : (x : M) → TangentSpace I x := VectorField.mlieBracket I XY V
   have ha_s : ContMDiffAt I 𝓘(ℝ, ℝ) ∞ a p := by
-    exact contMDiffAt_mvfderiv_apply_along (hf) hY
+    exact ManifoldCalculus.contMDiffAt_mvfderiv_apply_along hf hY
   have hb_s : ContMDiffAt I 𝓘(ℝ, ℝ) ∞ b p := by
-    exact contMDiffAt_mvfderiv_apply_along (hf) hX
-  have hXY_s : SmoothAt XY p := mlieBracket_smoothAt hX hY
+    exact ManifoldCalculus.contMDiffAt_mvfderiv_apply_along hf hX
   have hXV_s : SmoothAt XV p := mlieBracket_smoothAt hX hV
   have hYV_s : SmoothAt YV p := mlieBracket_smoothAt hY hV
-  have hX_YV_s : SmoothAt X_YV p := mlieBracket_smoothAt hX hYV_s
-  have hY_XV_s : SmoothAt Y_XV p := mlieBracket_smoothAt hY hXV_s
-  have hXY_V_s : SmoothAt XY_V p := mlieBracket_smoothAt hXY_s hV
   have ha : MDiffAt a p := ha_s.mdifferentiableAt (by simp)
   have hb : MDiffAt b p := hb_s.mdifferentiableAt (by simp)
   have hf' : MDiffAt f p := hf.mdifferentiableAt (by simp)
-  have hXp : MDiffAt (T% X) p := hX.mdifferentiableAt (by simp)
-  have hYp : MDiffAt (T% Y) p := hY.mdifferentiableAt (by simp)
   have hVp : MDiffAt (T% V) p := hV.mdifferentiableAt (by simp)
-  have hXYp : MDiffAt (T% XY) p := hXY_s.mdifferentiableAt (by simp)
   have hXVp : MDiffAt (T% XV) p := hXV_s.mdifferentiableAt (by simp)
   have hYVp : MDiffAt (T% YV) p := hYV_s.mdifferentiableAt (by simp)
   have hfaV : MDiffAt (T% (a • V)) p := ha.smul_section hVp
   have hfbV : MDiffAt (T% (b • V)) p := hb.smul_section hVp
-  have hfa : ContMDiffAt I 𝓘(ℝ, ℝ) ∞ a p := ha_s
-  have hfb : ContMDiffAt I 𝓘(ℝ, ℝ) ∞ b p := hb_s
   have hYf_ev : ∀ᶠ q in 𝓝 p,
       VectorField.mlieBracket I Y (f • V) q =
         a q • V q + f q • YV q := by
     filter_upwards [scalarAt_eventually_mdifferentiableAt hf,
-      smoothAt_eventually_mdifferentiableAt hV] with q hfq hVq
+      ManifoldCalculus.smoothAt_eventually_mdifferentiableAt hV] with q hfq hVq
     have hq := VectorField.mlieBracket_smul_right (I := I)
       (V := Y) (W := V) (f := f) (x := q) hfq hVq
     simpa [a, YV, mvfderiv] using hq
@@ -159,7 +112,7 @@ lemma scalar_bracket_commutator_mul_at
       VectorField.mlieBracket I X (f • V) q =
         b q • V q + f q • XV q := by
     filter_upwards [scalarAt_eventually_mdifferentiableAt hf,
-      smoothAt_eventually_mdifferentiableAt hV] with q hfq hVq
+      ManifoldCalculus.smoothAt_eventually_mdifferentiableAt hV] with q hfq hVq
     have hq := VectorField.mlieBracket_smul_right (I := I)
       (V := X) (W := V) (f := f) (x := q) hfq hVq
     simpa [b, XV, mvfderiv] using hq

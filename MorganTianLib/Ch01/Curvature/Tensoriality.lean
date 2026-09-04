@@ -1,3 +1,4 @@
+import MorganTianLib.Ch01.ManifoldCalculus
 import MorganTianLib.Ch01.Curvature.Manifold
 
 /-!
@@ -30,22 +31,14 @@ namespace MorganTianLib
 namespace Ch01
 namespace Curvature
 
+open ManifoldCalculus
+
 section Tensoriality
 
 variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
-
-private abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
-  ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
-
-private lemma smoothAt_eventually_mdifferentiableAt
-    {X : (x : M) → TangentSpace I x} {p : M} (hX : SmoothAt X p) :
-    ∀ᶠ q in 𝓝 p, MDiffAt (T% X) q := by
-  have hX1 := hX.of_le (show (1 : ℕ∞ω) ≤ ∞ by simp)
-  have hn := (contMDiffAt_iff_contMDiffAt_nhds (n := 1) (by simp)).mp hX1
-  exact hn.mono fun q hq => hq.mdifferentiableAt one_ne_zero
 
 private lemma covariantField_mdifferentiableAt_lc
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))

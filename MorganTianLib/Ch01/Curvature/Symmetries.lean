@@ -1,9 +1,9 @@
+import MorganTianLib.Ch01.ManifoldCalculus
 import MorganTianLib.Ch01.Curvature.Tensoriality
 import MorganTianLib.Ch01.Curvature.Sectional
 import MorganTianLib.Ch01.Curvature.ScalarCommutator
 import Mathlib.Analysis.Calculus.VectorField
 import Mathlib.Geometry.Manifold.VectorField.LieBracket
-import Mathlib.Tactic.Abel
 import Mathlib.Tactic.LinearCombination
 
 /-!
@@ -54,18 +54,14 @@ namespace MorganTianLib
 namespace Ch01
 namespace Curvature
 
+open ManifoldCalculus
+
 section Symmetries
 
 variable {EM : Type*} [NormedAddCommGroup EM] [NormedSpace ℝ EM]
   {H : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ EM H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
   [IsManifold I ∞ M] [FiniteDimensional ℝ EM]
-
-/-- Smoothness at a point for a tangent-bundle vector field.  The bundled
-`T%` presentation is the one consumed by Mathlib's covariant-derivative and
-Lie-bracket APIs. -/
-abbrev SmoothAt (X : (x : M) → TangentSpace I x) (p : M) : Prop :=
-  ContMDiffAt I (I.prod 𝓘(ℝ, EM)) ∞ (T% X) p
 
 /-! ### Field-level source-ordered tensors -/
 
@@ -195,16 +191,16 @@ theorem curvature4Field_self_zero_smoothAt
         (1 / 2 : ℝ) * (d% (fun q => d% f q (A q)) p) (B p) := by
     intro A B hA hB
     have hAev : ∀ᶠ q in 𝓝 p, MDiffAt (T% A) q := by
-      exact ScalarCommutator.smoothAt_eventually_mdifferentiableAt hA
+      exact ManifoldCalculus.smoothAt_eventually_mdifferentiableAt hA
     have hZev : ∀ᶠ q in 𝓝 p, MDiffAt (T% Z) q := by
-      exact ScalarCommutator.smoothAt_eventually_mdifferentiableAt hZ
+      exact ManifoldCalculus.smoothAt_eventually_mdifferentiableAt hZ
     have hev : (fun q => inner ℝ (covariantField cov A Z q) (Z q)) =ᶠ[𝓝 p]
         (fun q => (1 / 2 : ℝ) * (d% f q (A q))) := by
       filter_upwards [hAev, hZev] with q hAq hZq
       exact hhalf_at hAq hZq
     have hda : ContMDiffAt I 𝓘(ℝ, ℝ) ∞
         (fun q => d% f q (A q)) p := by
-      exact ScalarCommutator.contMDiffAt_mvfderiv_apply_along hf hA
+      exact ManifoldCalculus.contMDiffAt_mvfderiv_apply_along hf hA
     have hda' : MDiffAt (fun q => d% f q (A q)) p :=
       hda.mdifferentiableAt (by simp)
     have hderiv :
@@ -347,8 +343,8 @@ stated for smooth local sections: the weaker `TensorialAt` hypotheses in
 Mathlib do not provide enough regularity for the nested covariant derivatives
 in the present bundled API. -/
 
-/-- A smooth scalar in the first curvature slot factors through its value at
-the base point. -/
+/-- A scalar differentiable at the base point factors through its value in the
+first curvature slot. -/
 theorem curvatureField_smul_first_smoothAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {f : M → ℝ} {X Y W : (x : M) → TangentSpace I x} {p : M}
@@ -408,8 +404,8 @@ theorem curvatureField_smul_first_smoothAt
   simp only [smul_sub, ContinuousLinearMap.smulRight_apply]
   module
 
-/-- A smooth scalar in the second curvature slot factors through its value at
-the base point. -/
+/-- A scalar differentiable at the base point factors through its value in the
+second curvature slot. -/
 theorem curvatureField_smul_second_smoothAt
     (g : Bundle.ContMDiffRiemannianMetric I ∞ EM (TangentSpace I : M → Type _))
     {f : M → ℝ} {X Y W : (x : M) → TangentSpace I x} {p : M}
