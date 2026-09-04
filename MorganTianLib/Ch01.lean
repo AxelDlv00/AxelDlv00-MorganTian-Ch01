@@ -3,6 +3,7 @@ import MorganTianLib.Ch01.Metric
 import MorganTianLib.Ch01.Volume
 import MorganTianLib.Ch01.Connection
 import MorganTianLib.Ch01.Connection.Christoffel
+import MorganTianLib.Ch01.Geodesic
 import MorganTianLib.Ch01.Geodesic.Variation
 import MorganTianLib.Ch01.Curvature
 import MorganTianLib.Ch01.Models.Cone
@@ -22,16 +23,18 @@ import MorganTianLib.Ch01.Comparison.VectorSturm
 
 The public Chapter 1 umbrella.  It exposes finite-dimensional Riemannian metric
 existence, the canonical metric, distance, volume, and Levi--Civita connection
-coherence layers, the public Christoffel equation bridge, the connection-free
-curvature model, and the provisional selected-extension manifold curvature
-layer (including its proved tensorial and first-Bianchi subset).  The intrinsic
-arbitrary-extension producer remains a named S06 replacement target; the
-private chart calculation is kept out of this umbrella.  The public curvature
-consumers include the algebraic sectional-curvature and intrinsic-plane layers
-and the symmetric second-exterior-power operator.  Their direct-only tangent
-adapters are exported
-by `Curvature.SectionalProvisional` and `Curvature.OperatorProvisional`; every
-plane or operator property retains an explicit algebraic-curvature witness
+coherence layers, the public Christoffel equation bridge, the focused geodesic
+equation/IVP substrate and its chart-transition regressions, the geodesic
+energy/first-variation contract, the connection-free curvature model, and the
+provisional selected-extension manifold curvature layer (including its proved
+tensorial and first-Bianchi subset).  The intrinsic arbitrary-extension
+producer remains a named S06 replacement target; the geodesic module's
+fixed-to-moving Christoffel law and canonical maximal-flow construction remain
+an open S18 boundary.  The public curvature consumers include the algebraic
+sectional-curvature and intrinsic-plane layers and the symmetric
+second-exterior-power operator.  Their direct-only tangent adapters are
+exported by `Curvature.SectionalProvisional` and `Curvature.OperatorProvisional`;
+every plane or operator property retains an explicit algebraic-curvature witness
 until the S07 metric symmetry boundary is proved, and these adapters do not
 replace the producer.  It also exposes the algebraic curvature-convention
 kernel and the standalone scalar, vector/operator, traced Riccati, and
